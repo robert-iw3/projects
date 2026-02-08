@@ -1,0 +1,26 @@
+namespace: "ansible"
+name: "windows_stigs"
+description: "Ansible Playbooks for Windows STIG Scripts"
+readme: "README.md"
+homepage: ""
+issues: ""
+repository: ""
+authors:
+    - "make_stigs_easier"
+dependencies:
+    "ansible.windows": "*"
+    "community.windows": "*"
+    "community.general": "*"
+license_file: LICENSE
+tags:
+    - collection
+    - windows
+    - chocolatey
+    - package
+build_ignore:
+- collections/ansible_collections/general*
+- .github
+- .gitattributes
+- .gitignore
+- */files/*master.zip
+- */files/*main.zip

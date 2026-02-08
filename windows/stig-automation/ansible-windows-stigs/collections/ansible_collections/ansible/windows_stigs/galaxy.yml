@@ -1,0 +1,25 @@
+namespace: "ansible"
+name: "Windows_STIG_Ansible"
+description: "Ansible Playbooks for Windows STIG Scripts"
+version: "1.0.0"
+readme: "README.md"
+homepage:
+    - ""
+issues:
+    - ""
+authors:
+    - ""
+dependencies:
+    "chocolatey.chocolatey": "*"
+    "ansible.windows": "*"
+    "community.windows": "*"
+license:
+    - "GPLv3"
+license_file:
+    - LICENSE
+tags:
+    - collection
+    - windows
+    - chocolatey
+    - package
+repository: ""

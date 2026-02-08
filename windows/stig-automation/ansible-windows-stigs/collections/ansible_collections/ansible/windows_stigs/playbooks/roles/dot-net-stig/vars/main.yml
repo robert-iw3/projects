@@ -1,0 +1,7 @@
+---
+# vars file for base
+gitrepo: ""
+gitdir: "C:\\temp\\master.zip"
+gitname: ".NET-STIG-Script"
+zipdir: "C:\\temp\\{{ gitname }}"
+copyzipdir: "{{gitname}}-master.zip"

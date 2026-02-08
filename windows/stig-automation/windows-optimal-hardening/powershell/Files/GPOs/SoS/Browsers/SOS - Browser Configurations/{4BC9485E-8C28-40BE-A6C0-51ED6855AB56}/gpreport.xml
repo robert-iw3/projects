@@ -1,0 +1,2802 @@
+﻿<?xml version="1.0" encoding="utf-16"?>
+<GPO xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.microsoft.com/GroupPolicy/Settings">
+  <Identifier>
+    <Identifier xmlns="http://www.microsoft.com/GroupPolicy/Types">{4A9A1E55-03CE-4864-9BA9-CB0AEC608C4C}</Identifier>
+    <Domain xmlns="http://www.microsoft.com/GroupPolicy/Types">domain.local</Domain>
+  </Identifier>
+  <Name>NetBiosName - Browser Configurations</Name>
+  <IncludeComments>true</IncludeComments>
+  <CreatedTime>2023-07-31T21:59:33</CreatedTime>
+  <ModifiedTime>2023-08-01T21:56:23</ModifiedTime>
+  <ReadTime>2023-08-01T22:01:02.3263027Z</ReadTime>
+  <SecurityDescriptor>
+    <SDDL xmlns="http://www.microsoft.com/GroupPolicy/Types/Security">O:S-1-5-21-2926635386-1481231937-3050549317-1000G:DUD:PAI(OA;CI;CR;edacfd8f-ffb3-11d1-b41d-00a0c968f939;;AU)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;S-1-5-21-2926635386-1481231937-3050549317-1000)(A;CI;CCDCLCSWRPWPDTLOSDRCWDWO;;;DA)(A;CI;CCDCLCSWRPWPDTLOSDRCWDWO;;;S-1-5-21-2926635386-1481231937-3050549317-519)(A;CI;LCRPLORC;;;ED)(A;CI;LCRPLORC;;;AU)(A;CI;CCDCLCSWRPWPDTLOSDRCWDWO;;;SY)(A;CIIO;CCDCLCSWRPWPDTLOSDRCWDWO;;;CO)S:AI(OU;CIIDSA;WPWD;;f30e3bc2-9ff0-11d1-b603-0000f80367c1;WD)(OU;CIIOIDSA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CIIOIDSA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)</SDDL>
+    <Owner xmlns="http://www.microsoft.com/GroupPolicy/Types/Security">
+      <SID xmlns="http://www.microsoft.com/GroupPolicy/Types">S-1-5-21-2926635386-1481231937-3050549317-1000</SID>
+      <Name xmlns="http://www.microsoft.com/GroupPolicy/Types">NetBiosName\Placeholder</Name>
+    </Owner>
+    <Group xmlns="http://www.microsoft.com/GroupPolicy/Types/Security">
+      <SID xmlns="http://www.microsoft.com/GroupPolicy/Types">S-1-5-21-2926635386-1481231937-3050549317-513</SID>
+      <Name xmlns="http://www.microsoft.com/GroupPolicy/Types">NetBiosName\Domain Users</Name>
+    </Group>
+    <PermissionsPresent xmlns="http://www.microsoft.com/GroupPolicy/Types/Security">true</PermissionsPresent>
+    <Permissions xmlns="http://www.microsoft.com/GroupPolicy/Types/Security">
+      <InheritsFromParent>false</InheritsFromParent>
+      <TrusteePermissions>
+        <Trustee>
+          <SID xmlns="http://www.microsoft.com/GroupPolicy/Types">S-1-5-21-2926635386-1481231937-3050549317-519</SID>
+          <Name xmlns="http://www.microsoft.com/GroupPolicy/Types">NetBiosName\Enterprise Admins</Name>
+        </Trustee>
+        <Type xsi:type="PermissionType">
+          <PermissionType>Allow</PermissionType>
+        </Type>
+        <Inherited>false</Inherited>
+        <Applicability>
+          <ToSelf>true</ToSelf>
+          <ToDescendantObjects>false</ToDescendantObjects>
+          <ToDescendantContainers>true</ToDescendantContainers>
+          <ToDirectDescendantsOnly>false</ToDirectDescendantsOnly>
+        </Applicability>
+        <Standard>
+          <GPOGroupedAccessEnum>Edit, delete, modify security</GPOGroupedAccessEnum>
+        </Standard>
+        <AccessMask>0</AccessMask>
+      </TrusteePermissions>
+      <TrusteePermissions>
+        <Trustee>
+          <SID xmlns="http://www.microsoft.com/GroupPolicy/Types">S-1-5-9</SID>
+          <Name xmlns="http://www.microsoft.com/GroupPolicy/Types">NT AUTHORITY\ENTERPRISE DOMAIN CONTROLLERS</Name>
+        </Trustee>
+        <Type xsi:type="PermissionType">
+          <PermissionType>Allow</PermissionType>
+        </Type>
+        <Inherited>false</Inherited>
+        <Applicability>
+          <ToSelf>true</ToSelf>
+          <ToDescendantObjects>false</ToDescendantObjects>
+          <ToDescendantContainers>true</ToDescendantContainers>
+          <ToDirectDescendantsOnly>false</ToDirectDescendantsOnly>
+        </Applicability>
+        <Standard>
+          <GPOGroupedAccessEnum>Read</GPOGroupedAccessEnum>
+        </Standard>
+        <AccessMask>0</AccessMask>
+      </TrusteePermissions>
+      <TrusteePermissions>
+        <Trustee>
+          <SID xmlns="http://www.microsoft.com/GroupPolicy/Types">S-1-5-18</SID>
+          <Name xmlns="http://www.microsoft.com/GroupPolicy/Types">NT AUTHORITY\SYSTEM</Name>
+        </Trustee>
+        <Type xsi:type="PermissionType">
+          <PermissionType>Allow</PermissionType>
+        </Type>
+        <Inherited>false</Inherited>
+        <Applicability>
+          <ToSelf>true</ToSelf>
+          <ToDescendantObjects>false</ToDescendantObjects>
+          <ToDescendantContainers>true</ToDescendantContainers>
+          <ToDirectDescendantsOnly>false</ToDirectDescendantsOnly>
+        </Applicability>
+        <Standard>
+          <GPOGroupedAccessEnum>Edit, delete, modify security</GPOGroupedAccessEnum>
+        </Standard>
+        <AccessMask>0</AccessMask>
+      </TrusteePermissions>
+      <TrusteePermissions>
+        <Trustee>
+          <SID xmlns="http://www.microsoft.com/GroupPolicy/Types">S-1-5-21-2926635386-1481231937-3050549317-512</SID>
+          <Name xmlns="http://www.microsoft.com/GroupPolicy/Types">NetBiosName\Domain Admins</Name>
+        </Trustee>
+        <Type xsi:type="PermissionType">
+          <PermissionType>Allow</PermissionType>
+        </Type>
+        <Inherited>false</Inherited>
+        <Applicability>
+          <ToSelf>true</ToSelf>
+          <ToDescendantObjects>false</ToDescendantObjects>
+          <ToDescendantContainers>true</ToDescendantContainers>
+          <ToDirectDescendantsOnly>false</ToDirectDescendantsOnly>
+        </Applicability>
+        <Standard>
+          <GPOGroupedAccessEnum>Edit, delete, modify security</GPOGroupedAccessEnum>
+        </Standard>
+        <AccessMask>0</AccessMask>
+      </TrusteePermissions>
+      <TrusteePermissions>
+        <Trustee>
+          <SID xmlns="http://www.microsoft.com/GroupPolicy/Types">S-1-5-21-2926635386-1481231937-3050549317-1000</SID>
+          <Name xmlns="http://www.microsoft.com/GroupPolicy/Types">NetBiosName\Placeholder</Name>
+        </Trustee>
+        <Type xsi:type="PermissionType">
+          <PermissionType>Allow</PermissionType>
+        </Type>
+        <Inherited>false</Inherited>
+        <Applicability>
+          <ToSelf>true</ToSelf>
+          <ToDescendantObjects>false</ToDescendantObjects>
+          <ToDescendantContainers>false</ToDescendantContainers>
+          <ToDirectDescendantsOnly>false</ToDirectDescendantsOnly>
+        </Applicability>
+        <Standard>
+          <GPOGroupedAccessEnum>Edit, delete, modify security</GPOGroupedAccessEnum>
+        </Standard>
+        <Standard>
+          <GPOGroupedAccessEnum>Apply Group Policy</GPOGroupedAccessEnum>
+        </Standard>
+        <AccessMask>0</AccessMask>
+      </TrusteePermissions>
+      <TrusteePermissions>
+        <Trustee>
+          <SID xmlns="http://www.microsoft.com/GroupPolicy/Types">S-1-5-11</SID>
+          <Name xmlns="http://www.microsoft.com/GroupPolicy/Types">NT AUTHORITY\Authenticated Users</Name>
+        </Trustee>
+        <Type xsi:type="PermissionType">
+          <PermissionType>Allow</PermissionType>
+        </Type>
+        <Inherited>false</Inherited>
+        <Applicability>
+          <ToSelf>true</ToSelf>
+          <ToDescendantObjects>false</ToDescendantObjects>
+          <ToDescendantContainers>true</ToDescendantContainers>
+          <ToDirectDescendantsOnly>false</ToDirectDescendantsOnly>
+        </Applicability>
+        <Standard>
+          <GPOGroupedAccessEnum>Apply Group Policy</GPOGroupedAccessEnum>
+        </Standard>
+        <AccessMask>0</AccessMask>
+      </TrusteePermissions>
+    </Permissions>
+    <AuditingPresent xmlns="http://www.microsoft.com/GroupPolicy/Types/Security">false</AuditingPresent>
+  </SecurityDescriptor>
+  <FilterDataAvailable>true</FilterDataAvailable>
+  <Computer>
+    <VersionDirectory>4</VersionDirectory>
+    <VersionSysvol>4</VersionSysvol>
+    <Enabled>true</Enabled>
+    <ExtensionData>
+      <Extension xmlns:q1="http://www.microsoft.com/GroupPolicy/Settings/Registry" xsi:type="q1:RegistrySettings">
+        <q1:Policy>
+          <q1:Name>Abusive Experience Intervention Enforce</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Allows you to set whether sites with abusive experiences should be prevented from opening new windows or tabs.
+
+If this policy is set to True, sites with abusive experiences will be prevented from opening new windows or tabs.
+However this behavior will not trigger if SafeBrowsingEnabled policy is set to False.
+If this policy is set to False, sites with abusive experiences will be allowed to open new windows or tabs.
+If this policy is left not set, True will be used.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Ads setting for sites with intrusive ads</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Allows you to set whether ads should be blocked on sites with intrusive ads.
+
+If this policy is set to 2, ads will be blocked on sites with intrusive ads.
+However this behavior will not trigger if SafeBrowsingEnabled policy is set to False.
+If this policy is set to 1, ads will not be blocked on sites with intrusive ads.
+If this policy is left not set, 2 will be used.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Ads setting for sites with intrusive ads</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Do not allow ads on sites with intrusive ads</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow collection of WebRTC event logs from Google services</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to True allows Google Chrome to collect WebRTC event logs from Google services such as Hangouts Meet and upload them to Google. These logs have diagnostic information for debugging issues with audio or video meetings in Google Chrome, such as the time and size of RTP packets, feedback about congestion on the network, and metadata about time and quality of audio and video frames. These logs have no audio or video content from the meeting. To make debugging easier, Google might associate these logs, by means of a session ID, with other logs collected by the Google service itself.
+
+Setting the policy to False results in no collection or uploading of such logs.
+
+Leaving the policy unset on versions up to and including M76 means Google Chrome defaults to not being able to collect and upload these logs. Starting at M77, Google Chrome defaults to being able to collect and upload these logs from most profiles affected by cloud-based user-level enterprise policies. From M77 up to and including M80, Google Chrome can also collect and upload these logs by default from profiles affected by Google Chrome on-premise management.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow Dinosaur Easter Egg Game</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Allow users to play dinosaur easter egg game when device is offline.
+
+If this policy is set to False, users will not be able to play the dinosaur easter egg game when device is offline. If this setting is set to True, users are allowed to play the dinosaur game. If this policy is not set, users are not allowed to play the dinosaur easter egg game on enrolled Chrome OS, but are allowed to play it under other circumstances.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow Google Cast to connect to Cast devices on all IP addresses.</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>If this policy is set to true, Google Cast will connect to Cast devices on all IP addresses, not just RFC1918/RFC4193 private addresses.
+
+If this policy is set to false, Google Cast will connect to Cast devices on RFC1918/RFC4193 private addresses only.
+
+If this policy is not set, Google Cast will connect to Cast devices on RFC1918/RFC4193 private addresses only, unless the CastAllowAllIPs feature is enabled.
+
+If the policy "EnableMediaRouter" is set to false, then this policy's value would have no effect.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow media autoplay</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Allows you to control if videos can play automatically (without user consent) with audio content in Google Chrome.
+
+If the policy is set to True, Google Chrome is allowed to autoplay media.
+If the policy is set to False, Google Chrome is not allowed to autoplay media. The AutoplayWhitelist policy can be used to override this for certain URL patterns.
+By default, Google Chrome is not allowed to autoplay media. The AutoplayWhitelist policy can be used to override this for certain URL patterns.
+
+Note that if Google Chrome is running and this policy changes, it will be applied only to new opened tabs. Therefore some tabs might still observe the previous behavior.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow user feedback</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Allow user feedback.
+If the policy is set to false, users can not send feedback to Google.
+
+If the policy is unset or set to true, users can send feedback to Google via Menu-&gt;Help-&gt;Report an Issue or key combination.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Block third party cookies</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Enabling this setting prevents cookies from being set by web page elements that are not from the domain that is in the browser's address bar.
+
+Disabling this setting allows cookies to be set by web page elements that are not from the domain that is in the browser's address bar and prevents users from changing this setting.
+
+If this policy is left not set, third party cookies will be enabled but the user will be able to change that.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Control how Chrome Cleanup reports data to Google</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>If unset, should Chrome Cleanup detect unwanted software, it may report metadata about the scan to Google in accordance with policy set by SafeBrowsingExtendedReportingEnabled. Chrome Cleanup will then ask the user if they wish to clean up the unwanted software. The user can choose to share results of the cleanup with Google to assist with future unwanted software detection. These results contain file metadata, automatically installed extensions and registry keys as described by the Chrome Privacy Whitepaper.
+
+If disabled, should Chrome Cleanup detect unwanted software, it will not report metadata about the scan to Google, overriding any policy set by SafeBrowsingExtendedReportingEnabled. Chrome Cleanup will ask the user if they wish to clean up the unwanted software.  Results of the cleanup will not be reported to Google and the user will not have the option to do so.
+
+If enabled, should Chrome Cleanup detect unwanted software, it may report metadata about the scan to Google in accordance with policy set by SafeBrowsingExtendedReportingEnabled. Chrome Cleanup will ask the user if they wish to clean up the unwanted software.  Results of the cleanup will be reported to Google and the user will not have the option to prevent it.
+
+This policy is available only on Windows instances that are joined to a Microsoft® Active Directory® domain. or Windows 10 Pro or Enterprise instances that enrolled for device management.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Control SafeSites adult content filtering.</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy controls the application of the SafeSites URL filter.
+This filter uses the Google Safe Search API to classify URLs as pornographic or not.
+
+When this policy is not configured or set to "Do not filter sites for adult content", sites will not be filtered.
+
+When this policy is set to "Filter top level sites for adult content", sites classified as pornographic will be filtered.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Control SafeSites adult content filtering.</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Do not filter sites for adult content</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Disable synchronization of data with Google</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Disables data synchronization in Google Chrome using Google-hosted synchronization services and prevents users from changing this setting.
+
+If you enable this setting, users cannot change or override this setting in Google Chrome.
+
+If this policy is left not set Google Sync will be available for the user to choose whether to use it or not.
+
+To fully disable Google Sync, it is recommended that you disable the Google Sync service in the Google Admin console.
+
+This policy should not be enabled when RoamingProfileSupportEnabled policy is set to enabled as that feature shares the same client side functionality. The Google-hosted synchronization is disabled in this case completely.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>DNS interception checks enabled</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy configures a local switch that can be used to disable DNS interception checks. The checks attempt to discover whether the browser is behind a proxy that redirects unknown host names.
+
+This detection may not be necessary in an enterprise environment where the network configuration is known, since it causes some amount of DNS and HTTP traffic on start-up and each DNS configuration change.
+
+When this policy is not set, or is enabled, the DNS interception checks are performed. When explicitly disabled, they're not.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable a TLS 1.3 security feature for local trust anchors.</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy controls a security feature in TLS 1.3 which protects connections against downgrade attacks. It is backwards-compatible and will not affect connections to compliant TLS 1.2 servers or proxies. However, older versions of some TLS-intercepting proxies have an implementation flaw which causes them to be incompatible.
+
+If this policy is set to True or not set, Google Chrome will enable these security protections for all connections.
+
+If this policy is set to False, Google Chrome will disable these security protections for connections authenticated with locally-installed CA certificates. These protections are always enabled for connections authenticated with publicly-trusted CA certificates.
+
+The default value for this policy was changed in Google Chrome 81 from false to true. Affected proxies are expected to fail connections with an error code of ERR_TLS13_DOWNGRADE_DETECTED. Administrators who need more time to upgrade affected proxies may use this policy to temporarily disable this security feature. This policy will be removed after version 85.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable AutoFill for addresses</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Enables Google Chrome's AutoFill feature and allows users to auto complete address information in web forms using previously stored information.
+
+If this setting is disabled, Autofill will never suggest, or fill address information, nor will it save additional address information that the user might submit while browsing the web.
+
+If this setting is enabled or has no value, the user will be able to control Autofill for addresses in the UI.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable AutoFill for credit cards</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Enables Google Chrome's AutoFill feature and allows users to auto complete credit card information in web forms using previously stored information.
+
+If this setting is disabled, Autofill will never suggest, or fill credit card information, nor will it save additional credit card information that the user might submit while browsing the web.
+
+If this setting is enabled or has no value, the user will be able to control Autofill for credit cards in the UI.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable chrome://devices</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy controls access to controllable features in the local discovery UI (chrome://devices) which shows discoverable devices near the user as well as cloud devices registered to them. On all operating systems except for Google Chrome OS, the local discovery UI also allows users to add classic printers connected to their computers to Google Cloud Print.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable Get Image Descriptions from Google.</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>The Get Image Descriptions from Google
+accessibility feature enables visually-impaired screen reader users to
+get descriptions of unlabeled images on the web. Users who choose to enable it
+will have the option of using an anonymous Google service to provide
+automatic descriptions for unlabeled images they encounter on the web.
+
+If this feature is enabled, the content of images will be sent to Google
+servers in order to generate a description. No cookies or other user
+data is sent, and Google does not save or log any image content.
+
+If this policy is set to true, the
+Get Image Descriptions from Google
+feature will be enabled, though it will only affect users who are using a
+screen reader or other similar assistive technology.
+
+If this policy is set to false, users will not have the option of enabling
+the feature.
+
+If you set this policy, users cannot change or override it.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable network prediction</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Enables network prediction in Google Chrome and prevents users from changing this setting.
+
+This controls DNS prefetching, TCP and SSL preconnection and prerendering of web pages.
+
+If you set this policy, users cannot change or override this setting in Google Chrome.
+
+If this policy is left not set, network prediction will be enabled but the user will be able to change it.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Enable network prediction</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Do not predict network actions on any network connection</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable online OCSP/CRL checks</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>In light of the fact that soft-fail, online revocation checks provide no effective security benefit, they are disabled by default in Google Chrome version 19 and later. By setting this policy to true, the previous behavior is restored and online OCSP/CRL checks will be performed.
+
+If the policy is not set, or is set to false, then Google Chrome will not perform online revocation checks in Google Chrome 19 and later.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable or disable spell checking web service</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Google Chrome can use a Google web service to help resolve spelling errors. If this setting is enabled, then this service is always used. If this setting is disabled, then this service is never used.
+
+Spell checking can still be performed using a downloaded dictionary; this policy only controls the usage of the online service.
+
+If this setting is not configured then users can choose whether the spell checking service should be used or not.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable reporting of usage and crash-related data</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Enables anonymous reporting of usage and crash-related data about Google Chrome to Google and prevents users from changing this setting.
+
+If this setting is enabled, anonymous reporting of usage and crash-related
+data is sent to Google.  If it is disabled, this information is not sent
+to Google.  In both cases, users cannot change or override the setting.
+If this policy is left not set, the setting will be what the user chose
+upon installation / first run.
+
+This policy is available only on Windows instances that are joined to a Microsoft® Active Directory® domain. or Windows 10 Pro or Enterprise instances that enrolled for device management.
+(For Chrome OS, see DeviceMetricsReportingEnabled.)</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable Site Isolation for every site</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This setting, SitePerProcess, may be used to disallow users from opting out of the default behavior of isolating all sites. Note that the IsolateOrigins policy may also be useful for isolating additional, finer-grained origins.
+If the policy is enabled, users will be unable to opt out of the default behavior where each site runs in its own process.
+If the policy is not configured or disabled, the user will be able to opt out of site isolation
+(e.g. using "Disable site isolation" entry in chrome://flags).  Setting the policy to disabled and/or not configuring the policy does not turn off Site Isolation.
+On Google Chrome OS version 76 and earlier, it is recommended to also set the DeviceLoginScreenSitePerProcess device policy to the same value. If the values specified by the two policies don't match, a delay may be incurred when entering a user session while the value specified by user policy is being applied.
+
+NOTE: This policy does not apply on Android. To enable SitePerProcess on Android, use the SitePerProcessAndroid policy setting.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable spellcheck</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>If this policy is not set, the user can enable or disable spellcheck in the language settings.
+
+If this policy is set to true, spellcheck is enabled and the user cannot disable it. On Microsoft® Windows, Google Chrome OS and Linux, spellcheck languages can be individually toggled on or off, so the user can still effectively disable spellcheck by toggling off every spellcheck language. To avoid that, the SpellcheckLanguage policy can be used to force specific spellcheck languages to be enabled.
+
+If this policy is set to false, spellcheck is disabled and the user cannot enable it. The SpellcheckLanguage and SpellcheckLanguageBlacklist policies have no effect when this policy is set to false.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable stricter treatment for mixed content</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy controls the treatment for mixed content (HTTP content in HTTPS sites) in the browser.
+If the policy is set to true or unset, audio and video mixed content will be autoupgraded to HTTPS (i.e. the URL will be rewritten as HTTPS, without a fallback if the resource is not available over HTTPS) and a 'Not Secure' warning will be shown in the URL bar for image mixed content.
+If the policy is set to false, autoupgrades will be disabled for audio and video, and no warning will be shown for images.
+This policy does not affect other types of mixed content other than audio, video, and images.
+This policy will no longer take effect starting in Google Chrome 84.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable the Click to Call Feature</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Enable the Click to Call feature which allows users to send phone numbers from Chrome Desktops to an Android device when the user is Signed-in. For more information, see help center article: https://support.google.com/chrome/answer/9430554?hl=en.
+
+If this policy is set to enabled, the capability of sending phone numbers to Android devices will be enabled for the Chrome user.
+
+If this policy is set to disabled, the capability of sending phone numbers to Android devices will be disabled for the Chrome user.
+
+If you set this policy, users cannot change or override it.
+
+If this policy is left unset, the Click to Call feature is enabled by default.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable third party software injection blocking</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If the policy is set to false then third party software will be allowed to inject executable code into Chrome's processes. If the policy is unset or set to true then third party software will be prevented from injecting executable code into Chrome's processes.
+
+Regardless of the value of this policy, the browser will not currently block third party software from injecting executable code into its processes on a machine that is joined to a Microsoft® Active Directory® domain.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable Translate</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Enables the integrated Google Translate service on Google Chrome.
+
+If you enable this setting, Google Chrome will offer translation functionality to the user by showing an integrated translate toolbar (when appropriate) and a translate option on the right-click context menu.
+
+If you disable this setting, all built-in translate features will be disabled.
+
+If you enable or disable this setting, users cannot change or override this setting in Google Chrome.
+
+If this setting is left not set the user can decide to use this function or not.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Force Google SafeSearch</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Forces queries in Google Web Search to be done with SafeSearch set to active and prevents users from changing this setting.
+
+If you enable this setting, SafeSearch in Google Search is always active.
+
+If you disable this setting or do not set a value, SafeSearch in Google Search is not enforced.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Force minimum YouTube Restricted Mode</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Enforces a minimum Restricted Mode on YouTube and prevents users from
+picking a less restricted mode.
+
+If this setting is set to Strict, Strict Restricted Mode on YouTube is always active.
+
+If this setting is set to Moderate, the user may only pick Moderate Restricted Mode
+and Strict Restricted Mode on YouTube, but cannot disable Restricted Mode.
+
+If this setting is set to Off or no value is set, Restricted Mode on YouTube is not enforced by Google Chrome. External policies such as YouTube policies might still enforce Restricted Mode, though.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Import autofill form data from default browser on first run</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy forces the autofill form data to be imported from the previous default browser if enabled. If enabled, this policy also affects the import dialog.
+
+If disabled, the autofill form data is not imported.
+
+If it is not set, the user may be asked whether to import, or importing may happen automatically.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Import bookmarks from default browser on first run</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy forces bookmarks to be imported from the current default browser if enabled. If enabled, this policy also affects the import dialog.
+
+If disabled, no bookmarks are imported.
+
+If it is not set, the user may be asked whether to import, or importing may happen automatically.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Import browsing history from default browser on first run</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy forces the browsing history to be imported from the current default browser if enabled. If enabled, this policy also affects the import dialog.
+
+If disabled, no browsing history is imported.
+
+If it is not set, the user may be asked whether to import, or importing may happen automatically.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Import of homepage from default browser on first run</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy forces the home page to be imported from the current default browser if enabled.
+
+If disabled, the home page is not imported.
+
+If it is not set, the user may be asked whether to import, or importing may happen automatically.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Import saved passwords from default browser on first run</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy forces the saved passwords to be imported from the previous default browser if enabled. If enabled, this policy also affects the import dialog.
+
+If disabled, the saved passwords are not imported.
+
+If it is not set, the user may be asked whether to import, or importing may happen automatically.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Import search engines from default browser on first run</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy forces search engines to be imported from the current default browser if enabled. If enabled, this policy also affects the import dialog.
+
+If disabled, the default search engine is not imported.
+
+If it is not set, the user may be asked whether to import, or importing may happen automatically.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Incognito mode availability</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Specifies whether the user may open pages in Incognito mode in Google Chrome.
+
+If 'Enabled' is selected or the policy is left unset, pages may be opened in Incognito mode.
+
+If 'Disabled' is selected, pages may not be opened in Incognito mode.
+
+If 'Forced' is selected, pages may be opened ONLY in Incognito mode. Note that 'Forced' does not work for Android-on-Chrome</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Incognito mode availability</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Incognito mode disabled</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Minimum SSL version enabled</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is not configured then Google Chrome uses a default minimum version which is TLS 1.0.
+
+Otherwise it may be set to one of the following values: "tls1", "tls1.1" or "tls1.2". When set, Google Chrome will not use SSL/TLS versions less than the specified version. An unrecognized value will be ignored.
+
+Example value: tls1</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Minimum SSL version enabled</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>TLS 1.0</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Restrict the range of local UDP ports used by WebRTC</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If the policy is set, the UDP port range used by WebRTC is restricted to the specified port interval (endpoints included).
+
+If the policy is not set, or if it is set to the empty string or an invalid port range, WebRTC is allowed to use any available local UDP port.
+
+Example value: 10000-11999</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+          <q1:EditText>
+            <q1:Name>Restrict the range of local UDP ports used by WebRTC</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>10000-11999</q1:Value>
+          </q1:EditText>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Use built-in DNS client</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Controls whether the built-in DNS client is used in Google Chrome.
+
+This does not affect which DNS servers are used; just the software stack which is used to communicate with them. For example if the operating system is configured to use an enterprise DNS server, that same server would be used by the built-in DNS client. It is however possible that the built-in DNS client will address servers in different ways by using more modern DNS-related protocols such as DNS-over-TLS.
+
+If this policy is set to true, the built-in DNS client will be used, if available.
+
+If this policy is set to false, the built-in DNS client will never be used.
+
+If this policy is left not set, the built-in DNS client will be enabled by default on MacOS, Android (when neither Private DNS nor VPN are enabled) and ChromeOS, and the users will be able to change whether the built-in DNS client is used by editing chrome://flags or specifying a command-line flag.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Use hardware acceleration when available</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>If this policy is set to true or left unset, hardware acceleration will be enabled unless a certain GPU feature is blacklisted.
+
+If this policy is set to false, hardware acceleration will be disabled.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Control use of the Web Bluetooth API</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Allows you to set whether websites are allowed to get access to nearby Bluetooth devices. Access can be completely blocked, or the user can be asked every time a website wants to get access to nearby Bluetooth devices.
+
+If this policy is left not set, '3' will be used, and the user will be able to change it.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Content settings</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Control use of the Web Bluetooth API</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Do not allow any site to request access to Bluetooth devices via the Web Bluetooth API</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Control use of the WebUSB API</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Allows you to set whether websites are allowed to get access to connected USB devices. Access can be completely blocked, or the user can be asked every time a website wants to get access to connected USB devices.
+
+This policy can be overridden for specific URL patterns using the 'WebUsbAskForUrls' and 'WebUsbBlockedForUrls' policies.
+
+If this policy is left not set, '3' will be used, and the user will be able to change it.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Content settings</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Control use of the WebUSB API</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Do not allow any site to request access to USB devices via the WebUSB API</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Default Flash setting</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Allows you to set whether websites are allowed to automatically run the Flash plugin. Automatically running the Flash plugin can be either allowed for all websites or denied for all websites.
+
+Click to play allows the Flash plugin to run but the user must click on the placeholder to start its execution.
+
+Automatic playback is only allowed for domains explictly listed in the PluginsAllowedForUrls policy. If you want to enabled automatic playback for all sites consider adding http://* and https://* to this list.
+
+If this policy is left not set, 'BlockPlugins' will be used and the user will be able to change this setting manually.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Content settings</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Default Flash setting</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Click to play</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow users to show passwords in Password Manager (deprecated)</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy is deprecated. Its usage is discouraged. Read more at https://support.google.com/chrome/a/answer/7643500</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Deprecated policies</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Default mediastream setting</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy is deprecated. Its usage is discouraged. Read more at https://support.google.com/chrome/a/answer/7643500</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Deprecated policies</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Default mediastream setting</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Ask every time a site wants to access the camera and/or microphone</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Disable Developer Tools</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy is deprecated. Its usage is discouraged. Read more at https://support.google.com/chrome/a/answer/7643500</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Deprecated policies</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable AutoFill</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy is deprecated. Its usage is discouraged. Read more at https://support.google.com/chrome/a/answer/7643500</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Deprecated policies</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable force sign in for Google Chrome</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy is deprecated. Its usage is discouraged. Read more at https://support.google.com/chrome/a/answer/7643500</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Deprecated policies</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable Incognito mode</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy is deprecated. Its usage is discouraged. Read more at https://support.google.com/chrome/a/answer/7643500</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Deprecated policies</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable network prediction</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy is deprecated. Its usage is discouraged. Read more at https://support.google.com/chrome/a/answer/7643500</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Deprecated policies</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable sending downloads to Google for deep scanning for users enrolled in the Advanced Protection program</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy is deprecated. Its usage is discouraged. Read more at https://support.google.com/chrome/a/answer/7643500</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Deprecated policies</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Force SafeSearch</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy is deprecated. Its usage is discouraged. Read more at https://support.google.com/chrome/a/answer/7643500</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Deprecated policies</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Force YouTube Safety Mode</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy is deprecated. Its usage is discouraged. Read more at https://support.google.com/chrome/a/answer/7643500</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Deprecated policies</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Configure extension installation whitelist</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Allows you to specify which extensions are not subject to the blacklist.
+
+A blacklist value of * means all extensions are blacklisted and users can only install extensions listed in the whitelist.
+
+By default, all extensions are whitelisted, but if all extensions have been blacklisted by policy, the whitelist can be used to override that policy.
+
+Example value:
+
+extension_id1
+extension_id2</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Extensions</q1:Category>
+          <q1:ListBox>
+            <q1:Name>Extension IDs to exempt from the blacklist</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:ExplicitValue>false</q1:ExplicitValue>
+            <q1:Additive>false</q1:Additive>
+            <q1:Value>
+              <q1:Element>
+                <q1:Data>pkehgijcmpdhfbdbbnkijodmdjhbjlgp</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>maafgiompdekodanheihhgilkjchcakm</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>ldpochfccmkkmhdbclfhpagapcfdljkj</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>lckanjgmijmafbedllaakclkaicjfmnk</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>gcbommkclmclpchllfjekcdonpmejbdp</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>fhcgjolkccmbidfldomjliifgaodjagh</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>cjpalhdlnbpafiamejdnhcphjbkeiagm</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>bhfakmaiadhflpjloimlagikhodjiefj</q1:Data>
+              </q1:Element>
+            </q1:Value>
+          </q1:ListBox>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Configure the list of force-installed apps and extensions</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Specifies a list of apps and extensions that are installed silently,
+without user interaction, and which cannot be uninstalled nor
+disabled by the user. All permissions requested by the
+apps/extensions are granted implicitly, without user interaction,
+including any additional permissions requested by future versions of
+the app/extension. Furthermore, permissions are granted for the
+enterprise.deviceAttributes and enterprise.platformKeys extension
+APIs. (These two APIs are not available to apps/extensions that are
+not force-installed.)
+
+This policy takes precedence over a potentially conflicting ExtensionInstallBlacklist policy. If an app or extension that previously had been force-installed is removed from this list, it is automatically uninstalled by Google Chrome.
+
+For Windows instances that are not joined to a Microsoft® Active Directory® domain, forced installation is limited to apps and extensions listed in the Chrome Web Store.
+
+Note that the source code of any extension may be altered by users via Developer Tools (potentially rendering the extension dysfunctional). If this is a concern, the DeveloperToolsDisabled policy should be set.
+
+Each list item of the policy is a string that contains an extension ID and, optionally, an "update" URL separated by a semicolon (;). The extension ID is the 32-letter string found e.g. on chrome://extensions when in developer mode. The "update" URL, if specified, should point to an Update Manifest XML document as described at https://developer.chrome.com/extensions/autoupdate. By default, the Chrome Web Store's update URL is used (which currently is "https://clients2.google.com/service/update2/crx"). Note that the "update" URL set in this policy is only used for the initial installation; subsequent updates of the extension employ the update URL indicated in the extension's manifest. Note also that specifying the "update" URL explicitly was mandatory in Google Chrome versions up to and including 67.
+
+For example, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;https://clients2.google.com/service/update2/crx installs the extension with id aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa from the standard Chrome Web Store "update" URL. For more information about hosting extensions, see: https://developer.chrome.com/extensions/hosting.
+
+If this policy is left not set, no apps or extensions are installed automatically and the user can uninstall any app or extension in Google Chrome.
+
+Note that this policy doesn't apply to incognito mode.
+
+Example value:
+
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;https://clients2.google.com/service/update2/crx
+abcdefghijklmnopabcdefghijklmnop</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Extensions</q1:Category>
+          <q1:ListBox>
+            <q1:Name>Extension/App IDs and update URLs to be silently installed</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:ExplicitValue>false</q1:ExplicitValue>
+            <q1:Additive>false</q1:Additive>
+            <q1:Value>
+              <q1:Element>
+                <q1:Data>pkehgijcmpdhfbdbbnkijodmdjhbjlgp;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>maafgiompdekodanheihhgilkjchcakm;https://outlook.office.com/owa/SmimeCrxUpdate.ashx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>ldpochfccmkkmhdbclfhpagapcfdljkj;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>lckanjgmijmafbedllaakclkaicjfmnk;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>gcbommkclmclpchllfjekcdonpmejbdp;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>fhcgjolkccmbidfldomjliifgaodjagh;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>cjpalhdlnbpafiamejdnhcphjbkeiagm;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>bhfakmaiadhflpjloimlagikhodjiefj;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+            </q1:Value>
+          </q1:ListBox>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable Google Cast</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>If this policy is set to true or is not set, Google Cast will be enabled, and users will be able to launch it from the app menu, page context menus, media controls on Cast-enabled websites, and (if shown) the Cast toolbar icon.
+
+If this policy set to false, Google Cast will be disabled.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Google Cast</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Show the Google Cast toolbar icon</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>If this policy is set to true, the Cast toolbar icon will always be shown on the toolbar or the overflow menu, and users will not be able to remove it.
+
+If this policy is set to false or is not set, users will be able to pin or remove the icon via its contextual menu.
+
+If the policy "EnableMediaRouter" is set to false, then this policy's value would have no effect, and the toolbar icon would not be shown.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Google Cast</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Use Internet Explorer's SiteList policy for Legacy Browser Support.</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy controls whether to load rules from Internet Explorer's SiteList policy.
+
+When this policy is left unset, or set to false, Google Chrome does not use Internet Explorer's SiteList policy as a source of rules for switching browsers.
+
+When this policy is set to true, Google Chrome reads Internet Explorer's SiteList to obtain the site list's URL. Google Chrome then downloads the site list from that URL, and applies the rules as if they had been configured with the BrowserSwitcherUrlList policy.
+
+For more information on Internet Explorer's SiteList policy: https://docs.microsoft.com/internet-explorer/ie11-deploy-guide/what-is-enterprise-mode</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Legacy Browser Support</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable leak detection for entered credentials</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy can be used to force enable or force disable credential leak checking in Google Chrome.
+
+Note that even if this policy is set to True, the behavior will not trigger if Safe Browsing is disabled (either by policy or by the user). In order to force Safe Browsing on, use the SafeBrowsingEnabled policy.
+
+If this policy is enabled or disabled, users cannot change or override it in Google Chrome. If this policy is unset, credential leak checking is allowed (but can be turned off by the user).</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Password manager</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable saving passwords to the password manager</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>If this setting is enabled, users can have Google Chrome memorize passwords and provide them automatically the next time they log in to a site.
+
+If this settings is disabled, users cannot save new passwords but they
+may still use passwords that have been saved previously.
+
+If this policy is enabled or disabled, users cannot change or override it in Google Chrome. If this policy is unset, password saving is allowed (but can be turned off by the user).</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Password manager</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable Google Cloud Print proxy</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Enables Google Chrome to act as a proxy between Google Cloud Print and legacy printers connected to the machine.
+
+If this setting is enabled or not configured, users can enable the cloud print proxy by authentication with their Google account.
+
+If this setting is disabled, users cannot enable the proxy, and the machine will not be allowed to share it's printers with Google Cloud Print.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Printing</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable submission of documents to Google Cloud Print</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Enables Google Chrome to submit documents to Google Cloud Print for printing.  NOTE: This only affects Google Cloud Print support in Google Chrome.  It does not prevent users from submitting print jobs on web sites.
+
+If this setting is enabled or not configured, users can print to Google Cloud Print from the Google Chrome print dialog.
+
+If this setting is disabled, users cannot print to Google Cloud Print from the Google Chrome print dialog.
+
+In order to keep Google Cloud Print destinations discoverable, this policy must be set to true and cloud must not be included in the PrinterTypeDenyList policy.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Printing</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable firewall traversal from remote access host</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Enables usage of STUN servers when remote clients are trying to establish a connection to this machine.
+
+If this setting is enabled, then remote clients can discover and connect to this machines even if they are separated by a firewall.
+
+If this setting is disabled and outgoing UDP connections are filtered by the firewall, then this machine will only allow connections from client machines within the local network.
+
+If this policy is left not set the setting will be enabled.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Chromium/Remote access</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Abusive Experience Intervention Enforce</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If SafeBrowsingEnabled is not Disabled, then setting AbusiveExperienceInterventionEnforce to Enabled or leaving it unset prevents sites with abusive experiences from opening new windows or tabs.
+
+Setting SafeBrowsingEnabled to Disabled or AbusiveExperienceInterventionEnforce to Disabled lets sites with abusive experiences open new windows or tabs.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Ads setting for sites with intrusive ads</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Unless SafeBrowsingEnabled is set to False, then setting AdsSettingForIntrusiveAdsSites to 1 or leaving it unset allows ads on all sites.
+
+Setting the policy to 2 blocks ads on sites with intrusive ads.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Ads setting for sites with intrusive ads</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Do not allow ads on sites with intrusive ads</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow collection of WebRTC event logs from Google services</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled means Google Chrome can collect WebRTC event logs from Google services such as Hangouts Meet and upload them to Google. These logs have diagnostic information for debugging issues with audio or video meetings in Google Chrome, such as the time and size of RTP packets, feedback about congestion on the network, and metadata about time and quality of audio and video frames. These logs have no audio or video content from the meeting. To make debugging easier, Google might associate these logs, by means of a session ID, with other logs collected by the Google service itself.
+
+Setting the policy to Disabled results in no collection or uploading of such logs.
+
+Leaving the policy unset on versions up to and including M76 means Google Chrome defaults to not being able to collect and upload these logs. Starting at M77, Google Chrome defaults to being able to collect and upload these logs from most profiles affected by cloud-based, user-level enterprise policies. From M77 up to and including M80, Google Chrome can also collect and upload these logs by default from profiles affected by Google Chrome on-premise management.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow media autoplay</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to True lets Google Chrome autoplay media. Setting the policy to False stops Google Chrome from autoplaying media.
+
+ By default, Google Chrome doesn't autoplay media. But, for certain URL patterns, you can use the AutoplayAllowlist policy to change this setting.
+
+If this policy changes while Google Chrome is running, it only applies to newly opened tabs.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow or deny video capture</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled or leaving it unset means that, with the exception of URLs set in the VideoCaptureAllowedUrls list, users get prompted for video capture access.
+
+Setting the policy to Disabled turns off prompts, and video capture is only available to URLs set in the VideoCaptureAllowedUrls list.
+
+Note: The policy affects all video input (not just the built-in camera).</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow queries to a Google time service</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled or leaving it unset means Google Chrome send occasional queries to a Google server to retrieve an accurate timestamp.
+
+Setting the policy to Disabled stops Google Chrome from sending these queries.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Block third party cookies</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled prevents webpage elements that aren't from the domain that's in the browser's address bar from setting cookies. Setting the policy to Disabled lets those elements set cookies and prevents users from changing this setting.
+
+Leaving it unset turns third-party cookies on, but users can change this setting.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Continue running background apps when Google Chrome is closed</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled turns background mode on. In background mode, a Google Chrome process is started on OS sign-in and keeps running when the last browser window is closed, allowing background apps and the browsing session to remain active. The background process displays an icon in the system tray and can always be closed from there.
+
+Setting the policy to Disabled turns background mode off.
+
+If you set the policy, users can't change it in the browser settings. If unset, background mode is off at first, but users can change it.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Control how Chrome Cleanup reports data to Google</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled means if Chrome Cleanup detects unwanted software, it may, in line with policy set by SafeBrowsingExtendedReportingEnabled, report about the scan to Google. Chrome Cleanup asks users if they want the cleanup. It sends results to Google.
+
+Setting the policy to Disabled means if Chrome Cleanup detects unwanted software, it won't report about the scan to Google, regardless of the value of SafeBrowsingExtendedReportingEnabled. Chrome Cleanup asks users if they want the cleanup. The results aren't reported to Google.
+
+Leaving the policy unset means Chrome Cleanup may, in line with policy set by SafeBrowsingExtendedReportingEnabled, report about scans for detecting unwanted software to Google. Chrome Cleanup asks users if they want the cleanup and to share the results with Google to help with future unwanted software detection. These results have file metadata, automatically installed extensions, and registry keys, as described by the Chrome Privacy Whitepaper.
+
+On Microsoft® Windows®, this functionality is only available on instances that are joined to a Microsoft® Active Directory® domain, running on Windows 10 Pro, or enrolled in Chrome Browser Cloud Management.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Disable saving browser history</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled means browsing history is not saved, tab syncing is off and users can't change this setting.
+
+Setting the policy to Disabled or leaving it unset saves browsing history.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Disable synchronization of data with Google</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled turns off data synchronization in Google Chrome using Google-hosted synchronization services.
+To fully turn off Chrome Sync services, we recommend that you turn off the service in the Google Admin console.
+
+If the policy is set to Disabled or not set, users are allowed to choose whether to use Chrome Sync.
+
+Note: Do not turn on this policy when RoamingProfileSupportEnabled is Enabled, because that feature shares the same client-side functionality. The Google-hosted synchronization is off completely in this case.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable additional protections for users enrolled in the Advanced Protection program</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy controls whether users enrolled in the Advanced Protection program receive extra protections. Some of these features may involve the sharing of data with Google (for example, Advanced Protection users will be able to send their downloads to Google for malware scanning). If set to True or not set, enrolled users will receive extra protections. If set to False, Advanced Protection users will receive only the standard consumer features.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable AutoFill for addresses</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to True or leaving it unset gives users control of Autofill for addresses in the UI.
+
+Setting the policy to False means Autofill never suggests or fills address information, nor does it save additional address information that users submit while browsing the web.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable AutoFill for credit cards</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to True or leaving it unset means users can control autofill suggestions for credit cards in the UI.
+
+Setting the policy to False means autofill never suggests or fills credit card information, nor will it save additional credit card information that users might submit while browsing the web.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable Bookmark Bar</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Setting the policy to True displays a bookmark bar in Google Chrome. Setting the policy to False means users never see the bookmark bar.
+
+If you set the policy, users can't change it. If not set, users decide whether to use this function.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable Chrome Cleanup on Windows</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled or leaving it unset means Chrome Cleanup periodically scans the system for unwanted software and should any be found, will ask the user if they wish to remove it. Manually triggering Chrome Cleanup from chrome://settings is allowed.
+
+Setting the policy to Disabled means Chrome Cleanup won't periodically scan and manual triggering is disabled.
+
+On Microsoft® Windows®, this functionality is only available on instances that are joined to a Microsoft® Active Directory® domain, running on Windows 10 Pro, or enrolled in Chrome Browser Cloud Management.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable ending processes in Task Manager</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Setting the policy to Disabled prevents users from ending processes in the Task Manager.
+
+Setting the policy to Enabled or leaving it unset lets users end processes in the Task Manager.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable network prediction</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy controls network prediction in Google Chrome. It controls DNS prefetching, TCP, and SSL preconnection and prerendering of webpages.
+
+If you set the policy, users can't change it. Leaving it unset turns on network prediction, but the user can change it.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Enable network prediction</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Do not predict network actions on any network connection</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable online OCSP/CRL checks</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Setting the policy to True means online OCSP/CRL checks are performed.
+
+Setting the policy to False or leaving it unset means Google Chrome won't perform online revocation checks in Google Chrome 19 and later.
+
+Note: OCSP/CRL checks provide no effective security benefit.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable or disable spell checking web service</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled puts a Google web service in use to help resolve spelling errors. This policy only controls the use of the online service. Setting the policy to Disabled means this service is never used.
+
+Leaving the policy unset lets users choose whether to use the spellcheck service.
+
+The spell check can always use a downloaded dictionary locally unless the feature is disabled by SpellcheckEnabled in which case this policy will have no effect.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable Signed HTTP Exchange (SXG) support</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Setting the policy to True or leaving it unset means Google Chrome will accept web contents served as Signed HTTP Exchanges.
+
+Setting the policy to False prevents Signed HTTP Exchanges from loading.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable spellcheck</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled turns spellcheck on, and users can't turn it off. On Microsoft® Windows®, Google Chrome OS and Linux®, spellcheck languages can be switched on or off individually, so users can still turn spellcheck off by switching off every spellcheck language. To avoid that, use the SpellcheckLanguage to force-enable specific spellcheck languages.
+
+Setting the policy to Disabled turns off spellcheck from all sources, and users can't turn it on. The SpellCheckServiceEnabled, SpellcheckLanguage and SpellcheckLanguageBlocklist policies have no effect when this policy is set to False.
+
+Leaving the policy unset lets users turn spellcheck on or off in the language settings.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable the Shared Clipboard Feature</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Enable the Shared Clipboard feature which allows users to send text between Chrome Desktops and an Android device when Sync is enabled and the user is Signed-in.
+
+If this policy is set to true, the capability of sending text, cross device, for chrome user is enabled.
+
+If this policy is set to false, the capability of sending text, cross device, for chrome user is disabled.
+
+If you set this policy, users cannot change or override it.
+
+If this policy is left unset, the shared clipboard feature is enabled by default.
+
+It is up to the admins to set policies in all platforms they care about. It's recommended to set this policy to one value in all platforms.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable third party software injection blocking</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled or leaving it unset prevents third-party software from injecting executable code into Google Chrome's processes.
+
+Setting the policy to Disabled allows this software to inject such code into Google Chrome's processes.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable Translate</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to True provides translation functionality when it's appropriate for users by showing an integrated translate toolbar in Google Chrome and a translate option on the right-click context menu. Setting the policy to False shuts off all built-in translate features.
+
+If you set the policy, users can't change this function. Leaving it unset lets them change the setting.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Force Google SafeSearch</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled means SafeSearch in Google Search is always active, and users can't change this setting.
+
+Setting the policy to Disabled or leaving it unset means SafeSearch in Google Search is not enforced.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Minimum SSL version enabled</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Setting the policy to a valid value means Google Chrome won't use SSL/TLS versions less than the specified version. Unrecognized values are ignored.
+
+If this policy is not set, then Google Chrome will show an error for TLS 1.0 and TLS 1.1, but the user will be able to bypass it.
+
+If this policy is set to "tls1.2", the user will not be able to bypass this error.
+
+Support for setting this policy to "tls1" or "tls1.1" was removed in version 91. Suppressing the TLS 1.0/1.1 warning is no longer supported.
+
+Example value: tls1.2</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Minimum SSL version enabled</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>TLS 1.2</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Require Site Isolation for every site</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Since Google Chrome 67, site isolation has been enabled by default on all Desktop platforms, causing every site to run in its own process. A site is a scheme plus eTLD+1 (e.g., https://example.com). Setting this policy to Enabled does not change that behavior; it only prevents users from opting out (for example, using Disable site isolation in chrome://flags). Since Google Chrome 76, setting the policy to Disabled or leaving it unset doesn't turn off site isolation, but instead allows users to opt out.
+
+IsolateOrigins might also be useful for isolating specific origins at a finer granularity than site (e.g., https://a.example.com).
+
+On Google Chrome OS version 76 and earlier, set the DeviceLoginScreenSitePerProcess device policy to the same value. (If the values don't match, a delay can occur when entering a user session.)
+
+Note: For Android, use the SitePerProcessAndroid policy instead.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Use hardware acceleration when available</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled or leaving it unset turns on hardware acceleration, if available.
+
+Setting the policy to Disabled turns off hardware acceleration.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Default search provider search URL</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If DefaultSearchProviderEnabled is on, then setting DefaultSearchProviderSearchURL specifies the URL of the search engine used during a default search. The URL should include the string '{searchTerms}', replaced in the query by the user's search terms.
+
+You can specify Google's search URL as: '{google:baseURL}search?q={searchTerms}&amp;{google:RLZ}{google:originalQueryForSuggestion}{google:assistedQueryStats}{google:searchFieldtrialParameter}{google:searchClient}{google:sourceId}ie={inputEncoding}'.
+
+Example value: https://search.my.company/search?q={searchTerms}</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome/Default search provider</q1:Category>
+          <q1:EditText>
+            <q1:Name>Default search provider search URL</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>https://www.google.com/search?q={searchTerms}</q1:Value>
+          </q1:EditText>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable AutoFill</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy is deprecated. Its usage is discouraged. Read more at https://support.google.com/chrome/a/answer/7643500</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome/Deprecated policies</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable stricter treatment for mixed content</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy is deprecated. Its usage is discouraged. Read more at https://support.google.com/chrome/a/answer/7643500</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome/Deprecated policies</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Configure the list of force-installed apps and extensions</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Setting the policy specifies a list of apps and extensions that install silently, without user interaction, and which users can't uninstall or turn off. Permissions are granted implicitly, including for the enterprise.deviceAttributes and enterprise.platformKeys extension APIs. (These 2 APIs aren't available to apps and extensions that aren't force-installed.)
+
+Leaving the policy unset means no apps or extensions are autoinstalled, and users can uninstall any app or extension in Google Chrome.
+
+This policy supersedes ExtensionInstallBlocklist policy. If a previously force-installed app or extension is removed from this list, Google Chrome automatically uninstalls it.
+
+On Microsoft® Windows® instances, apps and extensions from outside the Chrome Web Store can only be forced installed if the instance is joined to a Microsoft® Active Directory® domain, running on Windows 10 Pro, or enrolled in Chrome Browser Cloud Management.
+
+On macOS instances, apps and extensions from outside the Chrome Web Store can only be force installed if the instance is managed via MDM, or joined to a domain via MCX.
+
+The source code of any extension may be altered by users through developer tools, potentially rendering the extension dysfunctional. If this is a concern, set the DeveloperToolsDisabled policy.
+
+Each list item of the policy is a string that contains an extension ID and, optionally, an "update" URL separated by a semicolon (;). The extension ID is the 32-letter string found, for example, on chrome://extensions when in Developer mode. If specified, the "update" URL should point to an Update Manifest XML document ( https://developer.chrome.com/extensions/autoupdate ). By default, the Chrome Web Store's update URL is used. The "update" URL set in this policy is only used for the initial installation; subsequent updates of the extension use the update URL in the extension's manifest.
+
+ Note: This policy doesn't apply to Incognito mode. Read about hosting extensions ( https://developer.chrome.com/extensions/hosting ).
+
+Example value:
+
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;https://clients2.google.com/service/update2/crx
+abcdefghijklmnopabcdefghijklmnop</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome/Extensions</q1:Category>
+          <q1:ListBox>
+            <q1:Name>Extension/App IDs and update URLs to be silently installed</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:ExplicitValue>false</q1:ExplicitValue>
+            <q1:Additive>false</q1:Additive>
+            <q1:ValuePrefix />
+            <q1:Value>
+              <q1:Element>
+                <q1:Data>maafgiompdekodanheihhgilkjchcakm;https://outlook.office.com/owa/SmimeCrxUpdate.ashx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>cjpalhdlnbpafiamejdnhcphjbkeiagm;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>pkehgijcmpdhfbdbbnkijodmdjhbjlgp;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>gcbommkclmclpchllfjekcdonpmejbdp;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>ldpochfccmkkmhdbclfhpagapcfdljkj;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>fhcgjolkccmbidfldomjliifgaodjagh;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>bhfakmaiadhflpjloimlagikhodjiefj;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>lckanjgmijmafbedllaakclkaicjfmnk;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+            </q1:Value>
+          </q1:ListBox>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow Google Cast to connect to Cast devices on all IP addresses.</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Unless EnableMediaRouter is set to Disabled, setting MediaRouterCastAllowAllIPs to Enabled connects Google Cast to Cast devices on all IP addresses, not just RFC1918/RFC4193 private addresses.
+
+Setting the policy to Disabled connects Google Cast to Cast devices only on RFC1918/RFC4193.
+
+Leaving the policy unset connects Google Cast to Cast devices only on RFC1918/RFC4193, unless the CastAllowAllIPs feature is turned on.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome/Google Cast</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable Google Cast</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled or leaving it unset turns on Google Cast, which users can launch from the app menu, page context menus, media controls on Cast-enabled websites, and (if shown) the Cast toolbar icon.
+
+Setting the policy to Disabled turns off Google Cast.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome/Google Cast</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Show the Google Cast toolbar icon</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled displays the Cast toolbar icon on the toolbar or the overflow menu, and users can't remove it.
+
+Setting the policy to Disabled or leaving it unset lets users pin or remove the icon through its contextual menu.
+
+If the policy EnableMediaRouter is set to Disabled, then this policy's value has no effect, and the toolbar icon doesn't appear.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome/Google Cast</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow user-level Native Messaging hosts (installed without admin permissions)</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled or leaving it unset means Google Chrome can use native messaging hosts installed at the user level.
+
+Setting the policy to Disabled means Google Chrome can only use these hosts if installed at the system level.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome/Native Messaging</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable leak detection for entered credentials</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled lets users have Google Chrome check whether usernames and passwords entered were part of a leak.
+
+If the policy is set, users can't change it in Google Chrome. If not set, credential leak checking is allowed, but the user can turn it off.
+
+This behavior will not trigger if Safe Browsing is disabled (either by policy or by the user). In order to force Safe Browsing on, use the SafeBrowsingEnabled policy or the SafeBrowsingProtectionLevel policy.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome/Password manager</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable saving passwords to the password manager</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled means users have Google Chrome remember passwords and provide them the next time they sign in to a site.
+
+Setting the policy to Disabled means users can't save new passwords, but previously saved passwords will still work.
+
+If the policy is set, users can't change it in Google Chrome. If not set, the user can turn off password saving.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome/Password manager</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable Google Cloud Print proxy</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled or leaving it unset lets Google Chrome act as a proxy between Google Cloud Print and legacy printers connected to the machine. Using their Google Account, users may turn on the cloud print proxy by authentication.
+
+Setting the policy to Disabled means users can't turn on the proxy, and the machine can't share its printers with Google Cloud Print.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome/Printing</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow remote access users to transfer files to/from the host</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled or leaving it unset allows users connected to a remote access host to transfer files between the client and the host. This doesn't apply to remote assistance connections, which don't support file transfer.
+
+Setting the policy to Disabled disallows file transfer.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome/Remote access</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable firewall traversal from remote access host</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled or leaving it unset allows the usage of STUN servers, letting remote clients discover and connect to this machine, even if separated by a firewall.
+
+Setting the policy to Disabled when outgoing UDP connections are filtered by the firewall means the machine only allows connections from client machines within the local network.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome/Remote access</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable or disable PIN-less authentication for remote access hosts</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled or leaving it unset lets users pair clients and hosts at connection time, eliminating the need to enter a PIN every time.
+
+Setting the policy to Disabled makes this feature unavailable.</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome/Remote access</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable a TLS 1.3 security feature for local trust anchors.</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy is removed. It is not compatible with this version of Google Chrome. Read more at https://support.google.com/chrome/a/answer/7643500</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome/Removed policies</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable submission of documents to Google Cloud Print</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy is removed. It is not compatible with this version of Google Chrome. Read more at https://support.google.com/chrome/a/answer/7643500</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome/Removed policies</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable Safe Browsing Extended Reporting</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Setting the policy to Enabled turns on Google Chrome's Safe Browsing Extended Reporting, which sends some system information and page content to Google servers to help detect dangerous apps and sites.
+
+Setting the policy to Disabled means reports are never sent.
+
+If you set this policy, users can't change it. If not set, users can decide whether to send reports or not.
+
+See more about Safe Browsing ( https://developers.google.com/safe-browsing ).</q1:Explain>
+          <q1:Supported>Microsoft Windows 7 or later</q1:Supported>
+          <q1:Category>Google/Google Chrome/Safe Browsing settings</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Ads setting for sites with intrusive ads</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Controls whether ads are blocked on sites with intrusive ads.
+
+Policy options mapping:
+
+* AllowAds (1) = Allow ads on all sites
+
+* BlockAds (2) = Block ads on sites with intrusive ads. (Default value)
+
+Use the preceding information when configuring this policy.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 78, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Ads setting for sites with intrusive ads</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Block ads on sites with intrusive ads. (Default value)</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow Google Cast to connect to Cast devices on all IP addresses</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Enable this policy to let Google Cast connect to Cast devices on all IP addresses, not just RFC1918/RFC4193 private addresses.
+
+Disable this policy to restrict Google Cast to Cast devices on RFC1918/RFC4193 private addresses.
+
+If you don't configure this policy, Google Cast connects to Cast devices on RFC1918/RFC4193 private addresses only, unless you enable the CastAllowAllIPs feature.
+
+If the 'EnableMediaRouter' (Enable Google Cast) policy is disabled, then this policy has no effect.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow media autoplay for websites</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy sets the media autoplay policy for websites.
+
+The default setting, "Not configured" respects the current media autoplay settings and lets users configure their autoplay settings.
+
+Setting to "Enabled" sets media autoplay to "Allow".  All websites are allowed to autoplay media. Users can't override this policy.
+
+Setting to "Disabled" sets media autoplay to "Limit".  This limits websites that are allowed to autoplay media to webpages with high media engagement and active WebRTC streams. Prior to Microsoft Edge version 92, this would set media autoplay to "Block". Users can't override this policy.
+
+A tab will need to be closed and re-opened for this policy to take effect.
+</q1:Explain>
+          <q1:Supported>Microsoft Edge version 78, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow user feedback</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Microsoft Edge uses the Edge Feedback feature (enabled by default) to allow users to send feedback, suggestions or customer surveys and to report any issues with the browser. Also, by default, users can't disable (turn off) the Edge Feedback feature.
+
+Starting in Microsoft Edge 105, if the user is signed into Microsoft Edge with their work or school account, their feedback is associated with their account and organization.
+
+If you enable this policy or don't configure it, users can invoke Edge Feedback.
+
+If you disable this policy, users can't invoke Edge Feedback.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Block all ads on Bing search results</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Enables an ad-free search experience on Bing.com
+
+If you enable this policy, then a user can search on bing.com and have an ad-free search experience. At the same time, the SafeSearch setting will be set to 'Strict' and can't be changed by the user.
+
+If you don't configure this policy, then the default experience will have ads in the search results on bing.com. SafeSearch will be set to 'Moderate' by default and can be changed by the user.
+
+This policy is only available for K-12 SKUs that are identified as EDU tenants by Microsoft.
+
+Please refer to https://go.microsoft.com/fwlink/?linkid=2119711 to learn more about this policy or if the following scenarios apply to you:
+
+* You have an EDU tenant, but the policy doesn't work.
+
+* You had your IP allowlisted for having an ad free search experience.
+
+* You were experiencing an ad-free search experience on Microsoft Edge Legacy and want to upgrade to the new version of Microsoft Edge.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 83, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Block third party cookies</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Block web page elements that aren't from the domain that's in the address bar from setting cookies.
+
+If you enable this policy, web page elements that are not from the domain that is in the address bar can't set cookies
+
+If you disable this policy, web page elements from domains other than in the address bar can set cookies.
+
+If you don't configure this policy, third-party cookies are enabled but users can change this setting.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Clear browsing data when Microsoft Edge closes</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Microsoft Edge doesn't clear the browsing data by default when it closes. Browsing data includes information entered in forms, passwords, and even the websites visited.
+
+If you enable this policy, all browsing data is deleted each time Microsoft Edge closes. Note that if you enable this policy, it takes precedence over how you configured 'DefaultCookiesSetting' (Configure cookies)
+
+If you disable or don't configure this policy, users can configure the Clear browsing data option in Settings.
+
+If you enable this policy, don't configure the 'AllowDeletingBrowserHistory' (Enable deleting browser and download history) or the 'ClearCachedImagesAndFilesOnExit' (Clear cached images and files when Microsoft Edge closes) policy, because they all deal with deleting browsing data. If you configure the preceding policies and this policy, all browsing data is deleted when Microsoft Edge closes, regardless of how you configured 'AllowDeletingBrowserHistory' or 'ClearCachedImagesAndFilesOnExit'.
+
+To exclude cookies from being deleted on exit, configure the 'SaveCookiesOnExit' (Save cookies when Microsoft Edge closes) policy.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 78, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Configure Do Not Track</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Specify whether to send Do Not Track requests to websites that ask for tracking info. Do Not Track requests let the websites you visit know that you don't want your browsing activity to be tracked. By default, Microsoft Edge doesn't send Do Not Track requests, but users can turn on this feature to send them.
+
+If you enable this policy, Do Not Track requests are always sent to websites asking for tracking info.
+
+If you disable this policy, requests are never sent.
+
+If you don't configure this policy, users can choose whether to send these requests.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Configure Online Text To Speech</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Set whether the browser can leverage Online Text to Speech voice fonts, part of Azure Cognitive Services. These voice fonts are higher quality than the pre-installed system voice fonts.
+
+If you enable or don't configure this policy, web-based applications that use the SpeechSynthesis API can use Online Text to Speech voice fonts.
+
+If you disable this policy, the voice fonts aren't available.
+
+Read more about this feature here:
+SpeechSynthesis API: https://go.microsoft.com/fwlink/?linkid=2110038
+Cognitive Services: https://go.microsoft.com/fwlink/?linkid=2110141</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Configure the Share experience</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If you set this policy to 'ShareAllowed' (the default), users will be able to access the Share experience from the Settings and More Menu in Microsoft Edge to share with other apps on the system.
+
+If you set this policy to 'ShareDisallowed', users won't be able to access the Share experience. If the Share button is on the toolbar, it will also be hidden.
+
+Policy options mapping:
+
+* ShareAllowed (0) = Allow using the Share experience
+
+* ShareDisallowed (1) = Don't allow using the Share experience
+
+Use the preceding information when configuring this policy.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 83, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Configure the Share experience</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Don't allow using the Share experience</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Disable saving browser history</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Disables saving browser history and prevents users from changing this setting.
+
+If you enable this policy, browsing history isn't saved. This also disables tab syncing.
+
+If you disable this policy or don't configure it, browsing history is saved.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Disable synchronization of data using Microsoft sync services</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Disables data synchronization in Microsoft Edge. This policy also prevents the sync consent prompt from appearing.
+
+This policy disables cloud synchronization only and has no impact on the 'RoamingProfileSupportEnabled' (Enable using roaming copies for Microsoft Edge profile data) policy.
+
+If you don't set this policy or apply it as recommended, users will be able to turn sync on or off. If you apply this policy as mandatory, users will not be able to turn sync on.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>DNS interception checks enabled</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy configures a local switch that can be used to disable DNS interception checks. These checks attempt to discover whether the browser is behind a proxy that redirects unknown host names.
+
+This detection might not be necessary in an enterprise environment where the network configuration is known. It can be disabled to avoid additional DNS and HTTP traffic on start-up and each DNS configuration change.
+
+If you enable or don't set this policy, the DNS interception checks are performed.
+
+If you disable this policy, DNS interception checks aren't performed.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 80, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable a TLS 1.3 security feature for local trust anchors (obsolete)</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>OBSOLETE: This policy is obsolete and doesn't work after Microsoft Edge 85.
+
+This policy doesn't work because it was only intended to be a short-term mechanism to give enterprises more time to upgrade affected proxies.
+
+This policy controls a security feature in TLS 1.3 that protects connections against downgrade attacks. It is backwards-compatible and will not affect connections to compliant TLS 1.2 servers or proxies. However, older versions of some TLS-intercepting proxies have an implementation flaw which causes them to be incompatible.
+
+If you enable this policy or don't set it, Microsoft Edge will enable these security protections for all connections.
+
+If you disable this policy, Microsoft Edge will disable these security protections for connections authenticated with locally-installed CA certificates. These protections are always enabled for connections authenticated with publicly-trusted CA certificates.
+
+This policy can be used to test for any affected proxies and upgrade them. Affected proxies are expected to fail connections with an error code of ERR_TLS13_DOWNGRADE_DETECTED.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 81-85, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable AutoFill for addresses</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Enables the AutoFill feature and allows users to auto-complete address information in web forms using previously stored information.
+
+If you disable this policy, AutoFill never suggests or fills in address information, nor does it save additional address information that the user might submit while browsing the web.
+
+If you enable this policy or don't configure it, users can control AutoFill for addresses in the user interface.
+
+Note that if you disable this policy you also stop all activity for all web forms, except payment and password forms. No further entries are saved, and Microsoft Edge won't suggest or AutoFill any previous entries.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable AutoFill for payment instruments</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Enables Microsoft Edge's AutoFill feature and lets users auto complete payment instruments like credit or debit cards in web forms using previously stored information. This includes suggesting new payment instruments like Buy Now Pay Later (BNPL) in web forms and Express Checkout.
+
+If you enable this policy or don't configure it, users can control AutoFill for payment instruments.
+
+If you disable this policy, AutoFill never suggests, fills, or recommends new payment Instruments. Additionally, it won't save any payment instrument information that users submit while browsing the web.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable ending processes in the Browser task manager</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If you enable or don't configure this policy, users can end processes in the Browser task manager. If you disable it, users can't end processes, and the End process button is disabled in the Browser task manager.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable favorites bar</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Enables or disables the favorites bar.
+
+If you enable this policy, users will see the favorites bar.
+
+If you disable this policy, users won't see the favorites bar.
+
+If this policy is not configured, then the user can decide to use the favorites bar or not.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable network prediction</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Enables network prediction and prevents users from changing this setting.
+
+This controls DNS prefetching, TCP and SSL preconnection, and prerendering of web pages.
+
+If you don't configure this policy, network prediction is enabled but the user can change it.
+
+Policy options mapping:
+
+* NetworkPredictionAlways (0) = Predict network actions on any network connection
+
+* NetworkPredictionWifiOnly (1) = Not supported, if this value is used it will be treated as if 'Predict network actions on any network connection' (0) was set
+
+* NetworkPredictionNever (2) = Don't predict network actions on any network connection
+
+Use the preceding information when configuring this policy.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Enable network prediction</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Don't predict network actions on any network connection</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable online OCSP/CRL checks</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Online revocation checks don't provide a significant security benefit and are disabled by default.
+
+If you enable this policy, Microsoft Edge will perform soft-fail, online OCSP/CRL checks. "Soft fail" means that if the revocation server can't be reached, the certificate will be considered valid.
+
+If you disable the policy or don't configure it, Microsoft Edge won't perform online revocation checks.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable search suggestions</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Enables web search suggestions in Microsoft Edge's Address Bar and Auto-Suggest List and prevents users from changing this policy.
+
+If you enable this policy, web search suggestions are used.
+
+If you disable this policy, web search suggestions are never used, however local history and local favorites suggestions still appear. If you disable this policy, neither the typed characters, nor the URLs visited will be included in telemetry to Microsoft.
+
+If this policy is left not set, search suggestions are enabled but the user can change that.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable Signed HTTP Exchange (SXG) support</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Enable support for Signed HTTP Exchange (SXG).
+
+If this policy isn't set or enabled, Microsoft Edge will accept web contents served as Signed HTTP Exchanges.
+
+If this policy is set to disabled, Signed HTTP Exchanges can't be loaded.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 78, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable site isolation for every site</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>The 'SitePerProcess' policy can be used to prevent users from opting out of the default behavior of isolating all sites. Note that you can also use the 'IsolateOrigins' (Enable site isolation for specific origins) policy to isolate additional, finer-grained origins.
+
+If you enable this policy, users can't opt out of the default behavior where each site runs in its own process.
+
+If you disable or don't configure this policy, a user can opt out of site isolation.  (For example, by using "Disable site isolation" entry in edge://flags.)  Disabling the policy or not configuring the policy doesn't turn off Site Isolation.
+</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable spellcheck</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>If you enable or don't configure this policy, the user can use spellcheck.
+
+If you disable this policy, the user can't use spellcheck and the 'SpellcheckLanguage' (Enable specific spellcheck languages) and 'SpellcheckLanguageBlocklist' (Force disable spellcheck languages) policies are also disabled.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable stricter treatment for mixed content (obsolete)</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>OBSOLETE: This policy is obsolete and doesn't work after Microsoft Edge 84.
+
+This policy doesn't work because it was only intended to be a short-term mechanism to give enterprises more time to update their web content if it was found to be incompatible with stricter mixed content treatment.
+
+This policy controls the treatment for mixed content (HTTP content in HTTPS sites) in the browser.
+
+If you set this policy to true or not set, audio and video mixed content will be automatically upgraded to HTTPS (that is, the URL will be rewritten as HTTPS, without a fallback if the resource isn't available over HTTPS) and a 'Not Secure' warning will be shown in the URL bar for image mixed content.
+
+If you set the policy to false, auto upgrades will be disabled for audio and video, and no warning will be shown for images.
+
+This policy does not affect other types of mixed content other than audio, video, and images.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 81-84, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable Translate</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Enables the integrated Microsoft translation service on Microsoft Edge.
+
+If you enable this policy, Microsoft Edge offers translation functionality to the user by showing an integrated translate flyout when appropriate, and a translate option on the right-click context menu.
+
+Disable this policy to disable all built-in translate features.
+
+If you don't configure the policy, users can choose whether to use the translation functionality or not.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable usage and crash-related data reporting (obsolete)</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>OBSOLETE: This policy is obsolete and doesn't work after Microsoft Edge 88.
+
+This policy is no longer supported. It is replaced by 'DiagnosticData' (Send required and optional diagnostic data about browser usage) (for Windows 7, Windows 8, and macOS) and Allow Telemetry on Win 10 (https://go.microsoft.com/fwlink/?linkid=2099569).
+
+This policy enables reporting of usage and crash-related data about Microsoft Edge to Microsoft.
+
+Enable this policy to send reporting of usage and crash-related data to Microsoft. Disable this policy to not send the data to Microsoft. In both cases, users can't change or override the setting.
+
+On Windows 10, if you don't configure this policy, Microsoft Edge will default to the Windows diagnostic data setting. If you enable this policy, Microsoft Edge will only send usage data if the Windows Diagnostic data setting is set to Enhanced or Full. If you disable this policy, Microsoft Edge will not send usage data. Crash-related data is sent based on the Windows Diagnostic data setting. Learn more about Windows Diagnostic data settings at https://go.microsoft.com/fwlink/?linkid=2099569
+
+On Windows 7, Windows 8, and macOS, this policy controls sending usage and crash-related data. If you don't configure this policy, Microsoft Edge will default to the user's preference.
+
+To enable this policy,'SendSiteInfoToImproveServices' (Send site information to improve Microsoft services) must be set to Enabled. If 'MetricsReportingEnabled' (Enable usage and crash-related data reporting) or 'SendSiteInfoToImproveServices' is Not Configured or Disabled, this data will not be sent to Microsoft.
+
+This policy is available only on Windows instances that are joined to a Microsoft Active Directory domain, Windows 10 Pro or Enterprise instances that enrolled for device management, or macOS instances that are that are managed via MDM or joined to a domain via MCX.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77-88, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enforce Bing SafeSearch</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Ensure that queries in Bing web search are done with SafeSearch set to the value specified. Users can't change this setting.
+
+If you configure this policy to 'BingSafeSearchNoRestrictionsMode', SafeSearch in Bing search falls back to the bing.com value.
+
+If you configure this policy to 'BingSafeSearchModerateMode', the moderate setting is used in SafeSearch. The moderate setting filters adult videos and images but not text from search results.
+
+If you configure this policy to 'BingSafeSearchStrictMode', the strict setting in SafeSearch is used. The strict setting filters adult text, images, and videos.
+
+If you disable this policy or don't configure it, SafeSearch in Bing search isn't enforced, and users can set the value they want on bing.com.
+
+Policy options mapping:
+
+* BingSafeSearchNoRestrictionsMode (0) = Don't configure search restrictions in Bing
+
+* BingSafeSearchModerateMode (1) = Configure moderate search restrictions in Bing
+
+* BingSafeSearchStrictMode (2) = Configure strict search restrictions in Bing
+
+Use the preceding information when configuring this policy.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Enforce Bing SafeSearch</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Configure strict search restrictions in Bing</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enforce Google SafeSearch</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Forces queries in Google Web Search to be performed with SafeSearch set to active, and prevents users from changing this setting.
+
+If you enable this policy, SafeSearch in Google Search is always active.
+
+If you disable this policy or don't configure it, SafeSearch in Google Search isn't enforced.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Force networking code to run in the browser process (obsolete)</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>OBSOLETE: This policy is obsolete and doesn't work after Microsoft Edge 83.
+
+This policy doesn't work because it was only intended to be a short-term mechanism to give enterprises more time to migrate to 3rd party software that doesn't depend on hooking networking APIs. Proxy servers are recommended over LSPs and Win32 API patching.
+
+This policy forces networking code to run in the browser process.
+
+This policy is disabled by default. If enabled, users are open to security issues when the networking process is sandboxed.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 78-83, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Minimum TLS version enabled</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Sets the minimum supported version of TLS.
+
+If you set this policy to 'tls1.2', Microsoft Edge will show an error for TLS 1.0 and TLS 1.1 and the user will not be able to bypass the error.
+
+If you don't configure this policy, Microsoft Edge will still show an error for TLS 1.0 and TLS 1.1 but the user will be able to bypass it.
+
+Support for suppressing the TLS 1.0/1.1 warning was removed from Microsoft Edge starting in version 91. The 'tls1' and 'tls1.1' values are no longer supported.
+
+Policy options mapping:
+
+* TLSv1 (tls1) = TLS 1.0
+
+* TLSv1.1 (tls1.1) = TLS 1.1
+
+* TLSv1.2 (tls1.2) = TLS 1.2
+
+Use the preceding information when configuring this policy.
+
+Example value: tls1</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Minimum TLS version enabled</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>TLS 1.2</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Restrict exposure of local IP address by WebRTC</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Allows you to set whether or not WebRTC exposes the user's local IP address.
+
+If you set this policy to "AllowAllInterfaces" or "AllowPublicAndPrivateInterfaces", WebRTC exposes the local IP address.
+
+If you set this policy to "AllowPublicInterfaceOnly" or "DisableNonProxiedUdp", WebRTC doesn't expose the local IP address.
+
+If you don't set this policy, or if you disable it, WebRTC exposes the local IP address.
+
+Note: This policy does not provide an option to exclude specific domains.
+
+Policy options mapping:
+
+* AllowAllInterfaces (default) = Allow all interfaces. This exposes the local IP address
+
+* AllowPublicAndPrivateInterfaces (default_public_and_private_interfaces) = Allow public and private interfaces over http default route. This exposes the local IP address
+
+* AllowPublicInterfaceOnly (default_public_interface_only) = Allow public interface over http default route. This doesn't expose the local IP address
+
+* DisableNonProxiedUdp (disable_non_proxied_udp) = Use TCP unless proxy server supports UDP. This doesn't expose the local IP address
+
+Use the preceding information when configuring this policy.
+
+Example value: default</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Restrict exposure of local IP address by WebRTC</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Allow public interface over http default route. This doesn't expose the local IP address</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Send all intranet sites to Internet Explorer</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>For guidance about configuring the optimal experience for Internet Explorer mode see https://go.microsoft.com/fwlink/?linkid=2094210</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Send site information to improve Microsoft services (obsolete)</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>OBSOLETE: This policy is obsolete and doesn't work after Microsoft Edge 88.
+
+This policy is no longer supported. It is replaced by 'DiagnosticData' (Send required and optional diagnostic data about browser usage) (for Windows 7, Windows 8, and macOS) and Allow Telemetry on Win 10 (https://go.microsoft.com/fwlink/?linkid=2099569).
+
+This policy enables sending info about websites visited in Microsoft Edge to Microsoft to improve services like search.
+
+Enable this policy to send info about websites visited in Microsoft Edge to Microsoft. Disable this policy to not send info about websites visited in Microsoft Edge to Microsoft. In both cases, users can't change or override the setting.
+
+On Windows 10, if you don't configure this policy, Microsoft Edge will default to the Windows diagnostic data setting. If this policy is enabled Microsoft Edge will only send info about websites visited in Microsoft Edge if the Windows Diagnostic data setting is set to Full. If this policy is disabled Microsoft Edge will not send info about websites visited. Learn more about Windows Diagnostic data settings: https://go.microsoft.com/fwlink/?linkid=2099569
+
+On Windows 7, windows 8, and macOS this policy controls sending info about websites visited. If you don't configure this policy, Microsoft Edge will default to the user's preference.
+
+To enable this policy, 'MetricsReportingEnabled' (Enable usage and crash-related data reporting) must be set to Enabled. If 'SendSiteInfoToImproveServices' (Send site information to improve Microsoft services) or 'MetricsReportingEnabled' is Not Configured or Disabled, this data will not be sent to Microsoft.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77-88, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Use hardware acceleration when available</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Specifies whether to use hardware acceleration if it's available. If you enable this policy or don't configure it, hardware acceleration is enabled unless a GPU feature is explicitly blocked.
+
+If you disable this policy, hardware acceleration is disabled.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow Microsoft Edge Side by Side browser experience</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy lets a user run Microsoft Edge (Edge HTML) and Microsoft Edge (Chromium-based) side-by-side.
+
+If this policy is set to “Not configured”, Microsoft Edge (Chromium-based) will replace Microsoft Edge (Edge HTML) after the Microsoft Edge (Chromium-based) stable channel and the November 2019 security updates are installed.  This is the same behavior as the “Disabled” setting.
+
+The “Disabled” setting blocks a side-by-side experience and Microsoft Edge (Chromium-based) will replace Microsoft Edge (Edge HTML) after the Microsoft Edge (Chromium-based) stable channel and the November 2019 security updates are installed.  This is the same behavior as the “Not Configured” setting.
+
+When this policy is “Enabled”, Microsoft Edge (Chromium-based) and Microsoft Edge (Edge HTML) can run side-by-side after Microsoft Edge (Chromium-based) is installed.
+
+For this group policy to take affect, it must be configured before the automatic install of Microsoft Edge (Chromium-based) by Windows Update. Note: ​A user can block the automatic update of Microsoft Edge (Chromium-based) by using the Microsoft Edge (Chromium-based) Blocker Toolkit.
+
+Starting with Windows 10 version 20H2 Microsoft Edge Legacy and the side-by-side browser experience are not supported.</q1:Explain>
+          <q1:Supported>Microsoft Edge Update 1.2.145.5 and later</q1:Supported>
+          <q1:Category>Microsoft Edge Update/Applications</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow installation</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Specifies whether a Microsoft Edge channel can be installed on domain-joined devices.
+
+  If you enable this policy for a channel, Microsoft Edge will not be blocked from installation.
+
+  If you disable this policy for a channel (or set it to 'Installs disabled'), Microsoft Edge will be blocked from installation.
+
+  If you don't configure this policy for a channel, the 'Allow installation default' policy configuration determines whether users can install that channel of Microsoft Edge.
+
+If you set this policy to Always allow Machine-Wide Installs but not Per-User Installs, Microsoft Edge will only be deployed machine-wide.
+
+If you set this policy to Force Installs (Machine-Wide), Microsoft Edge may only be deployed machine-wide if Microsoft Edge Update is pre-installed. Requires Microsoft Edge Update 1.3.155.43 or higher.
+
+If you set this policy to Force Installs (Per-User), Microsoft Edge may only be deployed on a Per-User basis to all machines if Microsoft Edge Update is pre-installed Per-User. Requires Microsoft Edge Update 1.3.155.43 or higher.
+
+This policy is available only on Windows instances that are joined to a Microsoft® Active Directory® domain.</q1:Explain>
+          <q1:Supported>Microsoft Edge Update 1.2.145.5 and later</q1:Supported>
+          <q1:Category>Microsoft Edge Update/Applications/Microsoft Edge</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Install Policy</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Always allow Installs (recommended)</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow installation</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Lets you specify whether the WebView2 Runtime can be installed using Microsoft Edge Update.
+
+  If you enable this policy, users can install the WebView2 Runtime through Microsoft Edge Update.
+
+  If you disable this policy (or set it to 'Installs disabled'), users cannot install the WebView2 Runtime through Microsoft Edge Update.
+
+  If you set this policy to Always allow Machine-Wide Installs but not Per-User Installs, the WebView2 Runtime will only be deployed machine-wide.
+
+  If you set the policy to Force Installs (Machine-Wide), users can install the WebView2 Runtime to all machines where Microsoft Edge Update is pre-installed. Requires Microsoft Edge Update 1.3.155.43 or higher.
+
+  If you don't configure this policy, the 'Allow installation default' policy configuration determines whether users can install the WebView2 Runtime through Microsoft Edge Update.</q1:Explain>
+          <q1:Supported>Microsoft Edge Update 1.3.127.1 and later</q1:Supported>
+          <q1:Category>Microsoft Edge Update/Microsoft Edge WebView2 Runtime</q1:Category>
+          <q1:DropDownList>
+            <q1:Name>Install Policy</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Always allow Installs (recommended)</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable Google Cast</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Enable this policy to enable Google Cast. Users will be able to launch it from the app menu, page context menus, media controls on Cast-enabled websites, and (if shown) the Cast toolbar icon.
+
+Disable this policy to disable Google Cast.
+
+By default, Google Cast is enabled.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge/Cast</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Show the cast icon in the toolbar</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Set this policy to true to show the Cast toolbar icon on the toolbar or the overflow menu. Users won't be able to remove it.
+
+If you don't configure this policy or if you disable it, users can pin or remove the icon by using its contextual menu.
+
+If you've also set the 'EnableMediaRouter' (Enable Google Cast) policy to false, then this policy is ignored, and the toolbar icon isn't shown.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge/Cast</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Control which extensions are installed silently</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Set this policy to specify a list of apps and extensions that install silently, without user interaction. Users can't uninstall or turn off this setting. Permissions are granted implicitly, including the enterprise.deviceAttributes and enterprise.platformKeys extension APIs. Note: These 2 APIs aren't available to apps and extensions that aren't force-installed.
+
+If you don't set this policy, no apps or extensions are autoinstalled and users can uninstall any app in Microsoft Edge.
+
+This policy supercedes 'ExtensionInstallBlocklist' (Control which extensions cannot be installed) policy. If a previously force-installed app or extension is removed from this list, Microsoft Edge automatically uninstalls it.
+
+For Windows instances not joined to a Microsoft Active Directory domain, forced installation is limited to apps and extensions listed in the Microsoft Edge Add-ons website.
+
+On macOS instances, apps and extensions from outside the Microsoft Edge Add-ons website can only be force installed if the instance is managed via MDM, or joined to a domain via MCX.
+
+The source code of any extension can be altered by users with developer tools, potentially rendering the extension unfunctional. If this is a concern, configure the 'DeveloperToolsAvailability' (Control where developer tools can be used) policy.
+
+Each list item of the policy is a string that contains an extension ID and, optionally, an "update" URL separated by a semicolon (;). The extension ID is the 32-letter string found, for example, on edge://extensions when in Developer mode. If specified, the "update" URL should point to an Update Manifest XML document ( https://go.microsoft.com/fwlink/?linkid=2095043 ). By default, the Microsoft Edge Add-ons website's update URL is used. The "update" URL set in this policy is only used for the initial installation; subsequent updates of the extension use the update URL in the extension's manifest.
+
+Note: This policy doesn't apply to InPrivate mode. Read about hosting extensions at [Publish and update extensions in the Microsoft Edge Add-ons website](/microsoft-edge/extensions-chromium/enterprise/hosting-and-updating).
+
+Example value:
+
+gbchcmhmhahfdphkhkmpfmihenigjmpp;https://edge.microsoft.com/extensionwebstorebase/v1/crx
+abcdefghijklmnopabcdefghijklmnop</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge/Extensions</q1:Category>
+          <q1:ListBox>
+            <q1:Name>Extension/App IDs and update URLs to be silently installed</q1:Name>
+            <q1:State>Enabled</q1:State>
+            <q1:ExplicitValue>false</q1:ExplicitValue>
+            <q1:Additive>false</q1:Additive>
+            <q1:ValuePrefix />
+            <q1:Value>
+              <q1:Element>
+                <q1:Data>maafgiompdekodanheihhgilkjchcakm;https://outlook.office.com/owa/SmimeCrxUpdate.ashx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>cjpalhdlnbpafiamejdnhcphjbkeiagm;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>pkehgijcmpdhfbdbbnkijodmdjhbjlgp;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>gcbommkclmclpchllfjekcdonpmejbdp;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>ldpochfccmkkmhdbclfhpagapcfdljkj;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>fhcgjolkccmbidfldomjliifgaodjagh;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>bhfakmaiadhflpjloimlagikhodjiefj;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>lckanjgmijmafbedllaakclkaicjfmnk;https://clients2.google.com/service/update2/crx</q1:Data>
+              </q1:Element>
+            </q1:Value>
+          </q1:ListBox>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow user-level native messaging hosts (installed without admin permissions)</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>If you set this policy to Enabled or leave it unset, Microsoft Edge can use native messaging hosts installed at the user level.
+
+If you set this policy to Disabled, Microsoft Edge can only use these hosts if they're installed at the system level.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge/Native Messaging</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enable saving passwords to the password manager</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Enable Microsoft Edge to save user passwords. The next time a user visits a site with a saved password, Microsoft Edge will enter the password automatically.
+
+If you enable or don't configure this policy, users can save and add their passwords in Microsoft Edge.
+
+If you disable this policy, users can't save and add new passwords, but they can still use previously saved passwords.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge/Password manager and protection</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Print using system print dialog</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>Shows the system print dialog instead of print preview.
+
+If you enable this policy, Microsoft Edge opens the system print dialog instead of the built-in print preview when a user prints a page.
+
+If you don't configure or disable this policy, print commands trigger the Microsoft Edge print preview screen.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge/Printing</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Configure Microsoft Defender SmartScreen</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy setting lets you configure whether to turn on Microsoft Defender SmartScreen. Microsoft Defender SmartScreen provides warning messages to help protect your users from potential phishing scams and malicious software. By default, Microsoft Defender SmartScreen is turned on.
+
+If you enable this setting, Microsoft Defender SmartScreen is turned on.
+
+If you disable this setting, Microsoft Defender SmartScreen is turned off.
+
+If you don't configure this setting, users can choose whether to use Microsoft Defender SmartScreen.
+
+This policy is available only on Windows instances that are joined to a Microsoft Active Directory domain, Windows 10 Pro or Enterprise instances that enrolled for device management, or macOS instances that are that are managed via MDM or joined to a domain via MCX.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 77, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge/SmartScreen settings</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Configure Microsoft Defender SmartScreen to block potentially unwanted apps</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy setting lets you configure whether to turn on blocking for potentially unwanted apps with Microsoft Defender SmartScreen. Potentially unwanted app blocking with Microsoft Defender SmartScreen provides warning messages to help protect users from adware, coin miners, bundleware, and other low-reputation apps that are hosted by websites. Potentially unwanted app blocking with Microsoft Defender SmartScreen is turned off by default.
+
+If you enable this setting, potentially unwanted app blocking with Microsoft Defender SmartScreen is turned on.
+
+If you disable this setting, potentially unwanted app blocking with Microsoft Defender SmartScreen is turned off.
+
+If you don't configure this setting, users can choose whether to use potentially unwanted app blocking with Microsoft Defender SmartScreen.
+
+This policy is available only on Windows instances that are joined to a Microsoft Active Directory domain, Windows 10 Pro or Enterprise instances that enrolled for device management, or macOS instances that are that are managed via MDM or joined to a domain via MCX.</q1:Explain>
+          <q1:Supported>Microsoft Edge version 80, Windows 7 or later</q1:Supported>
+          <q1:Category>Microsoft Edge/SmartScreen settings</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Disable Firefox Screenshots</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled, Firefox Screenshots is not available.
+
+If this policy is disabled or not configured, Firefox Screenshots is available.</q1:Explain>
+          <q1:Supported>Firefox 60 or later, Firefox 60 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Disable Firefox Studies</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled, Firefox will never run SHIELD studies or do Heartbeat surveys.
+
+If this policy is disabled or not configured, the user can choose to enable SHIELD studies or Heartbeat surveys.
+
+For more information, see https://support.mozilla.org/en-US/kb/shield and https://wiki.mozilla.org/Firefox/Shield/Heartbeat</q1:Explain>
+          <q1:Supported>Firefox 60 or later, Firefox 60 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Disable Form History</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled, Firefox will not remember form or search history.
+
+If this policy is disabled or not configured, Firefox will remember form and search history.</q1:Explain>
+          <q1:Supported>Firefox 60 or later, Firefox 60 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Disable Pocket</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled, Pocket is not available.
+
+If this policy is disabled or not configured, Pocket is available.</q1:Explain>
+          <q1:Supported>Firefox 60 or later, Firefox 60 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Disable Telemetry</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled, telemetry is not uploaded.
+
+If this policy is disabled or not configured, telemetry is collected and uploaded.
+
+Mozilla recommends that you do not disable telemetry. Information collected through telemetry helps us build a better product for businesses like yours.</q1:Explain>
+          <q1:Supported>Firefox 60 or later, Firefox 60 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Display Bookmarks Toolbar (Deprecated)</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled, the bookmarks toolbar is displayed by default. The user can still hide it.
+
+If this policy is disabled or not configured, the bookmarks toolbar is not displayed by default.</q1:Explain>
+          <q1:Supported>Firefox 60 or later, Firefox 60 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Do not allow passwords to be revealed in saved logins</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled, users cannot show passwords in saved logins.
+
+If this policy is disabled or not configured, users can show passwords in saved logins.</q1:Explain>
+          <q1:Supported>Firefox 71 or later, Firefox 68.3 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Maximum SSL version enabled</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled, Firefox will not use SSL/TLS versions greater than the value specified.
+
+If this policy is disabled or not configured, Firefox defaults to a maximum of TLS 1.3.</q1:Explain>
+          <q1:Supported>Firefox 66 or later, Firefox 60.6 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox</q1:Category>
+          <q1:DropDownList>
+            <q1:Name />
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>TLS 1.0</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Import Enterprise Roots</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled, Firefox will read certificates from the Windows certificate store.
+
+If this policy is disabled or not configured, Firefox will not read certificates from the Windows certificate store.</q1:Explain>
+          <q1:Supported>Firefox 60 or later, Firefox 60 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Certificates</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Browsing History</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If the policy is enabled, browsing history is cleared when the browser is closed.
+
+If this policy is disabled or not configured, browsing history is not cleared when the browser is closed.</q1:Explain>
+          <q1:Supported>Firefox 74 or later, Firefox 68.6 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Clear data when browser is closed</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Cache</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If the policy is enabled, the cache is cleared when the browser is closed.
+
+If this policy is disabled or not configured, the cache is not cleared when the browser is closed.</q1:Explain>
+          <q1:Supported>Firefox 74 or later, Firefox 68.6 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Clear data when browser is closed</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Download History</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If the policy is enabled, download history is cleared when the browser is closed.
+
+If this policy is disabled or not configured, download history is not cleared when the browser is closed.</q1:Explain>
+          <q1:Supported>Firefox 74 or later, Firefox 68.6 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Clear data when browser is closed</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Form &amp; Search History</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If the policy is enabled, form data is cleared when the browser is closed.
+
+If this policy is disabled or not configured, form data is not cleared when the browser is closed.</q1:Explain>
+          <q1:Supported>Firefox 74 or later, Firefox 68.6 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Clear data when browser is closed</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Offline Website Data</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If the policy is enabled, offline application storage is cleared when the browser is closed.
+
+If this policy is disabled or not configured, offline application storage is not cleared when the browser is closed.</q1:Explain>
+          <q1:Supported>Firefox 74 or later, Firefox 68.6 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Clear data when browser is closed</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Accept third-party cookies (Deprecated)</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled and cookies are allowed, you can set when to accept third-party cookies.
+
+This setting is ignored if this policy is disabled or not configured or if cookies are not allowed.</q1:Explain>
+          <q1:Supported>Firefox 60 or later, Firefox 60 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Cookies</q1:Category>
+          <q1:DropDownList>
+            <q1:Name />
+            <q1:State>Enabled</q1:State>
+            <q1:Value>
+              <q1:Name>Never</q1:Name>
+            </q1:Value>
+          </q1:DropDownList>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Reject trackers (Deprecated)</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled and cookies are allowed, Firefox will reject tracker cookies by default.
+
+This setting is ignored if this policy is disabled or not configured or if cookies are not allowed.</q1:Explain>
+          <q1:Supported>Firefox 64 or later, Firefox 60.4 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Cookies</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enabled</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is disabled, DNS over HTTPS is disabled.
+
+If this policy is enabled or not configured, DNS Over HTTPS is enabled.</q1:Explain>
+          <q1:Category>Mozilla/Firefox/DNS Over HTTPS</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Extensions to Install</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled, you can specify a list of extension URLs or paths that will be installed when Firefox is started.
+Anytime this list is changed, the extensions will be reinstalled.
+
+If this policy is disabled or not configured, no extensions are installed.</q1:Explain>
+          <q1:Supported>Firefox 60 or later, Firefox 60 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Extensions</q1:Category>
+          <q1:ListBox>
+            <q1:Name />
+            <q1:State>Enabled</q1:State>
+            <q1:ExplicitValue>false</q1:ExplicitValue>
+            <q1:Additive>false</q1:Additive>
+            <q1:ValuePrefix />
+            <q1:Value>
+              <q1:Element>
+                <q1:Data>https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>https://addons.mozilla.org/firefox/downloads/latest/privacy-badger17/latest.xpi</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>https://www.eff.org/files/https-everywhere-latest.xpi</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>https://addons.mozilla.org/firefox/downloads/latest/canvasblocker/latest.xpi</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>https://addons.mozilla.org/firefox/downloads/latest/multi-account-containers/latest.xpi</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>https://addons.mozilla.org/firefox/downloads/latest/cookie-autodelete/latest.xpi</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>https://addons.mozilla.org/firefox/downloads/latest/clearurls/latest.xpi</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>https://addons.mozilla.org/firefox/downloads/latest/umatrix/latest.xpi</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>https://addons.mozilla.org/firefox/downloads/latest/temporary-containers/latest.xpi</q1:Data>
+              </q1:Element>
+              <q1:Element>
+                <q1:Data>https://addons.mozilla.org/firefox/downloads/latest/decentraleyes/latest.xpi</q1:Data>
+              </q1:Element>
+            </q1:Value>
+          </q1:ListBox>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>geo.enabled</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>If this policy is enabled, the preference is locked to true. If this policy is disabled, the preference is locked to false.
+
+For a description of the preference, see:
+
+https://github.com/mozilla/policy-templates/blob/master/README.md#preferences</q1:Explain>
+          <q1:Supported>Firefox 70 or later, Firefox 68.2 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Preferences (Deprecated)</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>media.peerconnection.enabled</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>If this policy is enabled, the preference is locked to true. If this policy is disabled, the preference is locked to false.
+
+For a description of the preference, see:
+
+https://github.com/mozilla/policy-templates/blob/master/README.md#preferences</q1:Explain>
+          <q1:Supported>Firefox 72 or later, Firefox 68.4 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Preferences (Deprecated)</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>network.dns.disableIPv6</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled, the preference is locked to true. If this policy is disabled, the preference is locked to false.
+
+For a description of the preference, see:
+
+https://github.com/mozilla/policy-templates/blob/master/README.md#preferences</q1:Explain>
+          <q1:Supported>Firefox 68 or later, Firefox 68 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Preferences (Deprecated)</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>security.mixed_content.block_active_content</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled, the preference is locked to true. If this policy is disabled, the preference is locked to false.
+
+For a description of the preference, see:
+
+https://github.com/mozilla/policy-templates/blob/master/README.md#preferences</q1:Explain>
+          <q1:Supported>Firefox 70 or later, Firefox 68.2 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Preferences (Deprecated)</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>security.osclientcerts.autoload</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled, the preference is locked to true. If this policy is disabled, the preference is locked to false.
+
+For a description of the preference, see:
+
+https://github.com/mozilla/policy-templates/blob/master/README.md#preferences</q1:Explain>
+          <q1:Supported>Firefox 72 or later, Firefox 68.4 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Preferences (Deprecated)</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>security.ssl.errorReporting.enabled</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>If this policy is enabled, the preference is locked to true. If this policy is disabled, the preference is locked to false.
+
+For a description of the preference, see:
+
+https://github.com/mozilla/policy-templates/blob/master/README.md#preferences</q1:Explain>
+          <q1:Supported>Firefox 68 or later, Firefox 68 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Preferences (Deprecated)</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>security.tls.hello_downgrade_check</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled, the preference is locked to true. If this policy is disabled, the preference is locked to false.
+
+For a description of the preference, see:
+
+https://github.com/mozilla/policy-templates/blob/master/README.md#preferences</q1:Explain>
+          <q1:Supported>Firefox 72 or later, Firefox 68.4 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Preferences (Deprecated)</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Cryptomining</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled, scripts that use cryptomining are blocked.
+
+If this policy is disabled or not configured, scripts that use cryptomining are not blocked.</q1:Explain>
+          <q1:Supported>Firefox 74 or later, Firefox 68.6 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Tracking Protection</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Enabled</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled, tracking protection is enabled.
+
+If this policy is disabled, tracking protection is disabled and cannot be changed by the user.
+
+If this policy is not configured, standard tracking protection is used and the user can change it.</q1:Explain>
+          <q1:Supported>Firefox 74 or later, Firefox 68.6 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Tracking Protection</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Fingerprinting</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>If this policy is enabled, scripts that use fingerprinting are blocked.
+
+If this policy is disabled or not configured, scripts that use fingerprinting are not blocked.</q1:Explain>
+          <q1:Supported>Firefox 74 or later, Firefox 68.6 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/Tracking Protection</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Extension Recommendations</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>If this policy is disabled, extensions will not be recommended as the user visits websites.
+
+If this policy is enabled or not configured, extensions will be recommended as the user visits websites.</q1:Explain>
+          <q1:Supported>Firefox 75 or later, Firefox 68.7 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/User Messaging</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Feature Recommendations</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>If this policy is disabled, Firefox features will not be recommended as the user uses Firefox.
+
+If this policy is enabled or not configured, Firefox features will be recommended as the user uses Firefox.</q1:Explain>
+          <q1:Supported>Firefox 75 or later, Firefox 68.7 ESR or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/User Messaging</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>What's New</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>If this policy is disabled, the What's new icon and menuitem will not be displayed.
+
+If this policy is enabled or not configured, the What's New icon and menuitem will be displayed.</q1:Explain>
+          <q1:Supported>Firefox 75 or later</q1:Supported>
+          <q1:Category>Mozilla/Firefox/User Messaging</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Allow Saving History</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>Microsoft Edge saves your user's browsing history, which is made up of info about the websites they visit, on their devices.
+
+If enabled or not configured, the browsing history is saved and visible in the History pane.
+
+If disabled, the browsing history stops saving and is not visible in the History pane. If browsing history exists before this policy was disabled, the previous browsing history remains visible in the History pane. This policy, when disabled, does not stop roaming of existing history or history coming from other roamed devices.</q1:Explain>
+          <q1:Supported>Microsoft Edge on Windows 10, Version 1809 or later</q1:Supported>
+          <q1:Category>Windows Components/Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Configure Autofill</q1:Name>
+          <q1:State>Disabled</q1:State>
+          <q1:Explain>This policy setting lets you decide whether employees can use Autofill to automatically fill in form fields while using Microsoft Edge. By default, employees can choose whether to use Autofill.
+
+If you enable this setting, employees can use Autofill to automatically fill in forms while using Microsoft Edge.
+
+If you disable this setting, employees can't use Autofill to automatically fill in forms while using Microsoft Edge.
+
+If you don't configure this setting, employees can choose whether to use Autofill to automatically fill in forms while using Microsoft Edge.</q1:Explain>
+          <q1:Supported>Microsoft Edge on Windows 10 or later</q1:Supported>
+          <q1:Category>Windows Components/Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Configure Do Not Track</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy setting lets you decide whether employees can send Do Not Track requests to websites that ask for tracking info. By default, Do Not Track requests aren't sent, but employees can choose to turn on and send requests.
+
+If you enable this setting, Do Not Tracker requests are always sent to websites asking for tracking info.
+
+If you disable this setting, Do Not Track requests are never sent to websites asking for tracking info.
+
+If you don't configure this setting, employees can choose whether to send Do Not Track requests to websites asking for tracking info.</q1:Explain>
+          <q1:Supported>Microsoft Edge on Windows 10 or later</q1:Supported>
+          <q1:Category>Windows Components/Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Configure Favorites Bar</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>The favorites bar shows your user's links to sites they have added to it. With this policy, you can specify whether to set the favorites bar to always be visible or hidden on any page.
+
+If enabled, favorites bar is always visible on any page, and the favorites bar toggle in Settings sets to On, but disabled preventing your users from making changes. An error message also shows at the top of the Settings pane indicating that your organization manages some settings. The show bar/hide bar option is hidden from the context menu.
+
+If disabled, the favorites bar is hidden, and the favorites bar toggle resets to Off, but disabled preventing your users from making changes. An error message also shows at the top of the Settings pane indicating that your organization manages some settings.
+
+If not configured, the favorites bar is hidden but is visible on the Start and New Tab pages, and the favorites bar toggle in Settings sets to Off but is enabled allowing the user to make changes.</q1:Explain>
+          <q1:Supported>Microsoft Edge on Windows 10, Version 1809 or later</q1:Supported>
+          <q1:Category>Windows Components/Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Keep favorites in sync between Internet Explorer and Microsoft Edge</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This setting lets you decide whether people can sync their favorites between Internet Explorer and Microsoft Edge.
+
+If you enable this setting, employees can sync their favorites between Internet Explorer and Microsoft Edge.
+
+If you disable or don't configure this setting, employees can’t sync their favorites between Internet Explorer and Microsoft Edge.
+      </q1:Explain>
+          <q1:Supported>Microsoft Edge on Windows 10, Version 1703 or later</q1:Supported>
+          <q1:Category>Windows Components/Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Prevent Microsoft Edge from gathering Live Tile information when pinning a site to Start</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy lets you decide whether Microsoft Edge can gather Live Tile metadata from the ieonline.microsoft.com service to provide a better experience while pinning a Live Tile to the Start menu.
+
+If you enable this setting, Microsoft Edge won't gather the Live Tile metadata, providing a minimal experience when a user pins a Live Tile to the Start menu.
+
+If you disable or don't configure this setting, Microsoft Edge gathers the Live Tile metadata, providing a fuller and more complete experience when a user pins a Live Tile to the Start menu.</q1:Explain>
+          <q1:Supported>Microsoft Edge on Windows 10, Version 1703 or later</q1:Supported>
+          <q1:Category>Windows Components/Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Prevent the First Run webpage from opening on Microsoft Edge</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>
+This policy setting lets you decide whether employees see Microsoft's First Run webpage when opening Microsoft Edge for the first time.
+
+If you enable this setting, employees won't see the First Run page when opening Microsoft Edge for the first time.
+
+If you disable or don't configure this setting, employees will see the First Run page when opening Microsoft Edge for the first time.</q1:Explain>
+          <q1:Supported>Microsoft Edge on Windows 10, Version 1703 or later</q1:Supported>
+          <q1:Category>Windows Components/Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Prevent using Localhost IP address for WebRTC</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy setting lets you decide whether an employee's LocalHost IP address shows while making calls using the WebRTC protocol.
+
+If you enable this setting, LocalHost IP addresses are hidden while making calls using the WebRTC protocol.
+
+If you disable or don't configure this setting, LocalHost IP addresses are shown while making calls using the WebRTC protocol.</q1:Explain>
+          <q1:Supported>Microsoft Edge on Windows 10, Version 1511 or later</q1:Supported>
+          <q1:Category>Windows Components/Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Send all intranet sites to Internet Explorer 11</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy setting lets you decide whether your intranet sites should all open using Internet Explorer 11. This setting should only be used if there are known compatibility problems with Microsoft Edge.
+
+If you enable this setting, all intranet sites are automatically opened using Internet Explorer 11.
+
+If you disable or don't configure this setting, all intranet sites are automatically opened using Microsoft Edge.</q1:Explain>
+          <q1:Supported>Microsoft Edge on Windows 10 or later</q1:Supported>
+          <q1:Category>Windows Components/Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Policy>
+          <q1:Name>Configure Windows Defender SmartScreen</q1:Name>
+          <q1:State>Enabled</q1:State>
+          <q1:Explain>This policy setting lets you configure whether to turn on Windows Defender SmartScreen. Windows Defender SmartScreen provides warning messages to help protect your employees from potential phishing scams and malicious software. By default, Windows Defender SmartScreen is turned on.
+
+If you enable this setting, Windows Defender SmartScreen is turned on and employees can't turn it off.
+
+If you disable this setting, Windows Defender SmartScreen is turned off and employees can't turn it on.
+
+If you don't configure this setting, employees can choose whether to use Windows Defender SmartScreen.</q1:Explain>
+          <q1:Supported>Microsoft Edge on Windows 10 or later</q1:Supported>
+          <q1:Category>Windows Components/Windows Defender SmartScreen/Microsoft Edge</q1:Category>
+        </q1:Policy>
+        <q1:Blocked>false</q1:Blocked>
+      </Extension>
+      <Name>Registry</Name>
+    </ExtensionData>
+  </Computer>
+  <User>
+    <VersionDirectory>1</VersionDirectory>
+    <VersionSysvol>1</VersionSysvol>
+    <Enabled>false</Enabled>
+  </User>
+</GPO>

@@ -1,0 +1,9 @@
+[Unit]
+Description=AIDE daily check
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/aide --check
+Nice=19
+IOSchedulingClass=idle

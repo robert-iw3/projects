@@ -1,0 +1,289 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<policyDefinitionResources xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                           revision="1.0" schemaVersion="1.0" xmlns="http://www.microsoft.com/GroupPolicy/PolicyDefinitions">
+  <displayName></displayName>
+  <description></description>
+  <resources>
+    <stringTable>
+      <string id="BLAST_CAT_LABEL">VMware Blast</string>
+      <string id="BLAST_CAT_EXPLAIN">Policies for configuring the Blast protocol.</string>
+      <string id="BLAST_OPTIMIZER_LABEL">Blast Optimizer</string>
+      <string id="BLAST_OPTIMIZER_EXPLAIN">A single configuration for Blast users to choose between defaults that provide a better user experience or resource efficiency.
+Value 5: (the default) use Blast's default settings.
+Value greater than 5: improve user experience by increasing Blast's defaults for encoderGlobalQualityLevel, bandwidth slope, and encoder maxFPS.
+Value less than 5: improve resource efficiency by decreasing Blast's defaults for encoderGlobalQualityLevel, bandwidth slope, and encoder maxFPS.</string>
+      <string id="BLAST_MAX_SESSION_BW_LABEL">Max Session Bandwidth</string>
+      <string id="BLAST_MAX_SESSION_BW_EXPLAIN">Specifies the maximum bandwidth, in kilobits per second, that may be used by the Blast protocol for a remote session. The bandwidth includes all imaging, audio, virtual channel, USB and Blast control traffic.</string>
+      <string id="BLAST_MIN_SESSION_BW_LABEL">Min Session Bandwidth</string>
+      <string id="BLAST_MIN_SESSION_BW_EXPLAIN">Specifies the minimum bandwidth, in kilobits per second, that is reserved for the Blast protocol when remoting a session.</string>
+      <string id="BLAST_MAX_BANDWIDTH_KBPS_PER_MEGAPIXEL_SLOPE_LABEL">Max Session Bandwidth kbit/s Megapixel Slope</string>
+      <string id="BLAST_MAX_BANDWIDTH_KBPS_PER_MEGAPIXEL_SLOPE_EXPLAIN">Specifies the slope of the kbps per megapixel of remote screen's resolution that may be used by the Blast protocol for a remote session. kbit/s = TotalScreenMegaPixels * Slope</string>
+      <string id="BLAST_MAX_FPS_LABEL">Max Frame Rate</string>
+      <string id="BLAST_MAX_FPS_EXPLAIN">Maximum Frame Rate value to manage the average bandwidth consumed per user by limiting the number of screen updates per second.</string>
+      <string id="BLAST_UDP_LABEL">UDP Protocol</string>
+      <string id="BLAST_UDP_EXPLAIN">When this setting is enabled or not configured, Blast session traffic may be carried over UDP if Blast determines that using UDP will improve the user experience. If the setting is disabled, Blast session traffic will be carried over TCP.</string>
+      <string id="BLAST_CURSOR_WARPING_LABEL">Cursor Warping</string>
+      <string id="BLAST_CURSOR_WARPING_EXPLAIN">When this setting is enabled, the cursor warping feature is enabled. If this feature is enabled and the mouse is in absolute mode, the remote agent will detect sudden cursor movements and reflect them to the client by moving the local cursor, otherwise the sudden cursor movements in the remote agent will be ignored by the client. The cursor warping feature is disabled by default.</string>
+      <!--
+        NOTE FOR TRANSLATORS: the collection of BLAST_DSCP_..._EXPLAIN strings that follow
+	BLAST_DSP_ACTIVATE_LABEL all cite this "DSCP Marking" string in their second paragraph.
+	Whatever translation you apply to this string needs to be applied to those _EXPLAIN
+	strings too.
+      -->
+      <string id="BLAST_DSCP_ACTIVATE_LABEL">DSCP Marking</string>
+      <string id="BLAST_DSCP_ACTIVATE_EXPLAIN">When enabled or not configured, allows Differentiated Services Code Point values to be specified in network traffic sent by the Blast Agent, Client and Secure Gateway.  When disabled, no DSCP marking is performed.</string>
+      <string id="BLAST_DSCP_AGENT_OUT_TCP4_LABEL">DSCP from Agent, TCP/IPv4</string>
+      <string id="BLAST_DSCP_AGENT_OUT_TCP4_EXPLAIN">The Differentiated Services Code Point value to be placed in network traffic sent by the Blast Agent through TCP over IPv4.
+
+This setting is effective only if the DSCP Marking setting allows it.</string>
+      <string id="BLAST_DSCP_AGENT_OUT_UDP4_LABEL">DSCP from Agent, UDP/IPv4</string>
+      <string id="BLAST_DSCP_AGENT_OUT_UDP4_EXPLAIN">The Differentiated Services Code Point value to be placed in network traffic sent by the Blast Agent through UDP over IPv4.
+
+This setting is effective only if the DSCP Marking setting allows it.</string>
+      <string id="BLAST_DSCP_AGENT_OUT_TCP6_LABEL">DSCP from Agent, TCP/IPv6</string>
+      <string id="BLAST_DSCP_AGENT_OUT_TCP6_EXPLAIN">The Differentiated Services Code Point value to be placed in network traffic sent by the Blast Agent through TCP over IPv6.
+
+This setting is effective only if the DSCP Marking setting allows it.</string>
+      <string id="BLAST_DSCP_AGENT_OUT_UDP6_LABEL">DSCP from Agent, UDP/IPv6</string>
+      <string id="BLAST_DSCP_AGENT_OUT_UDP6_EXPLAIN">The Differentiated Services Code Point value to be placed in network traffic sent by the Blast Agent through UDP over IPv6.
+
+This setting is effective only if the DSCP Marking setting allows it.</string>
+      <string id="BLAST_DSCP_CLIENT_OUT_TCP4_LABEL">DSCP from Client, TCP/IPv4</string>
+      <string id="BLAST_DSCP_CLIENT_OUT_TCP4_EXPLAIN">The Differentiated Services Code Point value to be placed in network traffic sent by the Blast Client through TCP over IPv4.
+
+This setting is effective only if the DSCP Marking setting allows it.</string>
+      <string id="BLAST_DSCP_CLIENT_OUT_UDP4_LABEL">DSCP from Client, UDP/IPv4</string>
+      <string id="BLAST_DSCP_CLIENT_OUT_UDP4_EXPLAIN">The Differentiated Services Code Point value to be placed in network traffic sent by the Blast Client through UDP over IPv4.
+
+This setting is effective only if the DSCP Marking setting allows it.</string>
+      <string id="BLAST_DSCP_CLIENT_OUT_TCP6_LABEL">DSCP from Client, TCP/IPv6</string>
+      <string id="BLAST_DSCP_CLIENT_OUT_TCP6_EXPLAIN">The Differentiated Services Code Point value to be placed in network traffic sent by the Blast Client through TCP over IPv6.
+
+This setting is effective only if the DSCP Marking setting allows it.</string>
+      <string id="BLAST_DSCP_CLIENT_OUT_UDP6_LABEL">DSCP from Client, UDP/IPv6</string>
+      <string id="BLAST_DSCP_CLIENT_OUT_UDP6_EXPLAIN">The Differentiated Services Code Point value to be placed in network traffic sent by the Blast Client through UDP over IPv6.
+
+This setting is effective only if the DSCP Marking setting allows it.</string>
+      <string id="BLAST_DSCP_BSG_DOWN_TCP4_LABEL">DSCP from BSG to Client, TCP/IPv4</string>
+      <string id="BLAST_DSCP_BSG_DOWN_TCP4_EXPLAIN">The Differentiated Services Code Point value to be placed in network traffic sent by the Blast Secure Gateway to the Blast Client through TCP over IPv4.
+
+This setting is effective only if the DSCP Marking setting allows it.</string>
+      <string id="BLAST_DSCP_BSG_DOWN_UDP4_LABEL">DSCP from BSG to Client, UDP/IPv4</string>
+      <string id="BLAST_DSCP_BSG_DOWN_UDP4_EXPLAIN">The Differentiated Services Code Point value to be placed in network traffic sent by the Blast Secure Gateway to the Blast Client through UDP over IPv4.
+
+This setting is effective only if the DSCP Marking setting allows it.</string>
+      <string id="BLAST_DSCP_BSG_DOWN_TCP6_LABEL">DSCP from BSG to Client, TCP/IPv6</string>
+      <string id="BLAST_DSCP_BSG_DOWN_TCP6_EXPLAIN">The Differentiated Services Code Point value to be placed in network traffic sent by the Blast Secure Gateway to the Blast Client through TCP over IPv6.
+
+This setting is effective only if the DSCP Marking setting allows it.</string>
+      <string id="BLAST_DSCP_BSG_DOWN_UDP6_LABEL">DSCP from BSG to Client, UDP/IPv6</string>
+      <string id="BLAST_DSCP_BSG_DOWN_UDP6_EXPLAIN">The Differentiated Services Code Point value to be placed in network traffic sent by the Blast Secure Gateway to the Blast Client through UDP over IPv6.
+
+This setting is effective only if the DSCP Marking setting allows it.</string>
+      <string id="BLAST_DSCP_BSG_UP_TCP4_LABEL">DSCP from BSG to Agent, TCP/IPv4</string>
+      <string id="BLAST_DSCP_BSG_UP_TCP4_EXPLAIN">The Differentiated Services Code Point value to be placed in network traffic sent by the Blast Secure Gateway to the Blast Agent through TCP over IPv4.
+
+This setting is effective only if the DSCP Marking setting allows it.</string>
+      <string id="BLAST_DSCP_BSG_UP_UDP4_LABEL">DSCP from BSG to Agent, UDP/IPv4</string>
+      <string id="BLAST_DSCP_BSG_UP_UDP4_EXPLAIN">The Differentiated Services Code Point value to be placed in network traffic sent by the Blast Secure Gateway to the Blast Agent through UDP over IPv4.
+
+This setting is effective only if the DSCP Marking setting allows it.</string>
+      <string id="BLAST_DSCP_BSG_UP_TCP6_LABEL">DSCP from BSG to Agent, TCP/IPv6</string>
+      <string id="BLAST_DSCP_BSG_UP_TCP6_EXPLAIN">The Differentiated Services Code Point value to be placed in network traffic sent by the Blast Secure Gateway to the Blast Agent through TCP over IPv6.
+
+This setting is effective only if the DSCP Marking setting allows it.</string>
+      <string id="BLAST_DSCP_BSG_UP_UDP6_LABEL">DSCP from BSG to Agent, UDP/IPv6</string>
+      <string id="BLAST_DSCP_BSG_UP_UDP6_EXPLAIN">The Differentiated Services Code Point value to be placed in network traffic sent by the Blast Secure Gateway to the Blast Agent through UDP over IPv6.
+
+This setting is effective only if the DSCP Marking setting allows it.</string>
+      <string id="BLAST_ENCODER_IMAGE_CACHE_SIZE_LABEL">Encoder Image Cache Size (KB)</string>
+      <string id="BLAST_ENCODER_IMAGE_CACHE_SIZE_EXPLAIN">The maximum size of the encoder image cache, in kilobytes.
+
+The final size of the cache will be chosen based on the minimum of this configuration and the associated configuration of the client, and cannot exceed half of the available RAM on the Horizon Agent.</string>
+      <string id="BLAST_ENCODER_CPU_CONTROLLER_LABEL">Encoder CPU Controller</string>
+      <string id="BLAST_ENCODER_CPU_CONTROLLER_EXPLAIN">If you enable or do not configure this policy setting, maximum limit on encoder frames per second is dynamically scaled down or up based on the recent average system CPU usage. How far down this limit could be lowered to for reducing encoder CPU usage is controlled by the Encoder CPU Controller Minimum Frame Rate setting.
+
+If you disable this policy setting, maximum limit on encoder frames per second will not be scaled down from the Maximum Frame Rate setting due to high system CPU usage.</string>
+      <string id="BLAST_ENCODER_CPU_CONTROLLER_MIN_FPS_LABEL">Encoder CPU Controller Minimum Frame Rate</string>
+      <string id="BLAST_ENCODER_CPU_CONTROLLER_MIN_FPS_EXPLAIN">The minimum frame rate that Encoder CPU Controller is allowed to lower the maximum limit on encoder frames per second to for reducing encoder CPU usage during high system CPU usage. It can not exceed the Maximum Frame Rate setting.</string>
+      <string id="BLAST_H264_ENCODE_LABEL">H.264</string>
+      <string id="BLAST_H264_ENCODE_EXPLAIN">If you enable or do not configure this policy setting, H.264 encoding will be used for remoting the desktop. If you disable this policy setting, JPEG/PNG will be used for encoding.</string>
+      <string id="BLAST_HEVC_ENCODE_LABEL">HEVC</string>
+      <string id="BLAST_HEVC_ENCODE_EXPLAIN">If you enable or do not configure this policy setting, HEVC encoding will be allowed for remoting the desktop. If you disable this policy setting, H.264 or JPEG/PNG will be used for encoding.</string>
+      <string id="BLAST_PNG_ENCODE_LABEL">PNG</string>
+      <string id="BLAST_PNG_ENCODE_EXPLAIN">If you enable or do not configure this policy setting, PNG encoding will be available for remote sessions. If you disable this policy setting, only JPEG will be used for encoding in JPEG/PNG mode. This policy does not apply when the H.264 encoder is active.</string>
+      <string id="BLAST_SCREEN_BLANK_LABEL">Screen Blanking</string>
+      <string id="BLAST_SCREEN_BLANK_EXPLAIN">If you enable or do not configure this policy setting, the desktop virtual machine's console will show a blank screen when there is an active session to the desktop. If you disable this policy setting, the virtual machine's console will show the desktop that the user sees.</string>
+      <string id="BLAST_COOKIE_CLEANUP_LABEL">Cookie Cleanup Interval</string>
+      <string id="BLAST_COOKIE_CLEANUP_EXPLAIN">The interval controls how often inactive sessions will be cleaned up. This is done by deleting the cookie associated with the session.</string>
+      <string id="BLAST_COOKIE_CLEANUP_INTERVAL_LABEL">Interval (ms)</string>
+      <string id="BLAST_ENCODER_GLOBAL_QUALITY_LABEL">Blast Encoders Global Quality</string>
+      <string id="BLAST_ENCODER_GLOBAL_QUALITY_EXPLAIN">This setting controls the remoted display image quality level across all Blast encoders. The level selected will be mapped across all the codecs, ie this setting will update the maximum QP value for H.264, maximum QP value for Blast codec and the low JPEG quality in the Adaptive encoder according to the value selected.
+The Encoder Global Quality Level takes values in the range [1-5]. Lower value means lower quality and higher value means higher quality. The higher the quality level the more bandwidth used and potentially higher latency when regions of the screen are changing often, when scrolling on the screen for example.
+The default value is 1 (balanced). The quality mapping can be overridden with respective encoders QP values.</string>
+      <string id="BLAST_ENCODER_GLOBAL_QUALITY_LEVEL">Blast Encoder Global Quality Level</string>
+      <string id="BLAST_ENCODER_INTEL_H264_LABEL">Intel HW Encoder H264</string>
+      <string id="BLAST_ENCODER_INTEL_H264_EXPLAIN">If you enable or do not configure this policy setting, Intel HW encoding using H.264 compression will be available for remote sessions. If you disable this policy setting, Intel HW Encoder for H.264 will be unavailable, and would default to the next possible codec</string>
+      <string id="BLAST_ENCODER_INTEL_HEVC_LABEL">Intel HW Encoder HEVC</string>
+      <string id="BLAST_ENCODER_INTEL_HEVC_EXPLAIN">If you enable or do not configure this policy setting, Intel HW encoding using HEVC compression will be available for remote sessions. If you disable this policy setting, Intel HW Encoder for HEVC will be unavailable, and would default to the next possible codec</string>
+      <string id="BLAST_DISPLAY_QUALITY_LABEL">Adaptive Encoder Image Quality</string>
+      <string id="BLAST_DISPLAY_QUALITY_EXPLAIN">These settings control the image quality of the remoted display when using the Adaptive Encoder (JPEG/PNG).
+There are two quality profiles, low and high.  The low profile is used when areas of the screen are changing often, for example when scrolling.  The high quality profile is used to refine regions of the screen that change less, resulting in a better final image.
+The higher the quality the more bandwidth used and potentially higher latency when regions of the screen are changing often, when scrolling on the screen for example.</string>
+      <string id="BLAST_DISPLAY_QUALITY_JPEG_QUAL_LOW">Low JPEG Quality</string>
+      <string id="BLAST_DISPLAY_QUALITY_JPEG_QUAL_MID">Mid JPEG Quality</string>
+      <string id="BLAST_DISPLAY_QUALITY_JPEG_QUAL_HIGH">High JPEG Quality</string>
+      <string id="BLAST_CODEC_QUALITY_LABEL">Blast Codec Quality</string>
+      <string id="BLAST_CODEC_QUALITY_EXPLAIN">These settings control the image quality of the remoted display when using Blast Codec compression. The Quantization Parameter (QP) controls how much the resulting image is quantized, i.e. lossily compressed:
+- the minimum QP sets the lower bound for quantization, i.e. the best quality.
+- the maximum QP sets the upper bound for quantization, i.e. the lowest quality.
+These quantization values occupy the range [1, 8] and map roughly to a JPEG quality value in the range of [20, 88]. This quantization is applied only to non-text regions, and so has no bearing on text compression.
+A value of zero for either the maximum or minimum QP will cause the config to be overridden by the Low and High JPEG quality configs, respectively. This is the default behavior.</string>
+      <string id="BLAST_CODEC_QP_MAX">Blast Codec Maximum QP</string>
+      <string id="BLAST_CODEC_QP_MIN">Blast Codec Minimum QP</string>
+      <string id="BLAST_H264_QUALITY_LABEL">H.264 Quality</string>
+      <string id="BLAST_H264_QUALITY_EXPLAIN">These settings control the image quality of the remoted display when using H.264 compression. The Quantization Parameter (QP) controls how much the resulting image is quantized, i.e. lossily compressed:
+- the minimum QP sets the lower bound for quantization, i.e. the best quality.
+- the maximum QP sets the upper bound for quantization, i.e. the lowest quality.
+We advise keeping these values within +/- 5 of the defaults, as more significant changes can have drastic effects.</string>
+      <string id="BLAST_H264_QUALITY_MAX_QP">H.264 Maximum QP</string>
+      <string id="BLAST_H264_QUALITY_MIN_QP">H.264 Minimum QP</string>
+      <string id="BLAST_H264_COLOR_ACCURACY_LABEL">H.264 High Color Accuracy</string>
+      <string id="BLAST_H264_COLOR_ACCURACY_EXPLAIN">If you enable this policy setting, increased color accuracy will be requested when using H.264 encoding, by using the YUV 4:4:4 colorspace instead of 4:2:0.
+High Color Accuracy refers to the fact that chroma will not be subsampled when converting from RGB to YUV.
+This may result in degraded performance at very high resolutions or with multiple monitors.</string>
+
+      <string id="BLAST_HEVC_COLOR_ACCURACY_LABEL">HEVC High Color Accuracy</string>
+      <string id="BLAST_HEVC_COLOR_ACCURACY_EXPLAIN">If you enable this policy setting, increased color accuracy will be requested when using HEVC encoding, by using the YUV 4:4:4 colorspace instead of 4:2:0.
+High Color Accuracy refers to the fact that chroma will not be subsampled when converting from RGB to YUV.
+Client-side hardware acceleration of HEVC 4:4:4 is required for this policy to take effect.</string>
+
+      <string id="BLAST_HIGHER_FIDELITY_COLOR_LABEL">H.264, HEVC Higher Fidelity Color</string>
+      <string id="BLAST_HIGHER_FIDELITY_COLOR_EXPLAIN">If you enable this policy setting, full luma/chroma range and optimized conversion matrixes will be requested when using the YUV 4:4:4 colorspace with HEVC or H.264.
+Full range means that the input RGB range is not reduced before conversion.
+An HDTV matrix will be used for SDR content, and UHDTV matrix used for HDR content.
+If this policy is not configured, it will default to being enabled.
+Client support for this feature is required for this policy to take effect.</string>
+
+      <string id="BLAST_HTTP_LABEL">HTTP Service</string>
+      <string id="BLAST_HTTP_EXPLAIN">These settings control the Blast HTTP service. The port number being used should match the firewall setup</string>
+      <string id="BLAST_HTTP_PORTS_SECURE_LABEL">Secured (HTTPS) port</string>
+      <string id="BLAST_AUDIO_LABEL">Audio playback</string>
+      <string id="BLAST_AUDIO_EXPLAIN">This setting controls whether audio playback should be allowed for the remote desktop. Audio playback is enabled by default.</string>
+      <string id="KEYBOARD_LOCALE_SYNC_LABEL">Keyboard locale synchronization</string>
+      <string id="KEYBOARD_LOCALE_SYNC_EXPLAIN">Determines whether the keyboard locale list and the default keyboard locale for the user in the session is synchronized with the data of the client endpoint. When this setting is enabled, synchronization is allowed. When this setting is disabled or not configured, synchronization is disallowed.
+
+This setting applies to the agent only.</string>
+      <string id="BLAST_SUPPORTEDON_EMPTY"></string>
+    </stringTable>
+    <presentationTable>
+      <presentation id="BLAST_OPTIMIZER_LABEL">
+        <decimalTextBox refId="BLAST_OPTIMIZER_LABEL" defaultValue="5">Blast Optimizer</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_MAX_SESSION_BW_LABEL">
+        <decimalTextBox refId="BLAST_MAX_SESSION_BW_LABEL" defaultValue="2147483647">Max Session Bandwidth</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_MIN_SESSION_BW_LABEL">
+        <decimalTextBox refId="BLAST_MIN_SESSION_BW_LABEL" defaultValue="256">Min Session Bandwidth</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_MAX_BANDWIDTH_KBPS_PER_MEGAPIXEL_SLOPE_LABEL">
+        <decimalTextBox refId="BLAST_MAX_BANDWIDTH_KBPS_PER_MEGAPIXEL_SLOPE_LABEL" defaultValue="6200">Max Session Bandwidth kbit/s Megapixel Slope</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_MAX_FPS_LABEL">
+        <decimalTextBox refId="BLAST_MAX_FPS_LABEL" defaultValue="30">Max Frame Rate</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_UDP_LABEL" />
+      <presentation id="BLAST_CURSOR_WARPING_LABEL" />
+      <presentation id="BLAST_DSCP_ACTIVATE_LABEL" />
+      <presentation id="BLAST_DSCP_AGENT_OUT_TCP4_LABEL">
+        <decimalTextBox refId="BLAST_DSCP_AGENT_OUT_TCP4_LABEL" defaultValue="">DSCP Value</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_DSCP_AGENT_OUT_UDP4_LABEL">
+        <decimalTextBox refId="BLAST_DSCP_AGENT_OUT_UDP4_LABEL" defaultValue="">DSCP Value</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_DSCP_AGENT_OUT_TCP6_LABEL">
+        <decimalTextBox refId="BLAST_DSCP_AGENT_OUT_TCP6_LABEL" defaultValue="">DSCP Value</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_DSCP_AGENT_OUT_UDP6_LABEL">
+        <decimalTextBox refId="BLAST_DSCP_AGENT_OUT_UDP6_LABEL" defaultValue="">DSCP Value</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_DSCP_CLIENT_OUT_TCP4_LABEL">
+        <decimalTextBox refId="BLAST_DSCP_CLIENT_OUT_TCP4_LABEL" defaultValue="">DSCP Value</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_DSCP_CLIENT_OUT_UDP4_LABEL">
+        <decimalTextBox refId="BLAST_DSCP_CLIENT_OUT_UDP4_LABEL" defaultValue="">DSCP Value</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_DSCP_CLIENT_OUT_TCP6_LABEL">
+        <decimalTextBox refId="BLAST_DSCP_CLIENT_OUT_TCP6_LABEL" defaultValue="">DSCP Value</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_DSCP_CLIENT_OUT_UDP6_LABEL">
+        <decimalTextBox refId="BLAST_DSCP_CLIENT_OUT_UDP6_LABEL" defaultValue="">DSCP Value</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_DSCP_BSG_DOWN_TCP4_LABEL">
+        <decimalTextBox refId="BLAST_DSCP_BSG_DOWN_TCP4_LABEL" defaultValue="">DSCP Value</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_DSCP_BSG_DOWN_UDP4_LABEL">
+        <decimalTextBox refId="BLAST_DSCP_BSG_DOWN_UDP4_LABEL" defaultValue="">DSCP Value</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_DSCP_BSG_DOWN_TCP6_LABEL">
+        <decimalTextBox refId="BLAST_DSCP_BSG_DOWN_TCP6_LABEL" defaultValue="">DSCP Value</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_DSCP_BSG_DOWN_UDP6_LABEL">
+        <decimalTextBox refId="BLAST_DSCP_BSG_DOWN_UDP6_LABEL" defaultValue="">DSCP Value</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_DSCP_BSG_UP_TCP4_LABEL">
+        <decimalTextBox refId="BLAST_DSCP_BSG_UP_TCP4_LABEL" defaultValue="">DSCP Value</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_DSCP_BSG_UP_UDP4_LABEL">
+        <decimalTextBox refId="BLAST_DSCP_BSG_UP_UDP4_LABEL" defaultValue="">DSCP Value</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_DSCP_BSG_UP_TCP6_LABEL">
+        <decimalTextBox refId="BLAST_DSCP_BSG_UP_TCP6_LABEL" defaultValue="">DSCP Value</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_DSCP_BSG_UP_UDP6_LABEL">
+        <decimalTextBox refId="BLAST_DSCP_BSG_UP_UDP6_LABEL" defaultValue="">DSCP Value</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_ENCODER_IMAGE_CACHE_SIZE_LABEL">
+        <decimalTextBox refId="BLAST_ENCODER_IMAGE_CACHE_SIZE_LABEL" defaultValue="256000">Encoder Image Cache Size (KB)</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_ENCODER_CPU_CONTROLLER_LABEL" />
+      <presentation id="BLAST_ENCODER_CPU_CONTROLLER_MIN_FPS_LABEL">
+        <decimalTextBox refId="BLAST_ENCODER_CPU_CONTROLLER_MIN_FPS_LABEL" defaultValue="5">Encoder CPU Controller Minimum Frame Rate</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_H264_ENCODE_LABEL" />
+      <presentation id="BLAST_HEVC_ENCODE_LABEL" />
+      <presentation id="BLAST_PNG_ENCODE_LABEL" />
+      <presentation id="BLAST_SCREEN_BLANK_LABEL" />
+      <presentation id="BLAST_COOKIE_CLEANUP_LABEL">
+        <decimalTextBox refId="BLAST_COOKIE_CLEANUP_INTERVAL_LABEL" defaultValue="1000">Interval (ms)</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_ENCODER_GLOBAL_QUALITY_LABEL">
+        <decimalTextBox refId="BLAST_ENCODER_GLOBAL_QUALITY_LEVEL" defaultValue="1">Encoder Global Quality Level</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_DISPLAY_QUALITY_LABEL">
+        <decimalTextBox refId="BLAST_DISPLAY_QUALITY_JPEG_QUAL_LOW" defaultValue="25">Low JPEG Quality</decimalTextBox>
+        <decimalTextBox refId="BLAST_DISPLAY_QUALITY_JPEG_QUAL_MID" defaultValue="35">Mid JPEG Quality</decimalTextBox>
+        <decimalTextBox refId="BLAST_DISPLAY_QUALITY_JPEG_QUAL_HIGH" defaultValue="90">High JPEG Quality</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_ENCODER_INTEL_H264_LABEL" />
+      <presentation id="BLAST_ENCODER_INTEL_HEVC_LABEL" />
+      <presentation id="BLAST_CODEC_QUALITY_LABEL">
+        <decimalTextBox refId="BLAST_CODEC_QP_MAX" defaultValue="0">Blast Codec Maximum QP</decimalTextBox>
+        <decimalTextBox refId="BLAST_CODEC_QP_MIN" defaultValue="0">Blast Codec Minimum QP</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_H264_QUALITY_LABEL">
+        <decimalTextBox refId="BLAST_H264_QUALITY_MAX_QP" defaultValue="36">H.264 Maximum QP</decimalTextBox>
+        <decimalTextBox refId="BLAST_H264_QUALITY_MIN_QP" defaultValue="10">H.264 Minimum QP</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_H264_COLOR_ACCURACY_LABEL" />
+      <presentation id="BLAST_HEVC_COLOR_ACCURACY_LABEL" />
+      <presentation id="BLAST_HIGHER_FIDELITY_COLOR_LABEL" />
+      <presentation id="BLAST_HTTP_LABEL">
+        <decimalTextBox refId="BLAST_HTTP_PORTS_SECURE_LABEL" defaultValue="22443">Secured (HTTPS) port</decimalTextBox>
+      </presentation>
+      <presentation id="BLAST_AUDIO_LABEL" />
+      <presentation id="KEYBOARD_LOCALE_SYNC_LABEL" />
+      <presentation id="SERVER_HTMLACCESS_PRINT_STATE" />
+    </presentationTable>
+  </resources>
+</policyDefinitionResources>

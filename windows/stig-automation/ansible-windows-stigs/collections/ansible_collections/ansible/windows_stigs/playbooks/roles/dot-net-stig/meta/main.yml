@@ -1,0 +1,8 @@
+---
+galaxy_info:
+  author: simsec
+  description: Dot Net Framework 4 STIG Role
+  company: z
+  license: license GPLv3
+  min_ansible_version: 1.2
+dependencies: []

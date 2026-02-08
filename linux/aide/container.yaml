@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aide
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aide
+  template:
+    metadata:
+      labels:
+        app: aide
+    spec:
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
+      containers:
+        - name: aide
+          image: aide:latest
+          command: ["/bin/bash", "/configure_aide.sh"]
+          securityContext:
+            capabilities:
+              add: ["SYS_ADMIN"]
+          volumeMounts:
+            - name: etc-aide
+              mountPath: /etc/aide
+            - name: var-log
+              mountPath: /var/log
+            - name: var-backups
+              mountPath: /var/backups
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "500m"
+            limits:
+              memory: "512Mi"
+              cpu: "1"
+      volumes:
+        - name: etc-aide
+          emptyDir: {}
+        - name: var-log
+          emptyDir: {}
+        - name: var-backups
+          emptyDir: {}

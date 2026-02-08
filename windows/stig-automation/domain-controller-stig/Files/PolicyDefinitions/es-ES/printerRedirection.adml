@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<policyDefinitionResources revision="1.0" schemaVersion="1.0">
+  <displayName></displayName>
+  <description></description>
+  <resources>
+    <stringTable>
+      <string id="print_redir">VMware Integrated Printing</string>
+      <string id="SUPPORTED_NotSpecified">Sin especificar</string>
+      <string id="persistence_setting">Deshabilitar la persistencia de la propiedad de impresora</string>
+      <string id="persistence_setting_detail">Este ajuste determina si se conservará o no la configuración de la propiedad de impresora.
+
+Si se habilita, no se conservará el cambio de propiedad de la impresora en el lado del agente después de que el usuario se desconecte o cierre la sesión, por lo que el cambio no será persistente.
+Por ejemplo, si un usuario cambia el tamaño de papel de la impresora de &quot;Carta&quot; a &quot;A4&quot; durante una sesión, la próxima vez que se conecte, el cambio a &quot;A4&quot; no se conservará y el tamaño del papel volverá a ser &quot;Carta&quot;.
+
+Si no se configura o se deshabilita, se conservará el cambio de propiedad de la impresora en el lado del agente después de que el usuario se desconecte o cierre la sesión, por lo que el cambio será persistente.
+Por ejemplo, si un usuario cambia el tamaño de papel de la impresora de &quot;Carta&quot; a &quot;A4&quot; durante una sesión, la próxima vez que se conecte, el cambio se conservará y el tamaño del papel seguirá siendo &quot;Carta&quot;.
+
+Este GPO no está configurado de forma predeterminada.
+</string>
+      <string id="nondesktopclient_setting">Deshabilitar el redireccionamiento de impresoras para cliente que no sea escritorio</string>
+      <string id="nondesktopclient_setting_detail">Este ajuste determina si se admite VMware Integrated Printing para el endpoints de cliente que no son escritorio.
+
+Si está habilitada, no se admitirá VMware Integrated Printing para endpoints de cliente que no son escritorio.
+Si no está configurada o está deshabilitada, se admitirá VMware Integrated Printing para endpoints de cliente que no son escritorio.
+
+Este ajuste no está configurado de forma predeterminada.
+</string>
+      <string id="lbp_setting">Deshabilitar LBP</string>
+      <string id="lbp_setting_detail">Este ajuste de directiva le permite administrar si desea usar la impresión basada en ubicación (LBP).
+
+Si habilita este ajuste de directiva, no se puede usar la impresión basada en ubicación.
+
+Si deshabilita o no configura este ajuste de directiva, se puede usar la impresión basada en ubicación.
+
+Este ajuste no está configurado de forma predeterminada.
+</string>
+      <string id="lp_setting">No redireccionar impresoras de cliente</string>
+      <string id="lp_setting_detail">Este ajuste de directiva permite administrar si se redireccionan o no las impresoras de los clientes.
+
+Si habilita este ajuste de directiva, no se redireccionará ninguna de las impresoras cliente.
+Si deshabilita o no configura este ajuste de directiva, se redireccionarán todas las impresoras cliente.
+
+Este ajuste no está configurado de forma predeterminada.
+</string>
+      <string id="DefaultPrinter">No cambiar la impresora predeterminada</string>
+      <string id="DefaultPrinter_detail">Este ajuste determina si VMware Integrated Printing cambia la impresora predeterminada en las sesiones remotas.
+
+De forma predeterminada, si alguna impresora basada en la ubicación está configurada como impresora predeterminada, dicha impresora se establecerá como predeterminada en las sesiones remotas. Si ninguna de las impresoras basada en ubicación está configurada como predeterminada, la impresora cliente predeterminada se establecerá como la impresora predeterminada en las sesiones remotas y sobrescribirá cualquier impresora seleccionada en la imagen de la máquina virtual. Puede usar este ajuste para invalidar este comportamiento.
+
+Si habilita este ajuste, VMware Integrated Printing no cambiará la impresora predeterminada en sesiones remotas.
+Si deshabilita o no configura esta opción, VMware Integrated Printing cambiará la impresora predeterminada en sesiones remotas. Este es el comportamiento predeterminado.
+
+Este ajuste no está configurado de forma predeterminada.
+
+</string>
+      <string id="DriverMapping">Asignación del controlador</string>
+      <string id="DriverMapping_detail">Este ajuste se aplica a clientes Windows/Linux/Mac. Permite al usuario crear automáticamente una impresora virtual con un controlador diferente al del cliente.
+
+Puede agregar una asignación de controlador, y también editar o eliminar una asignación existente. Al agregar una asignación, introduzca el nombre del controlador de la impresora cliente en la columna &quot;Nombre de valor&quot; y, a continuación, introduzca los nombres de los controladores del servidor que se asignarán en la columna &quot;Valor&quot;.
+
+Puede especificar uno o varios nombres de controlador de servidor en la columna &quot;Valor&quot;. Cuando especifique varios nombres de controladores de servidor, sepárelos con punto y coma (por ejemplo: &quot;DriverA; DriverB; DriverC; DriverD&quot;).
+
+Todos los controladores de servidor especificados se probarán uno por uno hasta que la impresora redireccionada se cree correctamente. Si Horizon no puede crear una impresora redireccionada con ningún controlador de servidor especificado, se utilizará el &quot;Controlador de impresión de EMF de VMware&quot; para crear una impresora redireccionada para clientes Windows y el &quot;Controlador de impresión PostScript de VMware&quot; para crear una impresora redireccionada para clientes Linux/Mac.
+      </string>
+      <string id="MaxTxRate">Limitar la velocidad de transmisión (Kbps)</string>
+      <string id="MaxTxRate_detail">Este ajuste limita la velocidad de transmisión de todos los trabajos de impresión al número especificado en Kbps.
+La velocidad de transmisión mínima permitida es 1600 Kbps. Cuando no se configura o se deshabilita, la velocidad de transmisión no estará limitada.
+La velocidad de transmisión máxima permitida es 32 000 Kbps. Si se establece un valor mayor que ese, la velocidad de transmisión no estará limitada.
+
+</string>
+      <string id="printer_creation_setting">Selección del controlador de impresora</string>
+      <string id="printer_creation_setting_detail">Selección del controlador de impresora.
+
+Opciones para crear impresoras:
+Opciones sobre el controlador de impresora que se usa, el controlador de impresión universal (UPD) o el controlador de impresión nativo (NPD).
+
+Si elige la primera opción, &quot;Usar siempre NPD&quot;, el controlador de impresión nativo se usará siempre para la impresora redireccionada.
+
+Si elige la segunda opción, &quot;Usar siempre UPD&quot;, el controlador de impresión universal se usará siempre para la impresora redireccionada.
+
+Si elige la tercera opción, &quot;Usar primero NPD, luego UPD&quot;, el controlador de impresión nativo se usará primero. Si este no existe, se usará el controlador de impresión universal.
+
+Si elige la cuarta opción, &quot;Usar primero UPD, luego NPD&quot;, el controlador de impresión universal se usará primero. Si este no existe, se usará el controlador de impresión nativo.
+
+Controlador de impresión universal preferido:
+Opciones sobre el controlador de impresión universal preferido.
+
+Si elige la primera opción &quot;Controlador de EMF universal de VMware&quot;, se utilizará el controlador de EMF.
+
+Si elige la segunda opción &quot;Controlador de XPS universal de VMware&quot;, se utilizará el controlador de XPS.
+</string>
+      <string id="printer_creation_setting_npd">Usar siempre NPD</string>
+      <string id="printer_creation_setting_upd">Usar siempre UPD</string>
+      <string id="printer_creation_setting_npd_upd">Usar primero NPD, luego UPD</string>
+      <string id="printer_creation_setting_upd_npd">Usar primero UPD, luego NPD</string>
+      <string id="preferredEMF">Controlador de EMF universal de VMware</string>
+      <string id="preferredXPS">Controlador de XPS universal de VMware</string>
+      <string id="printer_filter">Especificar un filtro en el redireccionamiento de impresoras cliente</string>
+      <string id="printer_filter_desc">Una regla que filtra todas las impresoras cliente que coincidan en el redireccionamiento de impresora. Los atributos admitidos son: nombres de impresoras, nombres de controladores de impresoras y nombres de proveedores de controladores. Los operadores admitidos son: AND, OR y NOT. Como patrones de búsqueda, se admiten expresiones regulares que usen ECMAScript (una versión de JavaScript).
+De manera predeterminada, la regla está vacía, lo que implica que las impresoras cliente se redireccionarán.
+
+Ejemplo:
+(DriverName= &quot;DrName1&quot; OR VendorName=&quot;VeName1&quot;) AND NOT PrinterName= &quot;PrNa.?e&quot;</string>
+      <string id="print_preview_setting">Configuración de vista previa de impresión</string>
+      <string id="print_preview_setting_detail">Existen dos ajustes para la vista previa de impresión.
+
+El primer ajuste determina si el destino de impresión está habilitado o no. De forma predeterminada no está configurada.
+
+Cuando este ajuste está activado, el usuario final no puede elegir el destino de impresión.
+
+Cuando este ajuste está desactivado o no está configurado, el usuario final puede elegir el destino de impresión, imprimir la vista previa o imprimir directamente.
+
+
+El segundo ajuste determina la opción predeterminada de destino de impresión. No está configurada de forma predeterminada, lo que significa que la opción es imprimir directamente.
+Cuando la opción &quot;imprimir directamente&quot; está seleccionada, la opción de impresión predeterminada en la interfaz de usuario de impresión es &quot;imprimir directamente&quot;.
+
+Cuando se selecciona la opción &quot;Vista previa de impresión&quot;, la opción predeterminada de impresión de la interfaz de usuario de impresión es &quot;imprimir vista previa&quot;.
+</string>
+      <string id="print_directly">Imprimir directamente</string>
+      <string id="print_to_preview">Vista previa de impresión</string>
+      <string id="printer_name_schema">Esquema de nombre de la impresora</string>
+      <string id="printer_name_schema_desc">Este ajuste determina la convención de nomenclatura de la impresora cuando se utiliza VMware Integrated Printing.
+Cuando esta opción está habilitada, puede cambiar el esquema de nombre de la impresora para los agentes de VDI y RDSH.
+El esquema de nombre de impresora válido debe tener el formato &quot;%P*&quot;. La marca de asterisco representa la parte configurable. Las siguientes variables se pueden utilizar en la parte configurable.
+%S: identificador de sesión
+%C: nombre de la máquina cliente
+
+Si esta opción está habilitada, pero el esquema de nombre de impresora está vacío o no es válido, se utilizará el esquema de nombre de impresora predeterminado.
+P. ej.: %P%S, %P2%S (solo números entre %P y %S) o &quot;/&quot; incluidos en el esquema, ninguno es válido
+
+Cuando esta opción no está configurada o está deshabilitada, los agentes de VDI usarán &quot;%P (vdi)&quot; como esquema de nombre de impresora y los agentes RDSH usarán &quot;%P (v%S)&quot;.
+
+Este ajuste no está configurado de forma predeterminada.
+</string>
+
+      <string id="DefaultSetting">Configuración predeterminada para impresoras UPD</string>
+      <string id="DefaultSetting_desc">Esta directiva determina si se debe habilitar la configuración predeterminada para las impresoras UPD.
+Cuando esta directiva está habilitada, se puede definir un grupo de ajustes predeterminados para impresoras UPD. Se utilizarán como configuración inicial de las impresoras UPD cuando sea necesario. Para cada ajuste de impresión, hay una casilla que establece si siempre se usará el ajuste predeterminado para imprimir.
+Cuando esta directiva no está configurada o está deshabilitada, los ajustes predeterminados no estarán habilitados para las impresoras UPD.
+
+Esta directiva no está configurada de forma predeterminada.
+      </string>
+
+      <string id="none">Ninguno</string>
+      <string id="duplex_vertical">Orientación horizontal</string>
+      <string id="duplex_horizontal">Orientación vertical</string>
+
+      <string id="bw">Blanco y negro</string>
+      <string id="color">Color</string>
+
+      <string id="lossless_comp">Compresión sin pérdidas</string>
+      <string id="high_quality_comp">Compresión de alta calidad</string>
+      <string id="optimized_comp">Compresión optimizada</string>
+      <string id="no_image_comp">No hay ninguna imagen</string>
+
+       <string id="MaxDPI">PPP máximo para impresoras UPD</string>
+       <string id="MaxDPI_detail">Esta directiva especifica el número máximo de PPP para las impresoras UPD, lo que hace posible cambiar las opciones PPP y los PPP predeterminados de las impresoras UPD.
+
+Cuando esta directiva está habilitada, se utiliza para especificar el nivel de PPP máximo o el valor máximo de PPP del eje X para las impresoras UPD. Según la capacidad de la impresora cliente, la impresora UPD puede admitir el nivel PPP o el valor PPP.
+Cuando la impresora admite el nivel de PPP, las opciones de PPP y el valor de PPP predeterminado de la impresora UPD no serán superiores al nivel de PPP máximo.
+Cuando la impresora admite el valor de PPP y el valor de PPP del eje X más bajo no es mayor que el valor de PPP del eje X máximo, las opciones de PPP y el valor de PPP predeterminado de la impresora UPD no serán superiores que el valor de PPP del eje X máximo.
+Cuando la impresora admite el valor de PPP y el valor de PPP del eje X más bajo no es mayor que el valor de PPP del eje X máximo, las opciones de PPP de la impresora UPD serán las mismas que las opciones de PPP de la impresora cliente. El valor de PPP predeterminado de la impresora UPD será el valor de PPP del eje X más bajo.
+
+Cuando esta directiva no está configurada o está deshabilitada, las opciones de PPP y el valor de PPP predeterminado de las impresoras UPD no se modifican.
+
+Esta directiva no está configurada de forma predeterminada.
+       </string>
+       <string id="DPI_draft">Borrador</string>
+       <string id="DPI_low">Bajo</string>
+       <string id="DPI_medium">Medio</string>
+       <string id="DPI_high">Alto</string>
+    </stringTable>
+    <presentationTable>
+      <presentation id="DriverMapping">
+         <listBox refId="printer_driver_mapping">Asignación del controlador de impresora:</listBox>
+      </presentation>
+      <presentation id="PrinterCreationSetting">
+          <dropdownList refId="printer_creation_setting_list" defaultItem="2" noSort="true">Opciones para crear impresoras:</dropdownList>
+          <dropdownList refId="preferred_upd" defaultItem="0" noSort="true">UPD preferido:</dropdownList>
+      </presentation>
+      <presentation id="PrintPreviewSetting">
+        <checkBox refId="disable_print_choice">Deshabilitar la opción de impresión</checkBox>
+        <dropdownList refId="default_choice_list" defaultItem="0" noSort="true">Opciones predeterminadas de destino de impresión:</dropdownList>
+      </presentation>
+      <presentation id="printer_filter">
+        <textBox refId="printer_filter_textbox">
+          <label>Filtro de impresora</label>
+          <defaultValue></defaultValue>
+        </textBox>
+      </presentation>
+      <presentation id="printer_name_schema">
+        <textBox refId="printer_name_schema_textbox">
+          <label>Esquema de nombre de la impresora</label>
+          <defaultValue></defaultValue>
+        </textBox>
+      </presentation>
+      <presentation id="MaxTxRate">
+        <decimalTextBox refId="MaxTxRate" defaultValue="32000">Velocidad de transmisión máxima (kbps)</decimalTextBox>
+      </presentation>
+      <presentation id="DefaultSetting">
+        <dropdownList refId="DefaultDuplex" defaultItem="0" noSort="true">Doble cara:</dropdownList>
+        <checkBox refId="IsDuplexLocked">Usar siempre ajuste de doble cara predeterminado</checkBox>
+        <dropdownList refId="DefaultColor" defaultItem="0" noSort="true">Color:</dropdownList>
+        <checkBox refId="IsColorLocked">Usar siempre la configuración de color predeterminada</checkBox>
+        <dropdownList refId="DefaultImageCompLevel" defaultItem="0" noSort="true">Nivel de compresión:</dropdownList>
+        <checkBox refId="IsCompLevelLocked">Usar siempre la configuración de nivel de compresión predeterminada</checkBox>
+      </presentation>
+      <presentation id="MaxDPI">
+        <dropdownList refId="MaxDPILevel" defaultItem="2" noSort="true">Nivel de PPP máximo</dropdownList>
+        <decimalTextBox refId="MaxDPIValue" defaultValue="600">PPP máximo (X)</decimalTextBox>
+      </presentation>
+    </presentationTable>
+  </resources>
+</policyDefinitionResources>

@@ -1,0 +1,177 @@
+#
+# Module manifest for module 'dbadisa'
+#
+@{
+    # Version number of this module.
+    ModuleVersion     = '0.1.7'
+
+    # ID used to uniquely identify this module
+    GUID              = '4a160a6e-750b-4674-aefb-110e3ae046d5'
+
+    # Description of the functionality provided by this module
+    Description       = 'DISA STIG Automation for SQL Server'
+
+    # Minimum version of the Windows PowerShell engine required by this module
+    PowerShellVersion = '3.0'
+
+    # Format files (xml) to be loaded when importing this module
+    # "xml\dbatools.Format.ps1xml"
+    FormatsToProcess       = @("bin\xml\dbadisa.Format.ps1xml")
+
+    # Modules that must be imported into the global environment prior to importing this module
+    # @{ ModuleName = 'dbachecks'; ModuleVersion = '1.2.15' }
+    RequiredModules   = @(
+        @{ ModuleName = 'PSFramework'; ModuleVersion = '1.0.19' },
+        @{ ModuleName = 'dbatools'; ModuleVersion = '1.0.61' }
+        @{ ModuleName = 'dbachecks'; ModuleVersion = '1.2.22' }
+        @{ ModuleName = 'Pester'; ModuleVersion = '4.9.0' }
+    )
+
+    # Script module or binary module file associated with this manifest.
+    RootModule        = 'dbadisa.psm1'
+
+    FunctionsToExport = @(
+        'Disable-DbsBrowser',
+        'Disable-DbsCEIP',
+        'Disable-DbsDbContainment',
+        'Disable-DbsExternalScripts',
+        'Disable-DbsFilestreamAccess',
+        'Disable-DbsHadoopConnectivity',
+        'Disable-DbsMixedMode',
+        'Disable-DbsOleAutomation',
+        'Disable-DbsPolybaseExport',
+        'Disable-DbsProtocol',
+        'Disable-DbsRemoteAccess',
+        'Disable-DbsRemoteDataArchive',
+        'Disable-DbsReplicationXp',
+        'Disable-DbsSaAccount',
+        'Disable-DbsSqlClr',
+        'Disable-DbsUserOptions',
+        'Disable-DbsXpCmdShell',
+        'Enable-DbsC2',
+        'Enable-DbsFips',
+        'Get-DbsAcl',
+        'Get-DbsAdminRoleMember',
+        'Get-DbsAlert',
+        'Get-DbsAuditDisabled',
+        'Get-DbsAuditFilter',
+        'Get-DbsAuditLogin',
+        'Get-DbsAuditMaintainer',
+        'Get-DbsAuditMaxValue',
+        'Get-DbsAuditOnFailure',
+        'Get-DbsAuditSchemaAccessGroup',
+        'Get-DbsAuditSpecification',
+        'Get-DbsAuditStartupState',
+        'Get-DbsBrowser',
+        'Get-DbsC2',
+        'Get-DbsCEIP',
+        'Get-DbsComputerLogin',
+        'Get-DbsCustomXp',
+        'Get-DbsDbAccessControl',
+        'Get-DbsDbAlterPermission',
+        'Get-DbsDbAuditMaintainer',
+        'Get-DbsDbComputerUser',
+        'Get-DbsDbContainedUser',
+        'Get-DbsDbExecuteAs',
+        'Get-DbsDbExternalProcessAccess',
+        'Get-DbsDbInputValidity',
+        'Get-DbsDbKeyEncryptedByPassword',
+        'Get-DbsDbKeyNotEncryptedByServer',
+        'Get-DbsDbModuleAccess',
+        'Get-DbsDbObjectOwner',
+        'Get-DbsDbOwnerFixedServerRole',
+        'Get-DbsDbPermission',
+        'Get-DbsDbProhibitedKeyAlgorithm',
+        'Get-DbsDbRecoveryModel',
+        'Get-DbsDbSchema',
+        'Get-DbsDbTde',
+        'Get-DbsDbTemporalTable',
+        'Get-DbsDbTrustworthy',
+        'Get-DbsDbUser',
+        'Get-DbsEndpointEncryption',
+        'Get-DbsExternalScripts',
+        'Get-DbsFeature',
+        'Get-DbsFilestreamAccess',
+        'Get-DbsFips',
+        'Get-DbsHadoopConnectivity',
+        'Get-DbsIFI',
+        'Get-DbsLinkedServer',
+        'Get-DbsLocalAdmin',
+        'Get-DbsLogin',
+        'Get-DbsLoginProperty',
+        'Get-DbsMixedMode',
+        'Get-DbsOleAutomation',
+        'Get-DbsPermission',
+        'Get-DbsPolybaseExport',
+        'Get-DbsPrivilegedLogin',
+        'Get-DbsProtocol',
+        'Get-DbsRemoteAccess',
+        'Get-DbsRemoteDataArchive',
+        'Get-DbsReplicationXp',
+        'Get-DbsSaAccount',
+        'Get-DbsServiceAccount',
+        'Get-DbsSetupAccount',
+        'Get-DbsSqlClr',
+        'Get-DbsStartupProcedure',
+        'Get-DbsStig',
+        'Get-DbsSystemPermission',
+        'Get-DbsTcpPort',
+        'Get-DbsTimeSource',
+        'Get-DbsTraceFlag',
+        'Get-DbsUserOptions',
+        'Get-DbsXPCmdShell',
+        'Get-DbsXpPermission',
+        'Get-DbsSampleDatabase',
+        'Install-DbsAudit',
+        'Move-DbsAuditFile',
+        'New-DbsDocTemplate',
+        'Remove-DbsSystemPermission',
+        'Repair-DbsDbOwnerFixedServerRole',
+        'Revoke-DbsDbAlterPermission',
+        'Set-DbsAcl',
+        'Set-DbsAuditLogin',
+        'Set-DbsAuditMaintainer',
+        'Set-DbsAuditStartupState',
+        'Set-DbsConnectionLimit',
+        'Set-DbsDbAuditMaintainer',
+        'Set-DbsDbFileSize',
+        'Set-DbsDbRecoveryModel',
+        'Set-DbsDbSchemaOwner',
+        'Set-DbsEndpointEncryption',
+        'Set-DbsLoginProperty',
+        'Set-DbsTraceFlag',
+        'Test-DbsBuild',
+        'Test-DbsDbInputValidity',
+        'Test-DbsDiskSpace',
+        'Test-DbsInstallPath',
+        'Test-DbsServiceAccount',
+        'Test-DbsSpn',
+        'Find-DbsCommand',
+        'Export-DbsInstance',
+        'Get-DbsNonCompliance',
+        'Start-DbsStig'
+    )
+
+    CmdletsToExport   = @( )
+    AliasesToExport   = @( )
+
+    PrivateData       = @{
+        # PSData is module packaging and gallery metadata embedded in PrivateData
+        # It's for rebuilding PowerShellGet (and PoshCode) NuGet-style packages
+        # We had to do this because it's the only place we're allowed to extend the manifest
+        # https://connect.microsoft.com/PowerShell/feedback/details/421837
+        PSData = @{
+            # The primary categorization of this module (from the TechNet Gallery tech tree).
+            Category     = 'Security'
+
+            # Keyword tags to help users find this module via navigations and search.
+            Tags         = @('security', 'disa', 'stig', 'compliance')
+
+            # The web address of an icon which can be used in galleries to represent this module
+            IconUri      = 'https://user-images.githubusercontent.com/8278033/68308152-a886c180-00ac-11ea-880c-ef6ff99f5cd4.png'
+
+            # Indicates this is a pre-release/testing version of the module.
+            IsPrerelease = 'False'
+        }
+    }
+}

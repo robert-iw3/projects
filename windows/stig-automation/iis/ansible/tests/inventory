@@ -1,0 +1,9 @@
+[all]
+w2019 ansible_host=ip_address
+
+[all:vars]
+ansible_connection=winrm
+ansible_user=Administrator
+ansible_password="Password"
+ansible_winrm_transport=basic
+ansible_winrm_server_cert_validation=ignore

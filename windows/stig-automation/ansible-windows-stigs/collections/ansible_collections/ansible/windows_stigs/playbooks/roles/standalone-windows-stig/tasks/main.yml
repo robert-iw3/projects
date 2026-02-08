@@ -1,0 +1,61 @@
+---
+# tasks file for base
+
+- name: Debug VARs
+  ansible.builtin.debug:
+    msg: "Gitrepo is {{ gitrepo }}"
+- name: Debug VARs
+  ansible.builtin.debug:
+    msg: "Gitdir is {{ gitdir }}"
+- name: Debug VARs
+  ansible.builtin.debug:
+    msg: "Gitname is {{ gitname }}"
+- name: Debug VARs
+  ansible.builtin.debug:
+    msg: "Zipdir is {{ zipdir }}"
+
+- name: Download/Copy STIG files to specified path
+  block:
+    - name: Download STIG files to specified path
+      ansible.windows.win_get_url:
+        url: "{{ gitrepo }}"
+        dest: "{{ gitdir }}"
+        follow_redirects: all
+        force: yes
+    #- name: Force a failure
+    #  fail:
+    #    msg: forcing offline copy test
+  rescue:
+    - name: Copy files instead of downloading to specified path
+      ansible.windows.win_copy:
+        src: "{{ copyzipdir }}"
+        dest: "{{ gitdir }}"
+
+- name: Fix Windows Path Character Limit
+  ansible.windows.win_regedit:
+    path: HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem
+    name: LongPathsEnabled
+    data: 1
+    type: dword
+
+# Unzip STIG .zip file and remove all unneeded compressed files after completion.
+- name: Recursively decompress zip files
+  community.windows.win_unzip:
+    src: "{{ gitdir }}"
+    dest: "{{ zipdir }}"
+    delete_archive: yes
+
+- name: Run the STIG Script
+  ansible.windows.win_powershell:
+    chdir: "{{ zipdir }}"
+    script: |
+      try{
+        foreach ($script in (Get-Childitem -recurse *.ps1).fullname){
+          Write-Output executing $script
+          powershell.exe -ExecutionPolicy ByPass -File "$script"
+        }
+      } Catch {
+
+        $Ansible.failed = $true
+
+      }

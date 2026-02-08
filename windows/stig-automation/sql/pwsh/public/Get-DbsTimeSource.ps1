@@ -1,0 +1,63 @@
+function Get-DbsTimeSource {
+    <#
+    .SYNOPSIS
+        Returns a list of non-compliant time sources
+
+    .DESCRIPTION
+        Returns a list of non-compliant time sources
+
+    .PARAMETER ComputerName
+        The target SQL Server
+
+    .PARAMETER Credential
+        Login to the target computer using alternative credentials
+
+    .PARAMETER EnableException
+        By default, when something goes wrong we try to catch it, interpret it and give you a friendly warning message.
+        This avoids overwhelming you with "sea of red" exceptions, but is inconvenient because it basically disables advanced scripting.
+        Using this switch turns this "nice by default" feature off and enables you to catch exceptions with your own try/catch.
+
+    .NOTES
+        Tags: V-79233, NonCompliantResults
+
+
+    .EXAMPLE
+        PS C:\> Get-DbsTimeSource -ComputerName sql01
+
+        Returns a list of non-compliant time sources
+    #>
+    [CmdletBinding()]
+    param (
+        [parameter(ValueFromPipeline, Mandatory)]
+        [Alias("cn", "host", "Server")]
+        [DbaInstanceParameter[]]$ComputerName,
+        [PSCredential]$Credential,
+        [switch]$EnableException
+    )
+    begin {
+        . "$script:ModuleRoot\private\Set-Defaults.ps1"
+    }
+    process {
+        foreach ($computer in $ComputerName.ComputerName) {
+            try {
+                $partofodomain = Invoke-PSFCommand -ComputerName $computer -ScriptBlock {
+                    (Get-CimInstance -ClassName Win32_ComputerSystem).PartOfDomain
+                } -ErrorAction Stop
+
+                $cmos = Invoke-PSFCommand -ComputerName $computer -ScriptBlock {
+                    (w32tm /query /source) -match 'CMOS'
+                } -ErrorAction Stop
+
+                if (-not $partofdomain -or $cmos) {
+                    [PSCustomObject]@{
+                        ComputerName = $computer
+                        DomainJoined = $partofodomain
+                        CmosSource   = $cmos
+                    }
+                }
+            } catch {
+                Stop-PSFFunction -Message "Failure on $computer" -ErrorRecord $_
+            }
+        }
+    }
+}

@@ -1,0 +1,7 @@
+---
+# vars file for base
+gitrepo: ""
+gitdir: "C:\\temp\\main.zip"
+gitname: "Windows-Defender-STIG-Script"
+zipdir: "C:\\temp\\{{ gitname }}"
+copyzipdir: "{{gitname}}-main.zip"

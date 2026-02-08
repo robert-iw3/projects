@@ -1,0 +1,27 @@
+---
+dependencies:
+  - ansible.windows
+  - community.windows
+  - community.general
+
+galaxy_info:
+  description: "Ansible Playbooks for Windows STIG Scripts"
+  author: ""
+  platforms:
+      - name: Windows
+        versions:
+              - "2008R2"
+              - "2008x64"
+              - "2008x86"
+              - "2012"
+              - "2012R2"
+              - "2016"
+              - "2019"
+              - "2022"
+              - "all"
+  license: GPL-3.0-or-later
+  galaxy_tags:
+      - collection
+      - windows
+      - chocolatey
+      - package
