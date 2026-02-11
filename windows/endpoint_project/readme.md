@@ -5,9 +5,11 @@ Rust-based Windows kernel driver providing deep, efficient visibility for EDR/XD
 
 ## Directory Layout
 ```
-endpoint_project/
-├── README.md
+endpoint-project/
+├── readme.md
 ├── prepare_test_env.ps1        # VM setup
+├── sign_kernel_driver.ps1      # Driver signing for HVCI
+├── windbg_debugging.ps1        # Kernel debugging with WinDbg
 ├── driver.inf                  # Minifilter INF
 ├── rust-driver/                # Kernel crate
 │   ├── Cargo.toml
@@ -17,10 +19,9 @@ endpoint_project/
 │   └── test_kernel_driver.ps1  # Build/load/unload
 └── user-mode/                  # User-mode pilot app
     ├── Cargo.toml
-    ├── src/main.rs             # IOCTL client
+    ├── src/main.rs             # IOCTL client with polling/logging
     └── test_user_mode.ps1      # Build/run
 ```
-
 
 ## Features
 - Hooks: Process (PsSetCreateProcessNotifyRoutineEx), file (minifilter IRP_MJ_CREATE/READ/WRITE), image/syscall (PsSetLoadImageNotifyRoutine), registry (CmRegisterCallbackEx, gated), network (WFP callouts, gated), threads (PsSetCreateThreadNotifyRoutine, gated), objects (ObRegisterCallbacks, gated), memory (Mm callbacks, gated), power/device (PoRegisterPowerSettingCallback, gated).
