@@ -27,23 +27,26 @@
 #>
 
 Write-Host "Creating backup before hardening..." -ForegroundColor Cyan
-& ".\Backup-IIS-ConfigBeforeHarden.ps1"
+& "$PSScriptRoot\Backup-IIS-ConfigBeforeHarden.ps1"
 
 Write-Host "`nBackup created. Starting hardening..." -ForegroundColor Green
 
 if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-Write-Error "This script must be run as Administrator."
-exit 1
-}
+    Write-Error "This script must be run as Administrator."
+    exit 1
+    }
+
 $ErrorActionPreference = "Continue"
 $logFile = "Harden-IIS_$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
+
 Start-Transcript -Path $logFile -Force
-function Log {
-param([string]$Message, [string]$Level = "INFO")
-    $time = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-"$time [$Level] $Message" | Out-Host
-}
+    function Log {
+    param([string]$Message, [string]$Level = "INFO")
+        $time = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    "$time [$Level] $Message" | Out-Host
+    }
 Log "=== IIS Hardening Started ===" "INFO"
+
 # Parse config.ini
 function Get-IniContent {
 param([string]$Path = "config.ini")
@@ -60,8 +63,10 @@ switch -regex -file $Path {
     }
 return $ini
 }
+
 try { $config = Get-IniContent } catch { Log "Failed to parse config.ini: $_" "ERROR"; exit 1 }
 $globalConfig = $config["Global"]
+
 # ===============================================
 # GLOBAL HARDENING SETTINGS
 # ===============================================
@@ -71,7 +76,7 @@ $globalSettings = @(
 @{ Name = "LogAndETW"; Fix = { Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter "system.applicationHost/log" -Name "centralLogFileMode" -Value "CentralW3C" } }
 @{ Name = "ProxyDisabled"; Fix = { Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter "system.webServer/proxy" -Name "enabled" -Value $false -ErrorAction SilentlyContinue } }
 @{ Name = "WebDAVDisabled"; Fix = { if (Get-WindowsFeature Web-DAV-Publishing -ErrorAction SilentlyContinue) { Uninstall-WindowsFeature Web-DAV-Publishing -IncludeManagementTools } } }
-@{ Name = "GlobalAuthRule"; Fix = { Remove-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter "system.webServer/security/authorization" -Name "." -AtElement @{users='*';roles='';verbs=''} -ErrorAction SilentlyContinue; Add-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter "system.webServer/security/authorization" -Name "." -Value @{accessType='Allow';roles='Administrators'} } }
+# risky: @{ Name = "GlobalAuthRule"; Fix = { Remove-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter "system.webServer/security/authorization" -Name "." -AtElement @{users='*';roles='';verbs=''} -ErrorAction SilentlyContinue; Add-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter "system.webServer/security/authorization" -Name "." -Value @{accessType='Allow';roles='Administrators'} } }
 @{ Name = "DeploymentRetail"; Fix = { $paths = "$env:windir\Microsoft.NET\Framework\v4.0.30319\Config\machine.config","$env:windir\Microsoft.NET\Framework64\v4.0.30319\Config\machine.config"; foreach ($p in $paths) { if (Test-Path $p) { [xml]$xml = Get-Content $p; $node = $xml.configuration.'system.web'.deployment; if (-not $node) { $node = $xml.CreateElement("deployment"); $null = $xml.configuration.'system.web'.AppendChild($node) }; $node.SetAttribute("retail","true"); $xml.Save($p) } } } }
 @{ Name = "DebugDisabled"; Fix = { Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter "system.web/compilation" -Name "debug" -Value $false } }
 @{ Name = "XPoweredByRemoved"; Fix = { Remove-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter "system.webServer/httpProtocol/customHeaders" -Name "." -AtElement @{name='X-Powered-By'} -ErrorAction SilentlyContinue } }
