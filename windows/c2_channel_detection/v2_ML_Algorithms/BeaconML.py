@@ -1,111 +1,120 @@
 """
 Docstring for windows.pwsh.c2_channel_detection.v2_ML_Algorithms.BeaconML
 A simple ML-based beaconing detection using K-Means clustering on time intervals.
-Author: Robert Weber
+Performs Spectral Analysis (Lomb-Scargle) and Clustering (DBSCAN)
+on network intervals to detect Jittered Beacons.
 
-Updates 26 January 2026:
-- Added optional DBSCAN and Isolation Forest methods for enhanced detection.
-- Improved performance for large datasets with subsampling.
-- This version handles larger datasets (e.g., n=10k in ~0.03s via subsampling/adaptive eps), reducing time by 50-70% on benchmarks.
+Author: Robert Weber
 
 Usage:
 python BeaconML.py <intervals_file.json> [--std_threshold 10.0] [--min_samples 3] [--use_dbscan] [--use_isolation] [--n_jobs -1] [--max_samples 1000]
 
 Before Running:
-pip install scikit-learn numpy joblib
+pip install scikit-learn numpy joblib scipy
 """
 
 import sys
 import json
 import argparse
 import numpy as np
-from sklearn.cluster import KMeans, DBSCAN
-from sklearn.ensemble import IsolationForest
-from sklearn.metrics import silhouette_score
-from joblib import Parallel, delayed
 import logging
+from scipy.signal import lombscargle
+from sklearn.cluster import DBSCAN
+from joblib import Parallel, delayed
 
-# Setup logging
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+# Configure Logging to Stderr (so Stdout stays clean for JSON)
+logging.basicConfig(stream=sys.stderr, level=logging.ERROR)
 
-def compute_silhouette(k, X):
-    if len(X) < k:
-        return k, -1, None, None
-    kmeans = KMeans(n_clusters=k, random_state=0, n_init=1)
-    labels = kmeans.fit_predict(X)
-    if len(np.unique(labels)) > 1:
-        score = silhouette_score(X, labels)
-        return k, score, kmeans, labels
-    return k, -1, None, None
-
-def detect_beaconing(intervals_file, std_threshold=10.0, min_samples=3, use_dbscan=False, use_isolation=False, n_jobs=-1, max_samples=1000):
+def analyze_host(target, timestamps, config):
+    """
+    Analyzes a single host's timestamps for C2 patterns.
+    Returns: (target, alert_string_or_None)
+    """
     try:
-        with open(intervals_file, 'r') as f:
-            intervals = json.load(f)
+        if len(timestamps) < config['min_samples']:
+            return target, None
+
+        # Sort and calculate deltas (intervals)
+        timestamps = np.array(timestamps)
+        timestamps.sort()
+        intervals = np.diff(timestamps)
+
+        # --- CHECK 1: STATISTICAL VARIANCE (Fastest) ---
+        # Detects perfect, machine-like beacons (Cobalt Strike default)
+        std_dev = np.std(intervals)
+        if std_dev < config['std_threshold']:
+            return target, f"Low Variance Beacon (StdDev: {std_dev:.4f}s)"
+
+        # --- CHECK 2: SPECTRAL ANALYSIS (Lomb-Scargle) ---
+        # Detects periodic beacons hidden by Jitter (High Variance)
+        # We simulate a signal where Y is constant (1) at every timestamp X
+        # Strong periodicity results in a high power peak at specific frequencies.
+
+        # Frequencies to test: 0.01Hz (100s) to 1.0Hz (1s)
+        freqs = np.linspace(0.01, 1.0, 100)
+
+        # Scipy Lomb-Scargle expects: x (times), y (measurements), freqs
+        # We treat every connection as a "signal pulse" of amplitude 1
+        y = np.ones_like(timestamps)
+
+        # angular frequencies for scipy
+        w = 2 * np.pi * freqs
+        pgram = lombscargle(timestamps, y, w, normalize=True)
+        max_power = np.max(pgram)
+
+        if max_power > 0.85: # 0.85 is a strong statistical confidence of periodicity
+            return target, f"High Spectral Density (Periodicity Power: {max_power:.2f})"
+
+        # --- CHECK 3: DBSCAN CLUSTERING ---
+        # Detects "Modal" Beaconing (e.g., 90% of traffic is 5s, 10% is noise)
+        if config['use_dbscan']:
+            X = intervals.reshape(-1, 1)
+            # Epsilon = allows for X seconds of jitter deviation
+            jitter_tolerance = max(0.5, std_dev * 0.2)
+
+            db = DBSCAN(eps=jitter_tolerance, min_samples=int(len(X)*0.4)).fit(X)
+            labels = db.labels_
+
+            # Count clusters (ignoring -1 noise)
+            unique_labels = set(labels)
+            if -1 in unique_labels: unique_labels.remove(-1)
+
+            if len(unique_labels) >= 1:
+                # Calculate size of the largest cluster
+                main_cluster_ratio = np.sum(labels == list(unique_labels)[0]) / len(labels)
+                if main_cluster_ratio > 0.6: # If 60% of traffic fits a tight pattern
+                    return target, f"Cluster Beacon (Mode Found via DBSCAN)"
+
+        return target, None
+
     except Exception as e:
-        return f"Error loading file: {str(e)}"
-
-    if len(intervals) < min_samples:
-        return "No Beaconing (Insufficient Data)"
-
-    # Optimize for large datasets: Subsample if too big
-    if len(intervals) > max_samples:
-        logging.info(f"Subsampling from {len(intervals)} to {max_samples}")
-        intervals = np.random.choice(intervals, max_samples, replace=False).tolist()
-
-    X = np.array(intervals, dtype=np.float32).reshape(-1, 1)  # Float32 for memory
-
-    flags = []
-
-    # Dynamic K-Means with optimal k (parallel over k values)
-    max_k = min(5, len(X) + 1)
-    results = Parallel(n_jobs=n_jobs)(
-        delayed(compute_silhouette)(k, X) for k in range(2, max_k)
-    )
-    valid_results = [r for r in results if r[1] > -1]
-    if valid_results:
-        best_k, best_score, best_kmeans, best_labels = max(valid_results, key=lambda x: x[1])
-        cluster_std = [np.std(X[best_labels == i]) for i in np.unique(best_labels)]
-        min_std = min(cluster_std)
-        if min_std < std_threshold:
-            flags.append(f"ML K-Means Beaconing (Clusters: {best_k}, Min StdDev: {min_std:.2f}, Score: {best_score:.2f})")
-
-    # Optional DBSCAN (tune eps dynamically for performance)
-    if use_dbscan and len(X) >= min_samples:
-        eps = max(std_threshold / 2, np.std(X) / 2) if len(X) > 0 else std_threshold / 2  # Adaptive eps
-        dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-        labels = dbscan.fit_predict(X)
-        core_std = np.std(X[labels != -1]) if np.any(labels != -1) else float('inf')
-        if core_std < std_threshold:
-            flags.append(f"ML DBSCAN Beaconing (Core StdDev: {core_std:.2f})")
-
-    # Optional Isolation Forest (subsample for large data)
-    if use_isolation:
-        subsample_size = min(256, len(X))  # Forest default subsample
-        if len(X) > subsample_size:
-            X_sub = X[np.random.choice(len(X), subsample_size, replace=False)]
-        else:
-            X_sub = X
-        iso = IsolationForest(contamination=0.1, random_state=0, max_samples=subsample_size)
-        anomalies = iso.fit_predict(X_sub)
-        anomaly_ratio = np.sum(anomalies == -1) / len(X_sub)
-        if anomaly_ratio > 0.05:  # Adjustable; >5% anomalies flag potential irregular beacons
-            flags.append(f"ML Isolation Beaconing (Anomaly Ratio: {anomaly_ratio:.2f})")
-
-    if flags:
-        return '; '.join(flags)
-    return "No ML Beaconing"
+        # Fail gracefully for single host
+        return target, None
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="ML Beaconing Detection")
-    parser.add_argument("intervals_file", help="Path to intervals JSON")
-    parser.add_argument("--std_threshold", type=float, default=10.0, help="Low-variance std dev threshold")
-    parser.add_argument("--min_samples", type=int, default=3, help="Min samples for clustering")
-    parser.add_argument("--use_dbscan", action="store_true", help="Enable DBSCAN")
-    parser.add_argument("--use_isolation", action="store_true", help="Enable Isolation Forest")
-    parser.add_argument("--n_jobs", type=int, default=-1, help="Number of parallel jobs (-1 uses all cores)")
-    parser.add_argument("--max_samples", type=int, default=1000, help="Max samples for subsampling large datasets")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("batch_file", help="Path to JSON batch file")
+    parser.add_argument("--std_threshold", type=float, default=2.0)
+    parser.add_argument("--min_samples", type=int, default=5)
+    parser.add_argument("--use_dbscan", action="store_true")
+    parser.add_argument("--n_jobs", type=int, default=-1)
     args = parser.parse_args()
 
-    result = detect_beaconing(args.intervals_file, args.std_threshold, args.min_samples, args.use_dbscan, args.use_isolation, args.n_jobs, args.max_samples)
-    print(result)
+    try:
+        with open(args.batch_file, 'r') as f:
+            data = json.load(f)
+
+        # Execute Parallel Analysis
+        results = Parallel(n_jobs=args.n_jobs)(
+            delayed(analyze_host)(target, ts, vars(args))
+            for target, ts in data.items()
+        )
+
+        # Filter Nones and Create Result Dict
+        alerts = {target: alert for target, alert in results if alert is not None}
+
+        print(json.dumps(alerts))
+
+    except Exception as e:
+        # Output error as JSON so PowerShell can log it
+        print(json.dumps({"error": str(e)}))

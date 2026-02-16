@@ -85,27 +85,67 @@
     Author: Robert Weber
 #>
 
+#Requires -RunAsAdministrator
+
 param (
     [string]$OutputPath = "C:\Temp\C2Monitoring.csv",
     [ValidateSet("CSV", "JSON", "YAML")][string]$Format = "CSV",
+    [string]$PythonPath = "python",
+    [string]$MLScriptPath = "BeaconML.py", # Relative to script dir by default
+
+    # Polling & Batch Config
     [int]$IntervalSeconds = 10,
-    [int]$BeaconWindowMinutes = 60,
-    [int]$MinConnectionsForBeacon = 3,
-    [double]$MaxIntervalVarianceSeconds = 10,
+    [int]$BatchAnalysisIntervalSeconds = 60, # How often to run Python ML
+    [int]$MinConnectionsForML = 5,
     [int]$MaxHistoryKeys = 1000,
-    [int]$VolumeThreshold = 50,
-    [double]$DomainEntropyThreshold = 3.5,
+
+    # Anomaly Thresholds
+    [double]$DomainEntropyThreshold = 3.8,
     [int]$DomainLengthThreshold = 30,
     [double]$NumericRatioThreshold = 0.4,
     [double]$VowelRatioThreshold = 0.2,
     [double]$IPEntropyThreshold = 3.0,
+
+    # Specific Targets
     [string[]]$SpecificTLDs = @(),
     [string[]]$SpecificRMMTools = @(),
     [string[]]$SpecificLOLBins = @(),
     [string[]]$SpecificCloudDomains = @()
 )
 
-# Function to read INI file
+# --- 1. OPTIMIZATION & SETUP ---
+
+# Resolve Script Directory for Dependencies
+$ScriptDir = Split-Path $PSCommandPath -Parent
+$FullMLPath = Join-Path $ScriptDir $MLScriptPath
+
+# Verify Python Availability
+try {
+    $null = Get-Command $PythonPath -ErrorAction Stop
+    $PythonAvailable = $true
+} catch {
+    Write-Warning "Python not found in PATH. ML Beaconing features will be disabled."
+    $PythonAvailable = $false
+}
+
+# Compiled Regex for high-performance string matching
+$Regex_InternalIP = [regex]::new('^((10\.)|(172\.1[6-9]\.)|(172\.2[0-9]\.)|(172\.3[0-1]\.)|(192\.168\.)|(127\.)|(169\.254\.))', 'Compiled')
+$Regex_NonDigit   = [regex]::new('[^0-9]', 'Compiled')
+$Regex_Encoded    = [regex]::new('-EncodedCommand|-enc|IEX|Invoke-Expression|DownloadString', 'Compiled|IgnoreCase')
+$Regex_Defense    = [regex]::new('Set-MpPreference.*-Disable|sc delete|net stop', 'Compiled|IgnoreCase')
+$Regex_SysPaths   = [regex]::new('System32|SysWOW64|WinSxS', 'Compiled|IgnoreCase')
+$Regex_MS_Signed  = [regex]::new('Signed="true".*Signature="Microsoft Windows".*SignatureStatus="Valid"', 'Compiled')
+
+# Math Helpers
+$log2 = [Math]::Log(2)
+$vowels = [System.Collections.Generic.HashSet[char]]::new([char[]]"aeiou")
+
+# Collections
+$connectionHistory = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.Queue[datetime]]]::new()
+$dataBatch = [System.Collections.Generic.List[PSObject]]::new()
+
+# --- 2. HELPER FUNCTIONS ---
+
 function Read-IniFile {
     param ([string]$Path)
     $ini = @{}
@@ -118,453 +158,248 @@ function Read-IniFile {
     return $ini
 }
 
-# Load config.ini if exists (script directory)
-$configPath = Join-Path (Split-Path $PSCommandPath -Parent) "config.ini"
-$config = Read-IniFile -Path $configPath
-
-# Override defaults with config
-if ($config['Anomaly']) {
-    if ($config['Anomaly']['DomainEntropyThreshold']) { $DomainEntropyThreshold = [double]$config['Anomaly']['DomainEntropyThreshold'] }
-    if ($config['Anomaly']['DomainLengthThreshold']) { $DomainLengthThreshold = [int]$config['Anomaly']['DomainLengthThreshold'] }
-    if ($config['Anomaly']['NumericRatioThreshold']) { $NumericRatioThreshold = [double]$config['Anomaly']['NumericRatioThreshold'] }
-    if ($config['Anomaly']['VowelRatioThreshold']) { $VowelRatioThreshold = [double]$config['Anomaly']['VowelRatioThreshold'] }
-    if ($config['Anomaly']['IPEntropyThreshold']) { $IPEntropyThreshold = [double]$config['Anomaly']['IPEntropyThreshold'] }
-    if ($config['Anomaly']['VolumeThreshold']) { $VolumeThreshold = [int]$config['Anomaly']['VolumeThreshold'] }
-    # Add others if needed
-}
-if ($config['Specifics']) {
-    if ($config['Specifics']['TLDs']) { $SpecificTLDs = $config['Specifics']['TLDs'] -split ',' | ForEach-Object { $_.Trim() } }
-    if ($config['Specifics']['RMMTools']) { $SpecificRMMTools = $config['Specifics']['RMMTools'] -split ',' | ForEach-Object { $_.Trim() } }
-    if ($config['Specifics']['LOLBins']) { $SpecificLOLBins = $config['Specifics']['LOLBins'] -split ',' | ForEach-Object { $_.Trim() } }
-    if ($config['Specifics']['CloudDomains']) { $SpecificCloudDomains = $config['Specifics']['CloudDomains'] -split ',' | ForEach-Object { $_.Trim() } }
-}
-
-# Output directory setup
-try {
-    $outputDir = Split-Path $OutputPath -Parent
-    if (-not (Test-Path $outputDir)) { New-Item -Path $outputDir -ItemType Directory -Force | Out-Null }
-} catch {
-    Write-Error "Failed to create output directory: $($_.Exception.Message)"
-    exit
-}
-
-$logName = "Microsoft-Windows-Sysmon/Operational"
-
-# Check if Sysmon is installed
-try {
-    Get-WinEvent -FilterHashtable @{LogName = $logName} -MaxEvents 1 -ErrorAction Stop | Out-Null
-} catch {
-    Write-Warning "Sysmon not installed or log not found. Please run the companion installation script 'InstallSysmonForC2Detection.ps1' first and then rerun this script."
-    exit
-}
-
-# Common ports (examples, detection not confined)
-$commonPorts = @('80', '443', '53')
-$internalIpRegex = '^((10\.)|(172\.1[6-9]\.)|(172\.2[0-9]\.)|(172\.3[0-1]\.)|(192\.168\.)|(127\.)|(169\.254\.))'
-
-# Function to calculate Shannon entropy (optimized: precompute log2)
-$log2 = [Math]::Log(2)
 function Get-Entropy {
     param ([string]$inputString)
-    if ($inputString.Length -eq 0) { return 0 }
+    if ([string]::IsNullOrEmpty($inputString)) { return 0.0 }
     $charCounts = @{}
-    foreach ($char in $inputString.ToCharArray()) {
-        if ($charCounts.ContainsKey($char)) { $charCounts[$char]++ } else { $charCounts[$char] = 1 }
-    }
-    $entropy = 0
+    foreach ($c in $inputString.ToCharArray()) { $charCounts[$c]++ }
+    $entropy = 0.0
+    $len = $inputString.Length
     foreach ($count in $charCounts.Values) {
-        $p = $count / $inputString.Length
-        $entropy -= $p * [Math]::Log($p) / $log2
+        $p = $count / $len
+        $entropy -= $p * ([Math]::Log($p) / $log2)
     }
     return $entropy
 }
 
-# Function to check anomalous domain (heuristic-based)
 function Is-AnomalousDomain {
     param ([string]$domain)
     if ([string]::IsNullOrEmpty($domain)) { return $false }
     if ($domain.Length -gt $DomainLengthThreshold) { return $true }
-    $numericRatio = ($domain -replace '[^0-9]', '').Length / $domain.Length
-    if ($numericRatio -gt $NumericRatioThreshold) { return $true }
-    $vowels = 'aeiou'
+
+    $digits = $Regex_NonDigit.Replace($domain, "").Length
+    if (($digits / $domain.Length) -gt $NumericRatioThreshold) { return $true }
+
     $vowelCount = 0
-    foreach ($char in $domain.ToLower().ToCharArray()) {
-        if ($vowels -contains $char) { $vowelCount++ }
-    }
-    if ($vowelCount / $domain.Length -lt $VowelRatioThreshold) { return $true }
-    $entropy = Get-Entropy $domain
-    return $entropy -gt $DomainEntropyThreshold
+    foreach ($char in $domain.ToLower().ToCharArray()) { if ($vowels.Contains($char)) { $vowelCount++ } }
+    if (($vowelCount / $domain.Length) -lt $VowelRatioThreshold) { return $true }
+
+    return (Get-Entropy $domain) -gt $DomainEntropyThreshold
 }
 
-# Function to check anomalous IP (entropy-based)
-function Is-AnomalousIP {
-    param ([string]$ip)
-    if ([string]::IsNullOrEmpty($ip)) { return $false }
-    $numericRatio = ($ip -replace '[^0-9.]', '').Length / $ip.Length
-    if ($numericRatio -ne 1) { return $true }
-    $entropy = Get-Entropy $ip
-    return $entropy -gt $IPEntropyThreshold
+# --- 3. CONFIG LOADING ---
+
+$configPath = Join-Path $ScriptDir "config.ini"
+$config = Read-IniFile -Path $configPath
+
+# Load Config Overrides
+if ($config['Anomaly']) {
+    if ($config['Anomaly']['DomainEntropyThreshold']) { $DomainEntropyThreshold = [double]$config['Anomaly']['DomainEntropyThreshold'] }
+}
+if ($config['Specifics']) {
+    if ($config['Specifics']['TLDs'])          { $SpecificTLDs          = ($config['Specifics']['TLDs'] -split ',').Trim() }
+    if ($config['Specifics']['RMMTools'])      { $SpecificRMMTools      = ($config['Specifics']['RMMTools'] -split ',').Trim() }
+    if ($config['Specifics']['LOLBins'])       { $SpecificLOLBins       = ($config['Specifics']['LOLBins'] -split ',').Trim() }
+    if ($config['Specifics']['CloudDomains'])  { $SpecificCloudDomains  = ($config['Specifics']['CloudDomains'] -split ',').Trim() }
 }
 
-# Connection history for beaconing and volume (use hashtables for fast lookup)
-$connectionHistory = @{}
-$connectionVolume = @{}
+# --- 4. MAIN MONITORING LOOP ---
 
-# Advanced Beaconing Parameters (configurable)
-$ACFThreshold = 0.5 # Autocorrelation > this flags periodicity
-$JitterRatioThreshold = 0.2 # Variance/mean < this flags controlled jitter
-$PeriodPowerThreshold = 0.5 # For Lomb-Scargle approximation
+$logName = "Microsoft-Windows-Sysmon/Operational"
+$outputDir = Split-Path $OutputPath -Parent
+if (-not (Test-Path $outputDir)) { New-Item -Path $outputDir -ItemType Directory -Force | Out-Null }
 
-# Check if Python is installed for ML clustering
-$pythonInstalled = Get-Command python -ErrorAction SilentlyContinue
-$tempIntervalsFile = "$env:TEMP\beacon_intervals.json" # Temp file for Python
+$lastQueryTime = (Get-Date).AddMinutes(-1)
+$lastMLRunTime = Get-Date
+$tempBatchFile = [System.IO.Path]::GetTempFileName()
+$RefDate = Get-Date -Date "01/01/1970" # Unix Epoch
 
-# Function to add connection
-function Add-Connection {
-    param (
-        [string]$Key,
-        [DateTime]$Timestamp = (Get-Date)
-    )
-    if (-not $connectionHistory.ContainsKey($Key)) {
-        $connectionHistory[$Key] = New-Object System.Collections.ArrayList
-    }
-    [void]$connectionHistory[$Key].Add($Timestamp)
+Write-Host "[-] Starting Full-Spectrum C2 Monitor (Rev 3)..." -ForegroundColor Cyan
+Write-Host "    Mode: Hybrid (Real-time Heuristics + Async Batched ML)" -ForegroundColor Gray
 
-    if (-not $connectionVolume.ContainsKey($Key)) {
-        $connectionVolume[$Key] = 0
-    }
-    $connectionVolume[$Key]++
-}
-
-# Enhanced Check-Beaconing with advanced algorithms
-function Check-Beaconing {
-    param ([string]$Key)
-    $now = Get-Date
-    if (-not $connectionHistory.ContainsKey($Key)) { return $null }
-    $connectionHistory[$Key] = $connectionHistory[$Key] | Where-Object { $_ -gt $now.AddMinutes(-$BeaconWindowMinutes) }
-    if ($connectionHistory[$Key].Count -ge $MinConnectionsForBeacon) {
-        $times = $connectionHistory[$Key] | Sort-Object
-        $intervals = New-Object System.Collections.ArrayList
-        for ($i = 1; $i -lt $times.Count; $i++) {
-            [void]$intervals.Add(($times[$i] - $times[$i-1]).TotalSeconds)
-        }
-        if ($intervals.Count -gt 0) {
-            $avg = ($intervals | Measure-Object -Average).Average
-            $sumSqDiff = 0
-            foreach ($int in $intervals) { $sumSqDiff += [Math]::Pow($int - $avg, 2) }
-            $variance = $sumSqDiff / $intervals.Count
-            $stdDev = [Math]::Sqrt($variance)
-            $flags = @()
-            # Basic low-variance check
-            if ($stdDev -lt $MaxIntervalVarianceSeconds) {
-                $flags += "Basic Beaconing (StdDev: $($stdDev.ToString('N2')) seconds)"
-            }
-            # Advanced: Jitter ratio
-            if ($avg -gt 0 -and ($variance / $avg) -lt $JitterRatioThreshold) {
-                $flags += "Controlled Jitter Beaconing (Ratio: $(($variance / $avg).ToString('N2')))"
-            }
-            # Advanced: Autocorrelation (lag 1)
-            if ($intervals.Count -ge 2) {
-                $series1 = $intervals[0..($intervals.Count - 2)]
-                $series2 = $intervals[1..($intervals.Count - 1)]
-                $mean1 = ($series1 | Measure-Object -Average).Average
-                $mean2 = ($series2 | Measure-Object -Average).Average
-                $cov = 0
-                $var1 = 0
-                $var2 = 0
-                for ($j = 0; $j -lt $series1.Count; $j++) {
-                    $diff1 = $series1[$j] - $mean1
-                    $diff2 = $series2[$j] - $mean2
-                    $cov += $diff1 * $diff2
-                    $var1 += $diff1 * $diff1
-                    $var2 += $diff2 * $diff2
-                }
-                if ($var1 -gt 0 -and $var2 -gt 0) {
-                    $acf = $cov / [Math]::Sqrt($var1 * $var2)
-                    if ($acf -gt $ACFThreshold) {
-                        $flags += "Periodic Beaconing (ACF: $($acf.ToString('N2')))"
-                    }
-                }
-            }
-            # Advanced: Lomb-Scargle periodogram approximation
-            $periods = @(30, 60, 120, 300) # Common beacon periods in seconds
-            $maxPower = 0
-            foreach ($p in $periods) {
-                $omega = 2 * [Math]::PI / $p
-                $sinSum = 0
-                $cosSum = 0
-                foreach ($t in $normalized_times = $times | ForEach-Object { ($_ - $times[0]).TotalSeconds }) {
-                    $sinSum += [Math]::Sin($omega * $t)
-                    $cosSum += [Math]::Cos($omega * $t)
-                }
-                $power = ([Math]::Pow($sinSum, 2) + [Math]::Pow($cosSum, 2)) / $normalized_times.Count
-                if ($power -gt $maxPower) { $maxPower = $power }
-            }
-            if ($maxPower -gt $PeriodPowerThreshold) {
-                $flags += "Periodic Beaconing (Power: $($maxPower.ToString('N2')))"
-            }
-            # Advanced: ML Clustering (if Python installed)
-            if ($pythonInstalled) {
-                # Export intervals to temp file
-                $intervals | ConvertTo-Json | Out-File -FilePath $tempIntervalsFile -Encoding utf8
-                # Call Python script (BeaconML.py)
-                $mlResult = python (Join-Path (Split-Path $PSCommandPath -Parent) "BeaconML.py") $tempIntervalsFile
-                if ($mlResult -match "Beaconing") { $flags += $mlResult }
-                Remove-Item $tempIntervalsFile -ErrorAction SilentlyContinue
-            }
-            if ($flags.Count -gt 0) {
-                return $flags -join '; '
-            }
-        }
-    }
-    return $null
-}
-
-# Function to check volume anomaly
-function Check-Volume {
-    param ([string]$Key)
-    if ($connectionVolume.ContainsKey($Key) -and $connectionVolume[$Key] -gt $VolumeThreshold) {
-        return "High volume detected (Count: $($connectionVolume[$Key]))"
-    }
-    return $null
-}
-
-# Function to prune old keys
-function Prune-History {
-    $keysToRemove = $connectionHistory.Keys | Where-Object { $connectionHistory[$_].Count -eq 0 }
-    foreach ($key in $keysToRemove) {
-        $connectionHistory.Remove($key)
-        $connectionVolume.Remove($key)
-    }
-    if ($connectionHistory.Count -gt $MaxHistoryKeys) {
-        $oldestKeys = $connectionHistory.Keys | Sort-Object { $connectionHistory[$_][0] } | Select-Object -First ($connectionHistory.Count - $MaxHistoryKeys)
-        foreach ($key in $oldestKeys) {
-            $connectionHistory.Remove($key)
-            $connectionVolume.Remove($key)
-        }
-    }
-}
-
-# Batch data for export (performance: append in memory, export periodically)
-$dataBatch = @()
-$batchSize = 100 # Export every 100 items or at end of loop
-
-# Monitoring loop
 while ($true) {
     try {
-        if (-not $lastQueryTime) {
-            $lastQueryTime = (Get-Date).AddMinutes(-1) # Fallback to 1 minute ago if null
-        }
+        $now = Get-Date
+        if (-not $lastQueryTime) { $lastQueryTime = $now.AddMinutes(-1) }
+
+        # Poll ALL relevant Sysmon Events
         $filter = @{
             LogName = $logName
             ID = 1,3,7,11,12,13,22
             StartTime = $lastQueryTime
         }
-        $events = Get-WinEvent -FilterHashtable $filter -ErrorAction SilentlyContinue
-        $now = Get-Date
-        foreach ($event in $events) {
-            try {
-                $xmlData = [xml]$event.ToXml()
+
+        $events = try { Get-WinEvent -FilterHashtable $filter -ErrorAction Stop } catch { $null }
+
+        if ($events) {
+            foreach ($event in $events) {
+                $rawXml = $event.ToXml()
+
+                # Optimization: Skip Microsoft Signed ImageLoads immediately
+                if ($event.Id -eq 7 -and $Regex_MS_Signed.IsMatch($rawXml)) { continue }
+
+                # Parse XML
+                $xmlData = [xml]$rawXml
                 $eventDataHash = @{}
-                foreach ($data in $xmlData.Event.EventData.Data) {
-                    $eventDataHash[$data.Name] = $data.'#text'
-                }
-                # Noise filtering for known good: Skip event if matches criteria
-                if ($event.Id -eq 7 -and $eventDataHash['Signed'] -eq 'true' -and $eventDataHash['Signature'] -match 'Microsoft Windows' -and $eventDataHash['SignatureStatus'] -eq 'Valid') {
-                    continue  # Skip logging this event as normal noise
-                }
-                $props = @{
-                    EventType = switch ($event.Id) { 1 {"ProcessCreate"} 3 {"NetworkConnect"} 7 {"ImageLoad"} 11 {"FileCreate"} 12 {"RegistryCreateDelete"} 13 {"RegistrySet"} 22 {"DnsQuery"} }
+                foreach ($node in $xmlData.Event.EventData.Data) { $eventDataHash[$node.Name] = $node.'#text' }
+
+                # Build Base Object
+                $props = [ordered]@{
+                    EventType = switch ($event.Id) { 1 {"ProcessCreate"} 3 {"NetworkConnect"} 7 {"ImageLoad"} 11 {"FileCreate"} 12 {"RegistryEvent"} 13 {"RegistryEvent"} 22 {"DnsQuery"} default {$event.Id} }
                     Timestamp = $event.TimeCreated
-                    UtcTime = $eventDataHash['UtcTime']
-                    ProcessId = $eventDataHash['ProcessId']
                     Image = $eventDataHash['Image']
-                    SuspiciousFlags = @()
-                    ATTCKMappings = @()
-                    FullMessage = $event.Message # Add full Sysmon event message for details
-                    # Add event-specific details
-                    CommandLine = $eventDataHash['CommandLine'] # For process events
-                    DestinationIp = $eventDataHash['DestinationIp'] # For network
-                    DestinationPort = $eventDataHash['DestinationPort'] # For network
-                    QueryName = $eventDataHash['QueryName'] # For DNS
+                    SuspiciousFlags = [System.Collections.Generic.List[string]]::new()
+                    ATTCKMappings = [System.Collections.Generic.List[string]]::new()
+                    # Context fields
+                    CommandLine = $eventDataHash['CommandLine']
+                    DestinationIp = $eventDataHash['DestinationIp']
+                    DestinationHostname = $eventDataHash['DestinationHostname']
+                    TargetFilename = $eventDataHash['TargetFilename']
+                    TargetObject = $eventDataHash['TargetObject']
                 }
+
+                # --- ANALYSIS LOGIC ---
                 switch ($event.Id) {
-                    1 {
-                        $props['CommandLine'] = $eventDataHash['CommandLine']
+                    1 { # Process Create
                         $props['ParentImage'] = $eventDataHash['ParentImage']
-                        $props['ParentCommandLine'] = $eventDataHash['ParentCommandLine']
-                        if ($props['CommandLine'] -match '-EncodedCommand|-enc|IEX|Invoke-Expression|DownloadString') {
-                            $props.SuspiciousFlags += "Anomalous CommandLine (Potential Script Execution)"
-                            $props.ATTCKMappings += "TA0002: T1059 (Command and Scripting Interpreter); T1059.001 (PowerShell)"
+                        if ($Regex_Encoded.IsMatch($props['CommandLine'])) {
+                            $props.SuspiciousFlags.Add("Anomalous CommandLine (Script/Encoded)")
+                            $props.ATTCKMappings.Add("TA0002: T1059.001")
                         }
-                        if ($props['Image'] -match 'schtasks\.exe' -and $props['CommandLine'] -match '/create') {
-                            $props.SuspiciousFlags += "Scheduled Task Creation (Persistence Anomaly)"
-                            $props.ATTCKMappings += "TA0003: T1053.005 (Scheduled Task/Job)"
+                        if ($Regex_Defense.IsMatch($props['CommandLine'])) {
+                            $props.SuspiciousFlags.Add("Defense Tampering Attempt")
+                            $props.ATTCKMappings.Add("TA0005: T1562.001")
                         }
-                        if ($props['CommandLine'] -match 'Set-MpPreference.*-Disable|sc delete|net stop') {
-                            $props.SuspiciousFlags += "Service/Defense Tampering Anomaly"
-                            $props.ATTCKMappings += "TA0005: T1562 (Impair Defenses); T1562.001 (Disable or Modify Tools)"
-                        }
-                        if ($props['ParentImage'] -notmatch 'explorer|cmd|powershell' -and $props['Image'] -match '\.exe$') {
-                            $props.SuspiciousFlags += "Unusual Parent Process Anomaly"
-                            $props.ATTCKMappings += "TA0002: T1059 (Command and Scripting Interpreter)"
-                        }
-                        if ($SpecificRMMTools -and $SpecificRMMTools -contains $props['Image']) {
-                            $props.SuspiciousFlags += "Specific RMM Tool Match"
-                            $props.ATTCKMappings += "TA0011: T1219 (Remote Access Software)"
-                        }
-                        if ($SpecificLOLBins -and $SpecificLOLBins -contains $props['Image']) {
-                            $props.SuspiciousFlags += "Specific LOLBin Match"
-                            $props.ATTCKMappings += "TA0005: T1218 (System Binary Proxy Execution)"
+                        if ($SpecificRMMTools -contains $props['Image']) {
+                            $props.SuspiciousFlags.Add("RMM Tool Detected")
+                            $props.ATTCKMappings.Add("TA0011: T1219")
                         }
                     }
-                    3 {
-                        $props['Protocol'] = $eventDataHash['Protocol']
-                        $props['SourceIp'] = $eventDataHash['SourceIp']
-                        $props['SourcePort'] = $eventDataHash['SourcePort']
-                        $props['DestinationIp'] = $eventDataHash['DestinationIp']
-                        $props['DestinationHostname'] = $eventDataHash['DestinationHostname']
-                        $props['DestinationPort'] = $eventDataHash['DestinationPort']
-                        $props['IsOutbound'] = if ($eventDataHash['SourceIp'] -match $internalIpRegex -and $eventDataHash['DestinationIp'] -notmatch $internalIpRegex) { $true } else { $false }
-                        if ($props['IsOutbound']) {
-                            $key = if ($props['DestinationHostname']) { "$($props['DestinationHostname']):$($props['DestinationPort'])" } else { "$($props['DestinationIp']):$($props['DestinationPort'])" }
-                            Add-Connection -Key $key -Timestamp $props['Timestamp']
-                            $beaconFlag = Check-Beaconing -Key $key
-                            if ($beaconFlag) {
-                                $props.SuspiciousFlags += $beaconFlag
-                                $props.ATTCKMappings += "TA0011: T1071 (Application Layer Protocol); T1571 (Non-Standard Port)"
+                    3 { # Network Connect (Hybrid Mode)
+                        # Part 1: Real-time checks (Domain/IP anomalies)
+                        if ($props['DestinationHostname'] -and (Is-AnomalousDomain $props['DestinationHostname'])) {
+                            $props.SuspiciousFlags.Add("High Entropy Domain (Network)")
+                            $props.ATTCKMappings.Add("TA0011: T1568.002")
+                        }
+
+                        # Part 2: Buffer Data for Python ML
+                        $isOutbound = ($Regex_InternalIP.IsMatch($eventDataHash['SourceIp']) -and -not $Regex_InternalIP.IsMatch($eventDataHash['DestinationIp']))
+                        if ($isOutbound) {
+                            $dst = if ($props['DestinationHostname']) { "$($props['DestinationHostname']):$($eventDataHash['DestinationPort'])" } else { "$($props['DestinationIp']):$($eventDataHash['DestinationPort'])" }
+
+                            if (-not $connectionHistory.ContainsKey($dst)) {
+                                $connectionHistory[$dst] = [System.Collections.Generic.Queue[datetime]]::new()
                             }
-                            $volumeFlag = Check-Volume -Key $key
-                            if ($volumeFlag) {
-                                $props.SuspiciousFlags += $volumeFlag
-                                $props.ATTCKMappings += "TA0010: T1041 (Exfiltration Over C2 Channel); TA0011: T1095 (Non-Application Layer Protocol)"
-                            }
-                            if ($props['DestinationHostname']) {
-                                if (Is-AnomalousDomain $props['DestinationHostname']) {
-                                    $props.SuspiciousFlags += "Domain Anomaly (DGA-like)"
-                                    $props.ATTCKMappings += "TA0011: T1568 (Dynamic Resolution); T1568.002 (Domain Generation Algorithms)"
-                                }
-                                if ($SpecificTLDs -and ($SpecificTLDs | Where-Object { $props['DestinationHostname'].EndsWith($_, [StringComparison]::OrdinalIgnoreCase) })) {
-                                    $props.SuspiciousFlags += "Specific TLD Match"
-                                    $props.ATTCKMappings += "TA0011: T1568 (Dynamic Resolution)"
-                                }
-                            } elseif ($props['DestinationIp']) {
-                                if (Is-AnomalousIP $props['DestinationIp']) {
-                                    $props.SuspiciousFlags += "IP Anomaly (High Entropy/Random-like)"
-                                    $props.ATTCKMappings += "TA0011: T1071 (Application Layer Protocol); T1568.001 (Fast Flux DNS)"
-                                }
-                            }
-                            if ($props['DestinationPort'] -notin $commonPorts) {
-                                $props.SuspiciousFlags += "Unusual Port/Protocol Anomaly"
-                                $props.ATTCKMappings += "TA0011: T1571 (Non-Standard Port); T1095 (Non-Application Layer Protocol)"
-                            }
-                            if ($props['Protocol'] -eq 'udp' -and $props['DestinationPort'] -ne '53') {
-                                $props.SuspiciousFlags += "Potential Tunneling Anomaly"
-                                $props.ATTCKMappings += "TA0011: T1572 (Protocol Tunneling)"
-                            }
-                            if ($SpecificCloudDomains -and ($SpecificCloudDomains | Where-Object { $props['DestinationHostname'] -match $_ })) {
-                                $props.SuspiciousFlags += "Specific Cloud Domain Match"
-                                $props.ATTCKMappings += "TA0011: T1102 (Web Service)"
-                            }
-                            if ($props['Image'] -notmatch 'browser|system|trusted') {
-                                $props.SuspiciousFlags += "Unusual Process Network Activity"
-                                $props.ATTCKMappings += "TA0011: T1071 (Application Layer Protocol); TA0002: T1059 (Command and Scripting Interpreter)"
-                            }
-                        } else { continue }
+                            $connectionHistory[$dst].Enqueue($now)
+                        }
                     }
-                    7 {
+                    7 { # Image Load (DLL Sideloading)
                         $props['ImageLoaded'] = $eventDataHash['ImageLoaded']
-                        # Noise filtering for "known good" signed Microsoft DLLs
-                        if ($eventDataHash['Signed'] -eq 'true' -and $eventDataHash['Signature'] -match 'Microsoft Windows' -and $eventDataHash['SignatureStatus'] -eq 'Valid') {
-                            continue  # Skip logging this event as normal noise
-                        }
-                        if ($props['ImageLoaded'] -match '\.dll$' -and $props['Image'] -notmatch $props['ImageLoaded']) {
-                            $props.SuspiciousFlags += "Anomalous DLL Load"
-                            $props.ATTCKMappings += "TA0005: T1574 (Hijack Execution Flow); T1574.002 (DLL Side-Loading)"
+                        # Alert if System Binary loads non-System DLL
+                        if ($Regex_SysPaths.IsMatch($props['Image']) -and -not $Regex_SysPaths.IsMatch($props['ImageLoaded'])) {
+                            $props.SuspiciousFlags.Add("Anomalous DLL Load (Sideloading Risk)")
+                            $props.ATTCKMappings.Add("TA0005: T1574.002")
                         }
                     }
-                    11 {
-                        $props['TargetFilename'] = $eventDataHash['TargetFilename']
-                        if ($props['TargetFilename'] -match '\\system32\\|\AppData\\|\\.ps1|\\.vbs|\\.bat') {
-                            $props.SuspiciousFlags += "Anomalous File Creation (Sensitive Path/Script)"
-                            $props.ATTCKMappings += "TA0003: T1546 (Event Triggered Execution); TA0002: T1059 (Command and Scripting Interpreter)"
+                    11 { # File Create
+                        if ($props['TargetFilename'] -match '\.ps1$|\.vbs$|\.bat$|\.exe$') {
+                            $props.SuspiciousFlags.Add("Executable/Script File Created")
+                            $props.ATTCKMappings.Add("TA0002: T1059")
                         }
                     }
-                    {12,13} {
-                        $props['TargetObject'] = $eventDataHash['TargetObject']
-                        if ($props['TargetObject'] -match 'Run|RunOnce|Services|Startup|Image File Execution Options') {
-                            $props.SuspiciousFlags += "Registry Anomaly (Persistence Key)"
-                            $props.ATTCKMappings += "TA0003: T1547.001 (Boot or Logon Autostart Execution: Registry Run Keys); T1543.003 (Create or Modify System Process: Windows Service)"
+                    12, 13 { # Registry Events
+                        if ($props['TargetObject'] -match 'Run|RunOnce|Services|Startup') {
+                            $props.SuspiciousFlags.Add("Persistence Registry Key Modified")
+                            $props.ATTCKMappings.Add("TA0003: T1547.001")
                         }
                     }
-                    22 {
+                    22 { # DNS Query
                         $props['QueryName'] = $eventDataHash['QueryName']
-                        $props['QueryStatus'] = $eventDataHash['QueryStatus']
-                        $props['QueryResults'] = $eventDataHash['QueryResults']
                         if (Is-AnomalousDomain $props['QueryName']) {
-                            $props.SuspiciousFlags += "DNS Query Anomaly (DGA-like/Tunneling)"
-                            $props.ATTCKMappings += "TA0011: T1071.004 (Application Layer Protocol: DNS); T1568 (Dynamic Resolution)"
+                            $props.SuspiciousFlags.Add("DGA DNS Query Detected")
+                            $props.ATTCKMappings.Add("TA0011: T1568.002")
                         }
-                        if ($props['QueryName'] -match '\.onion|\.i2p' -or $props['QueryResults'] -match 'NXDOMAIN' * 5) {
-                            $props.SuspiciousFlags += "Anomalous DNS Resolution (Potential Hidden Channel)"
-                            $props.ATTCKMappings += "TA0011: T1572 (Protocol Tunneling); TA0005: T1021 (Remote Services)"
-                        }
-                        if ($SpecificTLDs -and ($SpecificTLDs | Where-Object { $props['QueryName'].EndsWith($_, [StringComparison]::OrdinalIgnoreCase) })) {
-                            $props.SuspiciousFlags += "Specific TLD Match in DNS"
-                            $props.ATTCKMappings += "TA0011: T1568 (Dynamic Resolution)"
+                        if ($SpecificTLDs -and ($SpecificTLDs | Where-Object { $props['QueryName'].EndsWith($_) })) {
+                            $props.SuspiciousFlags.Add("Suspicious TLD Match")
                         }
                     }
                 }
-                $props.SuspiciousFlags = $props.SuspiciousFlags -join '; '
-                $props.ATTCKMappings = $props.ATTCKMappings -join '; '
-                if ($event.Id -in @(3,22) -or $props.SuspiciousFlags) {
-                    $dataBatch += New-Object PSObject -Property $props
+
+                # Add to Batch if flagged
+                if ($props.SuspiciousFlags.Count -gt 0) {
+                    $outObj = New-Object PSObject -Property $props
+                    $outObj.SuspiciousFlags = $props.SuspiciousFlags -join '; '
+                    $outObj.ATTCKMappings = $props.ATTCKMappings -join '; '
+                    $dataBatch.Add($outObj)
                 }
-            } catch {
-                Write-Verbose "Error parsing event: $($_.Exception.Message)"
-                continue
             }
         }
-        # Prune history (optimized: batch remove)
-        $keysToRemove = $connectionHistory.Keys | Where-Object { $connectionHistory[$_].Count -eq 0 }
-        foreach ($key in $keysToRemove) {
-            $connectionHistory.Remove($key)
-            $connectionVolume.Remove($key)
-        }
-        if ($connectionHistory.Count -gt $MaxHistoryKeys) {
-            $oldestKeys = $connectionHistory.Keys | Sort-Object { $connectionHistory[$_][0] } | Select-Object -First ($connectionHistory.Count - $MaxHistoryKeys)
-            foreach ($key in $oldestKeys) {
-                $connectionHistory.Remove($key)
-                $connectionVolume.Remove($key)
+
+        # --- ASYNC ML EXECUTION (Beaconing) ---
+        if ($PythonAvailable -and ($now - $lastMLRunTime).TotalSeconds -ge $BatchAnalysisIntervalSeconds) {
+
+            # Prepare Payload
+            $payload = @{}
+            $targets = 0
+            foreach ($key in $connectionHistory.Keys) {
+                if ($connectionHistory[$key].Count -ge $MinConnectionsForML) {
+                    $timestamps = $connectionHistory[$key].ToArray() | ForEach-Object { ($_ - $RefDate).TotalSeconds }
+                    $payload[$key] = $timestamps
+                    $targets++
+                }
             }
-        }
-        # Export batched data if threshold or loop end
-        if ($dataBatch.Count -ge $batchSize -or $events.Count -eq 0) {
-            if ($dataBatch.Count -gt 0) {
+
+            if ($targets -gt 0) {
+                Write-Host "    [ML] analyzing $targets targets..." -NoNewline -ForegroundColor Gray
+
+                # Compress JSON to speed up IO
+                $payload | ConvertTo-Json -Depth 2 -Compress | Set-Content -Path $tempBatchFile
+
+                # Execute Python
+                $pyArgs = "`"$FullMLPath`" `"$tempBatchFile`" --use_dbscan"
+                $pInfo = New-Object System.Diagnostics.ProcessStartInfo
+                $pInfo.FileName = $PythonPath; $pInfo.Arguments = $pyArgs
+                $pInfo.RedirectStandardOutput = $true; $pInfo.CreateNoWindow = $true; $pInfo.UseShellExecute = $false
+
+                $p = [System.Diagnostics.Process]::Start($pInfo)
+                $p.WaitForExit()
+
                 try {
-                    switch ($Format) {
-                        "CSV" { $dataBatch | Export-Csv -Path $OutputPath -Append -NoTypeInformation }
-                        "JSON" { $dataBatch | ConvertTo-Json -Depth 4 | Add-Content -Path $OutputPath }
-                        "YAML" {
-                            if (-not (Get-Module -ListAvailable -Name powershell-yaml)) {
-                                Write-Warning "powershell-yaml not found. Falling back to JSON."
-                                $dataBatch | ConvertTo-Json -Depth 4 | Add-Content -Path $OutputPath
-                            } else {
-                                Import-Module powershell-yaml
-                                $dataBatch | ConvertTo-Yaml | Add-Content -Path $OutputPath
+                    $jsonOut = $p.StandardOutput.ReadToEnd()
+                    $alerts = $jsonOut | ConvertFrom-Json
+
+                    if ($alerts -and -not $alerts.error) {
+                        foreach ($t in $alerts.PSObject.Properties.Name) {
+                            $mlObj = [ordered]@{
+                                EventType="ML_BEACON_ALERT"; Timestamp=$now; Destination=$t
+                                SuspiciousFlags=$alerts.$t; ATTCKMappings="TA0011: T1071"
                             }
+                            $dataBatch.Add((New-Object PSObject -Property $mlObj))
                         }
-                    }
-                    Write-Output "$(Get-Date): Appended $($dataBatch.Count) monitored events (with anomalies and ATT&CK mappings) to $OutputPath"
-                } catch {
-                    Write-Error "Export error: $($_.Exception.Message)"
-                }
-                $dataBatch = @()
+                        Write-Host " Found $($alerts.PSObject.Properties.Count) beacons." -ForegroundColor Yellow
+                    } else { Write-Host " Clean." -ForegroundColor Green }
+                } catch { Write-Warning " Python ML Error: $_" }
+            }
+            $lastMLRunTime = $now
+
+            # Maintenance: Prune old history
+            if ($connectionHistory.Count -gt $MaxHistoryKeys) {
+                $keys = $connectionHistory.Keys | Select-Object -First 100
+                foreach ($k in $keys) { [void]$connectionHistory.Remove($k) }
             }
         }
+
+        # --- EXPORT ---
+        if ($dataBatch.Count -gt 0) {
+            switch ($Format) {
+                "CSV"  { $dataBatch | Export-Csv -Path $OutputPath -Append -NoTypeInformation }
+                "JSON" { $dataBatch | ConvertTo-Json -Depth 2 | Add-Content -Path $OutputPath }
+            }
+            $dataBatch.Clear()
+        }
+
         $lastQueryTime = $now
-    } catch {
-        Write-Error "Loop error: $($_.Exception.Message)"
-    }
-    Start-Sleep -Seconds $IntervalSeconds
+        Start-Sleep -Seconds $IntervalSeconds
+
+    } catch { Write-Error $_ }
 }
