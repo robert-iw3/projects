@@ -1,92 +1,49 @@
 <#
 .SYNOPSIS
-    PowerShell script to monitor Sysmon events for C2 and related threats with MITRE ATT&CK mappings (Version 2.0).
-    Optimized for performance: Reduced XML parsing overhead, batched exports, efficient pruning, minimized string operations.
-    Supports config.ini for persistent settings (e.g., thresholds, specifics); command-line params override config/defaults.
-    Enhanced beaconing: Added jitter ratio, autocorrelation, Lomb-Scargle periodogram approximation, and optional ML clustering via Python (if installed).
-    Syntax validated: No errors (braces match, cmdlets correct, variables defined).
+    Hybrid Sysmon C2 Monitor (PowerShell Collector + Async Python ML).
+    Features: Real-time Heuristics + Advanced Lomb-Scargle/DBSCAN Jitter Detection via BeaconML.py.
+    Architecture: Non-blocking data collection with periodic offloaded analysis.
 
 .DESCRIPTION
-    Loads settings from config.ini (if exists in script dir), overrides with params.
-    Checks Sysmon, monitors events, detects anomalies, outputs to file.
-    For advanced ML beaconing (K-Means clustering on intervals), checks for Python; if available, calls BeaconML.py (provided separately).
-    Config.ini example:
-    [Anomaly]
-    DomainEntropyThreshold=3.5
-    [Specifics]
-    TLDs=.ru,.cn
+    Operates in two modes simultaneously:
+    1. Real-Time: Immediate detection of DGA, Sideloading, and Persistence.
+    2. Async Batch: Offloads network timestamps to Python every N seconds for heavy math analysis.
+
+    Config Priority: CLI Arguments > Config.ini > Script Defaults.
+    Requires: BeaconML.py in the same directory (or specified via path).
 
 .PARAMETER OutputPath
     Path to output file (default: C:\Temp\C2Monitoring.csv).
 
 .PARAMETER Format
-    Output format: CSV (default), JSON, YAML.
+    Output format: CSV (default) or JSON.
 
-.PARAMETER IntervalSeconds
-    Polling interval (default: 10).
+.PARAMETER PythonPath
+    Path to Python executable (default: "python").
 
-.PARAMETER BeaconWindowMinutes
-    Beaconing window (default: 60).
+.PARAMETER MLScriptPath
+    Path to the Python analysis engine (default: "BeaconML.py").
 
-.PARAMETER MinConnectionsForBeacon
-    Min connections for beaconing check (default: 3).
+.PARAMETER BatchAnalysisIntervalSeconds
+    How often to offload data to Python for analysis (default: 60).
 
-.PARAMETER MaxIntervalVarianceSeconds
-    Max std dev for beaconing (default: 10).
+.PARAMETER MinConnectionsForML
+    Minimum data points required before sending to Python (default: 5).
 
-.PARAMETER MaxHistoryKeys
-    Max history keys (default: 1000).
-
-.PARAMETER VolumeThreshold
-    Connection count threshold for volume anomaly in window (default: 50).
-
-.PARAMETER DomainEntropyThreshold
-    Entropy threshold for domain anomaly (default: 3.5).
-
-.PARAMETER DomainLengthThreshold
-    Length threshold for domain anomaly (default: 30).
-
-.PARAMETER NumericRatioThreshold
-    Numeric ratio threshold for domain/IP anomaly (default: 0.4).
-
-.PARAMETER VowelRatioThreshold
-    Minimum vowel ratio for domain anomaly (below flags anomaly) (default: 0.2).
-
-.PARAMETER IPEntropyThreshold
-    Entropy threshold for IP anomaly (default: 3.0).
-
-.PARAMETER SpecificTLDs
-    Optional array of specific TLDs to flag (e.g., @('.ru', '.cn')).
-
-.PARAMETER SpecificRMMTools
-    Optional array of specific RMM tool names to flag (e.g., @('AnyDesk.exe')).
-
-.PARAMETER SpecificLOLBins
-    Optional array of specific LOLBin names to flag (e.g., @('rundll32.exe')).
-
-.PARAMETER SpecificCloudDomains
-    Optional array of specific cloud domains to flag (e.g., @('amazonaws.com')).
+# ... [Standard Detection Parameters same as MonitorC2Activities_v2.ps1] ...
 
 .EXAMPLE
-    .\MonitorC2Activities_AdvancedBeaconing.ps1 -SpecificTLDs @('.ru', '.cn') -DomainEntropyThreshold 3.8
-    .\MonitorC2Activities_AdvancedBeaconing.ps1 -OutputPath "D:\Logs\C2Log.json" -Format JSON -IntervalSeconds 15
-    .\MonitorC2Activities_AdvancedBeaconing.ps1 -SpecificRMMTools @('AnyDesk.exe','TeamViewer.exe') -SpecificLOLBins @('rundll32.exe','regsvr32.exe')
-    .\MonitorC2Activities_AdvancedBeaconing.ps1 -SpecificCloudDomains @('amazonaws.com','azureedge.net') -VolumeThreshold 100
-    .\MonitorC2Activities_AdvancedBeaconing.ps1 -BeaconWindowMinutes 120 -MinConnectionsForBeacon 5 -MaxIntervalVarianceSeconds 5
-    .\MonitorC2Activities_AdvancedBeaconing.ps1 -DomainLengthThreshold 25 -NumericRatioThreshold 0.3 -VowelRatioThreshold 0.25 -IPEntropyThreshold 2.5
-    .\MonitorC2Activities_AdvancedBeaconing.ps1 -MaxHistoryKeys 2000 -VolumeThreshold 75
-    .\MonitorC2Activities_AdvancedBeaconing.ps1 -Format YAML
-    .\MonitorC2Activities_AdvancedBeaconing.ps1
-        (Uses defaults and config.ini if present)
+    .\MonitorC2Activities_AdvancedBeaconing.ps1 -BatchAnalysisIntervalSeconds 30
+    .\MonitorC2Activities_AdvancedBeaconing.ps1 -PythonPath "C:\Python39\python.exe" -Format JSON
 
 .NOTES
     Author: Robert Weber
 
-    Architecture:
-      1. PowerShell collects and buffers network timestamps (O(1) speed).
-      2. Every N seconds, it dumps data to disk and calls Python.
-      3. Python (BeaconML.py) runs Lomb-Scargle/DBSCAN math in parallel.
-      4. Results are ingested back into the PowerShell output stream.
+    Updates (v2):
+    - Architecture: Async Batching (Does not block event loop).
+    - Logic: Fixed Regex/Switch syntax errors.
+    - Feature: Integration with BeaconML.py (DBSCAN/Spectral Analysis).
+    - Config: Fixed precedence (CLI now correctly overrides Config.ini).
 #>
 
 param (

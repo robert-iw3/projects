@@ -1,47 +1,54 @@
 <#
 .SYNOPSIS
-    PowerShell script to monitor Sysmon events for C2 and related threats with MITRE ATT&CK mappings.
-    Optimized for performance: Reduced XML parsing overhead, batched exports, efficient pruning, minimized string operations.
-    Supports config.ini for persistent settings (e.g., thresholds, specifics); command-line params override config/defaults.
-    Syntax validated: No errors (braces match, cmdlets correct, variables defined).
-    Script can be used for forensics or live monitoring, threat hunting, incident response, and security operations.
+    Standalone Native PowerShell C2 Monitor (No Python Dependencies).
+    Monitors Sysmon events for C2, Beaconing, and Persistence with MITRE ATT&CK mappings.
+    Optimized: Compiled Regex, XML Fast-Path filtering, O(1) Queues.
+    Features: In-memory .NET math for Beaconing (Variance/Jitter), DLL Sideloading, DGA, and Registry persistence.
 
 .DESCRIPTION
-    Loads settings from config.ini (if exists in script dir), overrides with params.
-    Checks Sysmon, monitors events, detects anomalies, outputs to file.
+    Loads settings from config.ini (if exists), but strictly respects Command-Line Overrides.
+    Config Priority: CLI Arguments > Config.ini > Script Defaults.
+
+    Detection Logic:
+    - Beaconing: Uses .NET math to calculate Interval Standard Deviation and Jitter Consistency.
+    - Sideloading: Alerts on System Binaries loading Non-System DLLs.
+    - Context: Includes a new 'Details' field (User, Registry Values, DNS Results) for correlation.
+
     Config.ini example:
     [Anomaly]
     DomainEntropyThreshold=3.5
     [Specifics]
     TLDs=.ru,.cn
-    RMMTools=AnyDesk.exe,TeamViewer.exe
 
 .PARAMETER OutputPath
     Path to output file (default: C:\Temp\C2Monitoring.csv).
 
 .PARAMETER Format
-    Output format: CSV (default), JSON, YAML.
+    Output format: CSV (default) or JSON. (YAML removed for standalone compatibility).
 
 .PARAMETER IntervalSeconds
     Polling interval (default: 10).
 
-.PARAMETER BeaconWindowMinutes
-    Beaconing window (default: 60).
-
 .PARAMETER MinConnectionsForBeacon
-    Min connections for beaconing check (default: 3).
+    Min connections before calculating variance (default: 5).
 
-.PARAMETER MaxIntervalVarianceSeconds
-    Max std dev for beaconing (default: 10).
+.PARAMETER MaxBeaconStdDev
+    Threshold (seconds) for "Perfect" machine-like beaconing (default: 5.0).
+
+.PARAMETER JitterTolerance
+    Percentage (0.0-1.0) of interval deviation allowed for "Jittered" beacon detection (default: 0.2).
+
+.PARAMETER BeaconWindowMinutes
+    Time window to track connections for beaconing analysis (default: 60).
 
 .PARAMETER MaxHistoryKeys
-    Max history keys (default: 1000).
+    Max number of active connection streams to track in memory (default: 2000).
 
 .PARAMETER VolumeThreshold
-    Connection count threshold for volume anomaly in window (default: 50).
+    Connection count threshold for volume anomaly (default: 50).
 
 .PARAMETER DomainEntropyThreshold
-    Entropy threshold for domain anomaly (default: 3.5).
+    Entropy threshold for domain anomaly (default: 3.8).
 
 .PARAMETER DomainLengthThreshold
     Length threshold for domain anomaly (default: 30).
@@ -50,7 +57,7 @@
     Numeric ratio threshold for domain/IP anomaly (default: 0.4).
 
 .PARAMETER VowelRatioThreshold
-    Minimum vowel ratio for domain anomaly (below flags anomaly) (default: 0.2).
+    Minimum vowel ratio for domain anomaly (default: 0.2).
 
 .PARAMETER IPEntropyThreshold
     Entropy threshold for IP anomaly (default: 3.0).
@@ -68,18 +75,19 @@
     Optional array of specific cloud domains to flag (e.g., @('amazonaws.com')).
 
 .EXAMPLE
-    .\MonitorC2Activities.ps1 -SpecificTLDs @('.ru', '.cn') -DomainEntropyThreshold 3.8
-    .\MonitorC2Activities.ps1 -OutputPath "D:\Logs\C2Log.json" -Format JSON -IntervalSeconds 15
-    .\MonitorC2Activities.ps1 -SpecificRMMTools @('AnyDesk.exe','TeamViewer.exe') -SpecificLOLBins @('rundll32.exe') -SpecificCloudDomains @('amazonaws.com','azureedge.net')
-    .\MonitorC2Activities.ps1
-        (Uses defaults and config.ini if present)
+    .\MonitorC2Activities_v2.ps1 -SpecificTLDs @('.ru', '.cn') -JitterTolerance 0.3
+    .\MonitorC2Activities_v2.ps1 -OutputPath "C:\Logs\C2Log.json" -Format JSON
+    .\MonitorC2Activities_v2.ps1 -MaxBeaconStdDev 2.0 -MinConnectionsForBeacon 10
 
 .NOTES
     Author: Robert Weber
 
-    v2 Updates:
-    Performance: Compiled Regex, XML String pre-filtering, Generic Queues, O(1) Pruning.
-    Logic: Fixed Event 7 (DLL Sideloading) and IP Anomaly detection.
+    Updates (v2):
+    - Architecture: Pure .NET (No Python required).
+    - Logic: Fixed Event 12/13 Switch syntax and Regex Flag compatibility.
+    - Logic: Fixed Event 7 (Sideloading) false positives.
+    - Feature: Added 'Details' column for deeper context.
+    - Config: Fixed precedence (CLI now correctly overrides Config.ini).
 #>
 
 param (
