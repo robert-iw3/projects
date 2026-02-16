@@ -1,5 +1,3 @@
-#Requires -RunAsAdministrator
-
 <#
 .SYNOPSIS
     PowerShell script to install Sysmon with a configurable configuration enabling logging for C2 detection events.

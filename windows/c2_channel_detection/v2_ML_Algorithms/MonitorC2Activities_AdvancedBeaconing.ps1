@@ -130,12 +130,12 @@ try {
     $PythonAvailable = $false
 }
 
-# Compiled Regex (High Performance)
+# Compiled Regex (FIXED: Uses comma separation)
 $Regex_InternalIP = [regex]::new('^((10\.)|(172\.1[6-9]\.)|(172\.2[0-9]\.)|(172\.3[0-1]\.)|(192\.168\.)|(127\.)|(169\.254\.))', 'Compiled')
 $Regex_NonDigit   = [regex]::new('[^0-9]', 'Compiled')
-$Regex_Encoded    = [regex]::new('-EncodedCommand|-enc|IEX|Invoke-Expression|DownloadString', 'Compiled|IgnoreCase')
-$Regex_Defense    = [regex]::new('Set-MpPreference.*-Disable|sc delete|net stop', 'Compiled|IgnoreCase')
-$Regex_SysPaths   = [regex]::new('System32|SysWOW64|WinSxS', 'Compiled|IgnoreCase')
+$Regex_Encoded    = [regex]::new('-EncodedCommand|-enc|IEX|Invoke-Expression|DownloadString', 'Compiled, IgnoreCase')
+$Regex_Defense    = [regex]::new('Set-MpPreference.*-Disable|sc delete|net stop', 'Compiled, IgnoreCase')
+$Regex_SysPaths   = [regex]::new('System32|SysWOW64|WinSxS', 'Compiled, IgnoreCase')
 $Regex_MS_Signed  = [regex]::new('Signed="true".*Signature="Microsoft Windows".*SignatureStatus="Valid"', 'Compiled')
 
 # Math Helpers & Collections
@@ -162,7 +162,7 @@ function Read-IniFile {
 $configPath = Join-Path $ScriptDir "config.ini"
 $config = Read-IniFile -Path $configPath
 
-# Robust Override Logic: Only use Config.ini value if CLI param was NOT provided
+# Robust Override Logic
 if ($config['Anomaly']) {
     $s = $config['Anomaly']
     if ($s['DomainEntropyThreshold'] -and -not $PSBoundParameters.ContainsKey('DomainEntropyThreshold')) { $DomainEntropyThreshold = [double]$s['DomainEntropyThreshold'] }
@@ -238,7 +238,7 @@ while ($true) {
             foreach ($event in $events) {
                 $rawXml = $event.ToXml()
 
-                # OPTIMIZATION: Fast-Path Filter (Skip XML parsing for Signed Microsoft DLLs)
+                # OPTIMIZATION: Fast-Path Filter
                 if ($event.Id -eq 7 -and $Regex_MS_Signed.IsMatch($rawXml)) { continue }
 
                 $xmlData = [xml]$rawXml
@@ -275,13 +275,11 @@ while ($true) {
                         }
                     }
                     3 {
-                        # Part 1: Real-time checks
                         if ($props['DestinationHostname'] -and (Is-AnomalousDomain $props['DestinationHostname'])) {
                             $props.SuspiciousFlags.Add("High Entropy Domain (Network)")
                             $props.ATTCKMappings.Add("TA0011: T1568.002")
                         }
 
-                        # Part 2: Buffer for Async ML
                         $isOutbound = ($Regex_InternalIP.IsMatch($eventDataHash['SourceIp']) -and -not $Regex_InternalIP.IsMatch($eventDataHash['DestinationIp']))
                         if ($isOutbound) {
                             $dst = if ($props['DestinationHostname']) { "$($props['DestinationHostname']):$($eventDataHash['DestinationPort'])" } else { "$($props['DestinationIp']):$($eventDataHash['DestinationPort'])" }
@@ -290,7 +288,6 @@ while ($true) {
                         }
                     }
                     7 {
-                        # Fixed Logic: Alert only if System Binary loads Non-System DLL
                         if ($Regex_SysPaths.IsMatch($props['Image']) -and -not $Regex_SysPaths.IsMatch($props['ImageLoaded'])) {
                             $props.SuspiciousFlags.Add("Anomalous DLL Load (Sideloading Risk)")
                             $props.ATTCKMappings.Add("TA0005: T1574.002")
@@ -302,7 +299,7 @@ while ($true) {
                             $props.ATTCKMappings.Add("TA0002: T1059")
                         }
                     }
-                    12, 13 {
+                    { $_ -in 12, 13 } { # FIXED: Using script block for multiple values
                         if ($props['TargetObject'] -match 'Run|RunOnce|Services|Startup') {
                             $props.SuspiciousFlags.Add("Persistence Registry Key Modified")
                             $props.ATTCKMappings.Add("TA0003: T1547.001")
@@ -332,7 +329,6 @@ while ($true) {
         # --- ASYNC ML BEACONING EXECUTION ---
         if ($PythonAvailable -and ($now - $lastMLRunTime).TotalSeconds -ge $BatchAnalysisIntervalSeconds) {
 
-            # 1. Prepare Payload (Convert Datetime to Unix Seconds for Python)
             $payload = @{}
             $targets = 0
             foreach ($key in $connectionHistory.Keys) {
@@ -346,10 +342,8 @@ while ($true) {
             if ($targets -gt 0) {
                 Write-Host "    [ML] analyzing $targets targets..." -NoNewline -ForegroundColor Gray
 
-                # 2. Serialize to Disk
                 $payload | ConvertTo-Json -Depth 2 -Compress | Set-Content -Path $tempBatchFile
 
-                # 3. Call Python Engine
                 $pyArgs = "`"$FullMLPath`" `"$tempBatchFile`" --use_dbscan"
                 $pInfo = New-Object System.Diagnostics.ProcessStartInfo
                 $pInfo.FileName = $PythonPath; $pInfo.Arguments = $pyArgs
@@ -358,7 +352,6 @@ while ($true) {
                 $p = [System.Diagnostics.Process]::Start($pInfo)
                 $p.WaitForExit()
 
-                # 4. Ingest Results
                 try {
                     $jsonOut = $p.StandardOutput.ReadToEnd()
                     $alerts = $jsonOut | ConvertFrom-Json
@@ -376,7 +369,6 @@ while ($true) {
             }
             $lastMLRunTime = $now
 
-            # 5. History Cleanup (Prune Memory)
             if ($connectionHistory.Count -gt $MaxHistoryKeys) {
                 $keys = $connectionHistory.Keys | Select-Object -First 100
                 foreach ($k in $keys) { [void]$connectionHistory.Remove($k) }

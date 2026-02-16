@@ -82,8 +82,6 @@
     Logic: Fixed Event 7 (DLL Sideloading) and IP Anomaly detection.
 #>
 
-#Requires -RunAsAdministrator
-
 param (
     [string]$OutputPath = "C:\Temp\C2Monitoring.csv",
     [ValidateSet("CSV", "JSON")][string]$Format = "CSV",
@@ -96,7 +94,7 @@ param (
     [double]$MaxBeaconStdDev = 5.0,
     [double]$JitterTolerance = 0.2,
 
-    # Anomaly Thresholds (Defaults)
+    # Anomaly Thresholds
     [double]$DomainEntropyThreshold = 3.8,
     [int]$DomainLengthThreshold = 30,
     [double]$NumericRatioThreshold = 0.4,
@@ -115,12 +113,12 @@ param (
 
 $ScriptDir = Split-Path $PSCommandPath -Parent
 
-# Compiled Regex
+# Compiled Regex (Comma separated flags)
 $Regex_InternalIP = [regex]::new('^((10\.)|(172\.1[6-9]\.)|(172\.2[0-9]\.)|(172\.3[0-1]\.)|(192\.168\.)|(127\.)|(169\.254\.))', 'Compiled')
 $Regex_NonDigit   = [regex]::new('[^0-9]', 'Compiled')
-$Regex_Encoded    = [regex]::new('-EncodedCommand|-enc|IEX|Invoke-Expression|DownloadString', 'Compiled|IgnoreCase')
-$Regex_Defense    = [regex]::new('Set-MpPreference.*-Disable|sc delete|net stop', 'Compiled|IgnoreCase')
-$Regex_SysPaths   = [regex]::new('System32|SysWOW64|WinSxS', 'Compiled|IgnoreCase')
+$Regex_Encoded    = [regex]::new('-EncodedCommand|-enc|IEX|Invoke-Expression|DownloadString', 'Compiled, IgnoreCase')
+$Regex_Defense    = [regex]::new('Set-MpPreference.*-Disable|sc delete|net stop', 'Compiled, IgnoreCase')
+$Regex_SysPaths   = [regex]::new('System32|SysWOW64|WinSxS', 'Compiled, IgnoreCase')
 $Regex_MS_Signed  = [regex]::new('Signed="true".*Signature="Microsoft Windows".*SignatureStatus="Valid"', 'Compiled')
 
 $log2 = [Math]::Log(2)
@@ -128,7 +126,7 @@ $vowels = [System.Collections.Generic.HashSet[char]]::new([char[]]"aeiou")
 $connectionHistory = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.Queue[datetime]]]::new()
 $dataBatch = [System.Collections.Generic.List[PSObject]]::new()
 
-# --- 2. CONFIGURATION ENGINE (CLI > Config > Default) ---
+# --- 2. CONFIGURATION ENGINE ---
 
 function Read-IniFile {
     param ([string]$Path)
@@ -145,7 +143,6 @@ function Read-IniFile {
 $configPath = Join-Path $ScriptDir "config.ini"
 $config = Read-IniFile -Path $configPath
 
-# Override logic: Only overwrite if NOT provided via CLI
 if ($config['Anomaly']) {
     $s = $config['Anomaly']
     if ($s['DomainEntropyThreshold'] -and -not $PSBoundParameters.ContainsKey('DomainEntropyThreshold')) { $DomainEntropyThreshold = [double]$s['DomainEntropyThreshold'] }
@@ -199,7 +196,6 @@ function Test-Beaconing {
 
     if ($timestamps.Count -lt $MinConnectionsForBeacon) { return $null }
 
-    # 1. Calculate Intervals
     $intervals = [System.Collections.Generic.List[double]]::new()
     for ($i = 1; $i -lt $timestamps.Count; $i++) {
         $delta = ($timestamps[$i] - $timestamps[$i-1]).TotalSeconds
@@ -208,7 +204,6 @@ function Test-Beaconing {
 
     if ($intervals.Count -eq 0) { return $null }
 
-    # 2. Basic Stats
     $sum = 0; $intervals | ForEach-Object { $sum += $_ }
     $avg = $sum / $intervals.Count
 
@@ -217,14 +212,10 @@ function Test-Beaconing {
     $variance = $sumSqDiff / $intervals.Count
     $stdDev = [Math]::Sqrt($variance)
 
-    # --- DETECTION LOGIC ---
-
-    # Type A: Perfect Beacon (Low Variance)
     if ($stdDev -le $MaxBeaconStdDev) {
         return "Perfect Beacon Detected (StdDev: $($stdDev.ToString('N2'))s, Interval: ~$($avg.ToString('N0'))s)"
     }
 
-    # Type B: Jittered Beacon (Consistent Mode)
     $consistentCount = 0
     $lower = $avg * (1.0 - $JitterTolerance)
     $upper = $avg * (1.0 + $JitterTolerance)
@@ -246,9 +237,8 @@ if (-not (Test-Path $outputDir)) { New-Item -Path $outputDir -ItemType Directory
 
 $lastQueryTime = (Get-Date).AddMinutes(-1)
 
-Write-Host "[-] Starting Native C2 Monitor..." -ForegroundColor Cyan
-Write-Host "    Mode: Standalone (No Python). Using .NET Math." -ForegroundColor Gray
-Write-Host "    Config: Loaded from ini, overridden by CLI args." -ForegroundColor Gray
+Write-Host "[-] Starting Native C2 Monitor (Enhanced Context)..." -ForegroundColor Cyan
+Write-Host "    Mode: Standalone (No Python)." -ForegroundColor Gray
 
 while ($true) {
     try {
@@ -267,21 +257,26 @@ while ($true) {
                 $eventDataHash = @{}
                 foreach ($node in $xmlData.Event.EventData.Data) { $eventDataHash[$node.Name] = $node.'#text' }
 
+                # Base Props with NEW 'Details' Field
                 $props = [ordered]@{
                     EventType = switch ($event.Id) { 1 {"ProcessCreate"} 3 {"NetworkConnect"} 7 {"ImageLoad"} 11 {"FileCreate"} 12 {"RegistryEvent"} 13 {"RegistryEvent"} 22 {"DnsQuery"} default {$event.Id} }
                     Timestamp = $event.TimeCreated
                     Image = $eventDataHash['Image']
+                    User = $eventDataHash['User'] # Capture User Context
+                    Details = "" # Placeholder for specific event details
                     SuspiciousFlags = [System.Collections.Generic.List[string]]::new()
                     ATTCKMappings = [System.Collections.Generic.List[string]]::new()
+
+                    # Raw Fields (kept for filtering, but 'Details' will summarize them)
                     CommandLine = $eventDataHash['CommandLine']
                     DestinationIp = $eventDataHash['DestinationIp']
                     DestinationHostname = $eventDataHash['DestinationHostname']
-                    TargetFilename = $eventDataHash['TargetFilename']
-                    TargetObject = $eventDataHash['TargetObject']
                 }
 
                 switch ($event.Id) {
-                    1 {
+                    1 { # Process Create
+                        $props.Details = "Cmd: $($props.CommandLine)"
+
                         if ($Regex_Encoded.IsMatch($props['CommandLine'])) {
                             $props.SuspiciousFlags.Add("Anomalous CommandLine (Script/Encoded)")
                             $props.ATTCKMappings.Add("TA0002: T1059.001")
@@ -295,54 +290,68 @@ while ($true) {
                             $props.ATTCKMappings.Add("TA0011: T1219")
                         }
                     }
-                    3 {
+                    3 { # Network Connect
+                        $dst = if ($props['DestinationHostname']) { "$($props['DestinationHostname'])" } else { "$($props['DestinationIp'])" }
+                        $port = $eventDataHash['DestinationPort']
+                        $props.Details = "Dest: $dst Port: $port Protocol: $($eventDataHash['Protocol'])"
+
                         if ($props['DestinationHostname'] -and (Is-AnomalousDomain $props['DestinationHostname'])) {
                             $props.SuspiciousFlags.Add("High Entropy Domain (Network)")
                             $props.ATTCKMappings.Add("TA0011: T1568.002")
                         }
-                        # Native Beacon Logic (Inline)
+
+                        # Beacon Logic
                         $isOutbound = ($Regex_InternalIP.IsMatch($eventDataHash['SourceIp']) -and -not $Regex_InternalIP.IsMatch($eventDataHash['DestinationIp']))
                         if ($isOutbound) {
-                            $dst = if ($props['DestinationHostname']) { "$($props['DestinationHostname']):$($eventDataHash['DestinationPort'])" } else { "$($props['DestinationIp']):$($eventDataHash['DestinationPort'])" }
-                            if (-not $connectionHistory.ContainsKey($dst)) { $connectionHistory[$dst] = [System.Collections.Generic.Queue[datetime]]::new() }
-                            $connectionHistory[$dst].Enqueue($now)
+                            $key = "$dst`:$port"
+                            if (-not $connectionHistory.ContainsKey($key)) { $connectionHistory[$key] = [System.Collections.Generic.Queue[datetime]]::new() }
+                            $connectionHistory[$key].Enqueue($now)
 
-                            while ($connectionHistory[$dst].Count -gt 0 -and $connectionHistory[$dst].Peek() -lt $now.AddMinutes(-$BeaconWindowMinutes)) {
-                                [void]$connectionHistory[$dst].Dequeue()
+                            while ($connectionHistory[$key].Count -gt 0 -and $connectionHistory[$key].Peek() -lt $now.AddMinutes(-$BeaconWindowMinutes)) {
+                                [void]$connectionHistory[$key].Dequeue()
                             }
 
-                            $alert = Test-Beaconing $connectionHistory[$dst].ToArray()
+                            $alert = Test-Beaconing $connectionHistory[$key].ToArray()
                             if ($alert) {
                                 $props.SuspiciousFlags.Add($alert)
                                 $props.ATTCKMappings.Add("TA0011: T1071")
                             }
                         }
                     }
-                    7 {
+                    7 { # Image Load
+                        $props.Details = "Loaded: $($eventDataHash['ImageLoaded'])"
                         if ($Regex_SysPaths.IsMatch($props['Image']) -and -not $Regex_SysPaths.IsMatch($props['ImageLoaded'])) {
                             $props.SuspiciousFlags.Add("Anomalous DLL Load (Sideloading Risk)")
                             $props.ATTCKMappings.Add("TA0005: T1574.002")
                         }
                     }
-                    11 {
-                        if ($props['TargetFilename'] -match '\.ps1$|\.vbs$|\.bat$|\.exe$') {
+                    11 { # File Create
+                        $props.Details = "Created: $($eventDataHash['TargetFilename'])"
+                        if ($eventDataHash['TargetFilename'] -match '\.ps1$|\.vbs$|\.bat$|\.exe$') {
                             $props.SuspiciousFlags.Add("Executable/Script File Created")
                             $props.ATTCKMappings.Add("TA0002: T1059")
                         }
                     }
-                    12, 13 {
-                        if ($props['TargetObject'] -match 'Run|RunOnce|Services|Startup') {
+                    { $_ -in 12, 13 } { # Registry
+                        # Capture the details of WHAT was set
+                        $details = "Key: $($eventDataHash['TargetObject'])"
+                        if ($eventDataHash['Details']) { $details += " Value: $($eventDataHash['Details'])" }
+                        $props.Details = $details
+
+                        if ($eventDataHash['TargetObject'] -match 'Run|RunOnce|Services|Startup') {
                             $props.SuspiciousFlags.Add("Persistence Registry Key Modified")
                             $props.ATTCKMappings.Add("TA0003: T1547.001")
                         }
                     }
-                    22 {
-                        $props['QueryName'] = $eventDataHash['QueryName']
-                        if (Is-AnomalousDomain $props['QueryName']) {
+                    22 { # DNS
+                        $props.Details = "Query: $($eventDataHash['QueryName']) Result: $($eventDataHash['QueryResults'])"
+                        $qName = $eventDataHash['QueryName']
+
+                        if (Is-AnomalousDomain $qName) {
                             $props.SuspiciousFlags.Add("DGA DNS Query Detected")
                             $props.ATTCKMappings.Add("TA0011: T1568.002")
                         }
-                        if ($SpecificTLDs -and ($SpecificTLDs | Where-Object { $props['QueryName'].EndsWith($_) })) {
+                        if ($SpecificTLDs -and ($SpecificTLDs | Where-Object { $qName.EndsWith($_) })) {
                             $props.SuspiciousFlags.Add("Suspicious TLD Match")
                         }
                     }
