@@ -1,7 +1,7 @@
 # C2 Detection (Anamalous Network Traffic) with PowerShell
 
 ## Overview
-This tool monitors Windows systems for potential C2 (Command and Control) activities using Sysmon events. It detects anomalies like beaconing, high-entropy domains/IPs, unusual ports, and process behaviors, mapping them to MITRE ATT&CK tactics/techniques. Outputs logs to CSV/JSON/YAML for analysis.
+This tool monitors Windows systems for potential C2 (Command and Control) activities using Sysmon events. It detects anomalies like beaconing, high-entropy domains/IPs, unusual ports, and process behaviors, mapping them to MITRE ATT&CK tactics/techniques. Outputs logs to CSV or JSON for analysis.
 
 ## Requirements
 - Windows OS with administrative privileges.
@@ -57,5 +57,4 @@ Override defaults/config with params (e.g., `.\MonitorC2Activities.ps1 -OutputPa
 ## Troubleshooting
 - Ensure Sysmon is running (`Get-Service Sysmon*`).
 - If no events, verify Sysmon config logs the required IDs.
-- For YAML, install `powershell-yaml` module if needed.
 - Stop with Ctrl+C.
