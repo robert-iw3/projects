@@ -1,0 +1,28 @@
+# === Process Execution (critical for masquerading & new C2 processes) ===
+-a always,exit -F arch=b64 -S execve,execveat -k process_exec
+-a always,exit -F arch=b32 -S execve,execveat -k process_exec
+
+# === Network Connections (outbound C2 channels) ===
+-a always,exit -F arch=b64 -S connect,accept,bind -F success=1 -k network_connect
+-a always,exit -F arch=b32 -S connect,accept,bind -F success=1 -k network_connect
+
+# === Process Tree & Masquerading Monitoring ===
+-w /proc -p wa -k proc_monitor
+-w /proc -p r  -k proc_read
+
+# === Fileless / Suspicious Execution (memfd, tmpfs, hidden execution) ===
+-a always,exit -F arch=b64 -S memfd_create -k fileless_exec
+-a always,exit -F arch=b32 -S memfd_create -k fileless_exec
+
+# Watch suspicious directories for execute permissions (common C2 drop locations)
+-a always,exit -F dir=/tmp   -F perm=x -k suspicious_exec
+-a always,exit -F dir=/dev/shm -F perm=x -k suspicious_exec
+-a always,exit -F dir=/run   -F perm=x -k suspicious_exec
+
+# Optional: Process forking (useful for double-fork / daemon-style C2)
+# -a always,exit -F arch=b64 -S clone,fork -k process_fork
+
+# =============================================================================
+# Load with: auditctl -R /etc/audit/rules.d/c2_beacon.rules
+# Check status: auditctl -l | grep -E 'process|network|fileless|suspicious'
+# =============================================================================
