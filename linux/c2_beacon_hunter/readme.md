@@ -78,7 +78,8 @@ sudo ./setup.sh install     # copies new rules + service + reloads everything
 sudo ./setup.sh run         # native mode
 # or
 sudo ./setup.sh container   # Docker/Podman
-
+# run smoke test
+sudo ./setup.sh test        # runs tests/live_c2_advanced.sh
 # To stop cleanly:
 sudo ./setup.sh shutdown
 ```
