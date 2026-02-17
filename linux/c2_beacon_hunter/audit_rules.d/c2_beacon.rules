@@ -1,28 +1,37 @@
-# === Process Execution (critical for masquerading & new C2 processes) ===
+# Clear existing rules to prevent duplicates
+-D
+
+# === Process Execution (High Performance) ===
 -a always,exit -F arch=b64 -S execve,execveat -k process_exec
 -a always,exit -F arch=b32 -S execve,execveat -k process_exec
 
-# === Network Connections (outbound C2 channels) ===
--a always,exit -F arch=b64 -S connect,accept,bind -F success=1 -k network_connect
--a always,exit -F arch=b32 -S connect,accept,bind -F success=1 -k network_connect
+# === Network Connections ===
+# Split lines to handle "Unknown Syscall" errors gracefully per-distro
+-a always,exit -F arch=b64 -S connect,bind,accept4 -F success=1 -k network_connect
+-a always,exit -F arch=b32 -S connect,bind,socketcall -F success=1 -k network_connect
+# Optional: some older RHEL/Debian kernels specifically need 'accept' on its own
+-a always,exit -F arch=b64 -S accept -F success=1 -k network_connect
 
-# === Process Tree & Masquerading Monitoring ===
--w /proc -p wa -k proc_monitor
--w /proc -p r  -k proc_read
+# === Process Tree & Masquerading (Replaced -w with -a) ===
+# This replaces the "Old style watch" on /proc with a faster syscall filter
+-a always,exit -F arch=b64 -F dir=/proc -F perm=wa -k proc_monitor
+-a always,exit -F arch=b32 -F dir=/proc -F perm=wa -k proc_monitor
 
-# === Fileless / Suspicious Execution (memfd, tmpfs, hidden execution) ===
+# === Fileless Execution ===
 -a always,exit -F arch=b64 -S memfd_create -k fileless_exec
 -a always,exit -F arch=b32 -S memfd_create -k fileless_exec
 
-# Watch suspicious directories for execute permissions (common C2 drop locations)
--a always,exit -F dir=/tmp   -F perm=x -k suspicious_exec
--a always,exit -F dir=/dev/shm -F perm=x -k suspicious_exec
--a always,exit -F dir=/run   -F perm=x -k suspicious_exec
+# === Suspicious Directory Execution (Modern Syscall Style) ===
+# Using -a with -F arch eliminates the "perm used without arch is slower" warning
+-a always,exit -F arch=b64 -F dir=/tmp -F perm=x -k suspicious_exec
+-a always,exit -F arch=b32 -F dir=/tmp -F perm=x -k suspicious_exec
 
-# Optional: Process forking (useful for double-fork / daemon-style C2)
-# -a always,exit -F arch=b64 -S clone,fork -k process_fork
+-a always,exit -F arch=b64 -F dir=/dev/shm -F perm=x -k suspicious_exec
+-a always,exit -F arch=b32 -F dir=/dev/shm -F perm=x -k suspicious_exec
+
+-a always,exit -F arch=b64 -F dir=/run -F perm=x -k suspicious_exec
+-a always,exit -F arch=b32 -F dir=/run -F perm=x -k suspicious_exec
 
 # =============================================================================
-# Load with: auditctl -R /etc/audit/rules.d/c2_beacon.rules
-# Check status: auditctl -l | grep -E 'process|network|fileless|suspicious'
+# Load with: sudo auditctl -R /etc/audit/rules.d/c2_beacon.rules
 # =============================================================================
