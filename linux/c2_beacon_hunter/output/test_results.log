@@ -1,0 +1,13 @@
+====================================================
+    ADVANCED C2 SIMULATION (Firewall Aware)
+====================================================
+[*] Target IP: 192.168.1.248:1337
+[*] Firewalld detected. Punching temporary hole...
+[+] Port 1337 opened successfully.
+[+] Starting C2 Server (Background)...
+[+] Starting Beaconing Loop (300 seconds)...
+[*] Beacon #23 sent | Active: 288s
+[+] Test Complete.
+
+[*] Teardown: Stopping test components...
+    Closing Port 1337 in Firewalld... Done.

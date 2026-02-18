@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-c2_beacon_hunter - Linux C2 Beacon Detector (Patched Version)
+c2_beacon_hunter - Linux C2 Beacon Detector
 Author: Robert Weber
 Integrates BeaconML.py for advanced K-Means/DBSCAN/Isolation Forest detection on time intervals, plus statistical heuristics and optional DNS monitoring.
 """
@@ -33,11 +33,7 @@ except ImportError:
     SCAPY_AVAILABLE = False
 
 # Advanced ML module
-try:
-    from BeaconML import detect_beaconing_list
-except ImportError:
-    # Fallback if BeaconML is missing during lightweight tests
-    def detect_beaconing_list(*args, **kwargs): return None
+from BeaconML import detect_beaconing_list
 
 # ====================== CONFIG ======================
 config = configparser.ConfigParser()
@@ -146,88 +142,29 @@ class BeaconHunter:
             pass
 
     def snapshot(self):
-        """
-        Primary: fast ss -tupn → fallback to psutil
-        PATCHED: Handles RHEL/CentOS/Fedora column offsets and %interface suffixes.
-        """
+        """Primary: fast ss -tupn → fallback to psutil"""
         ts = time.time()
         try:
-            # --numeric to avoid DNS lookups slowing us down
             output = subprocess.check_output(["ss", "-tupn", "--numeric"], timeout=3).decode('utf-8', errors='ignore')
-            lines = output.splitlines()
-
-            # Skip header if present
-            if len(lines) > 0 and ("State" in lines[0] or "Netid" in lines[0]):
-                lines = lines[1:]
-
-            for line in lines:
+            for line in output.splitlines()[1:]:
                 parts = line.split()
-                if len(parts) < 5:
+                if len(parts) < 6 or "ESTAB" not in parts[0]:
                     continue
-
-                # --- PATCH: Dynamic Column Detection ---
-                # Standard: State(0) Recv(1) Send(2) Local(3) Remote(4)
-                # RHEL/Fedora: Netid(0) State(1) Recv(2) Send(3) Local(4) Remote(5)
-                state_idx = -1
-                if "ESTAB" in parts[0]:
-                    state_idx = 0
-                elif len(parts) > 1 and "ESTAB" in parts[1]:
-                    state_idx = 1
-
-                # Only process Established connections
-                if state_idx == -1:
+                local = parts[3]
+                remote = parts[4]
+                if ':' not in remote:
                     continue
-
-                # Ensure we have enough columns relative to the State column
-                if len(parts) < state_idx + 5:
+                raddr, rport_str = remote.rsplit(':', 1)
+                if raddr in ("127.0.0.1", "::1"):
                     continue
-
-                local_raw = parts[state_idx + 3]
-                remote_raw = parts[state_idx + 4]
-
-                # --- PATCH: Handle IPv6 brackets and %interface suffixes ---
-                # Example: [::1]:22 or 192.168.1.5%wlo1:443
-
-                # 1. Strip Interface Suffix (%)
-                remote_clean = remote_raw.split('%')[0]
-                local_clean = local_raw.split('%')[0]
-
-                # 2. Parse Port (Handle Last Colon)
-                if ':' not in remote_clean:
-                    continue
-
-                try:
-                    raddr, rport_str = remote_clean.rsplit(':', 1)
-                    laddr, lport_str = local_clean.rsplit(':', 1)
-
-                    # Handle IPv6 brackets if present
-                    raddr = raddr.strip('[]')
-                    laddr = laddr.strip('[]')
-
-                    rport = int(rport_str)
-                except ValueError:
-                    continue
-
-                # 3. Filter Loopback (Strict)
-                # Note: We allow LAN IPs (192.168.x.x) for testing purposes
-                if raddr in ("127.0.0.1", "::1", "0.0.0.0"):
-                    continue
-
-                # 4. Extract PID
-                # Format: users:(("process_name",pid=1234,fd=4))
+                rport = int(rport_str)
                 pid = 0
-                if "pid=" in line:
+                if len(parts) > 5 and "pid=" in parts[-1]:
                     try:
-                        pid_str = line.split("pid=")[1].split(",")[0]
-                        # Remove any closing parens just in case
-                        pid_str = pid_str.split(")")[0]
-                        pid = int(pid_str)
+                        pid = int(parts[-1].split("pid=")[1].split(",")[0])
                     except:
                         pass
-
-                key = (local_clean, raddr, rport)
-
-                # 5. Metadata Enrichment
+                key = (local, raddr, rport)
                 try:
                     p = psutil.Process(pid)
                     proc = {
@@ -237,10 +174,8 @@ class BeaconHunter:
                     }
                 except:
                     proc = {"name": "unknown", "cmd": "", "entropy_cmd": 0.0}
-
                 with self.lock:
                     self.flows[key].append((ts, pid, proc))
-
         except Exception as e:
             logger.warning(f"ss snapshot failed ({e}), falling back to psutil")
             try:
@@ -274,8 +209,6 @@ class BeaconHunter:
     def analyze_flow(self, key, events):
         now = time.time()
         last = self.last_analyzed.get(key, 0)
-
-        # Min samples check (Needs at least 5 connections to form a pattern)
         if len(events) < 5 or (now - last < 30):
             return None
         self.last_analyzed[key] = now
@@ -310,7 +243,7 @@ class BeaconHunter:
             if cv < 0.25 and mean_delta > 5:
                 score += 30
                 reasons.append("low_cv_periodic")
-            if ml_result and "Beaconing" in ml_result:
+            if "Beaconing" in ml_result:
                 score += 60
                 reasons.append(f"Advanced_ML: {ml_result}")
                 mitre = MITRE_MAP["beacon_periodic"]
@@ -362,7 +295,6 @@ class BeaconHunter:
                     "mitre_name": mitre[2],
                     "description": f"C2 Beacon detected - {ml_result or 'Statistical match'}"
                 }
-                # Log to file immediately
                 with open(DETECTION_LOG, "a") as f:
                     f.write(f"{datetime.now().isoformat()} [SCORE {score}] {anomaly['description']} "
                             f"→ {raddr}:{port} ({anomaly['process']})\n")
@@ -377,13 +309,11 @@ class BeaconHunter:
             current_flows = dict(self.flows)
         new_anomalies = []
         for key, events in current_flows.items():
-            # Analyze if we have enough data points
             if len(events) >= 5:
                 anomaly = self.analyze_flow(key, list(events))
                 if anomaly:
                     new_anomalies.append(anomaly)
                     self.detection_count += 1
-                    # Red color for visibility in terminal
                     print(f"\033[91m[DETECTION #{self.detection_count}] {anomaly['description']}\033[0m")
                     logger.info(f"DETECTION: {anomaly['description']} Score={anomaly['score']}")
         if new_anomalies:
@@ -415,11 +345,8 @@ class BeaconHunter:
         print(f"Output directory: {self.output_dir} | Ctrl+C to stop")
         try:
             while self.running:
-                # Main thread handles analysis loop
-                time.sleep(ANALYZE_INTERVAL)
                 self.run_analysis()
-        except KeyboardInterrupt:
-            self.shutdown()
+                time.sleep(ANALYZE_INTERVAL)
         except Exception as e:
             logger.critical(f"Main loop error: {e}")
 
