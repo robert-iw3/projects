@@ -1,191 +1,215 @@
 #!/bin/bash
 
+# c2_beacon_hunter Setup & Management Script
+# V2.4 - Includes Smart Test Mode (Auto-Patching)
+
 set -e
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_DIR"
 
-echo "=== c2_beacon_hunter One-Shot Setup ==="
-
-# --- Dependency Check & Install ---
-if command -v apt-get >/dev/null; then
-    PKG="apt-get"; UPDATE="apt-get update -qq"; INSTALL="$PKG install -y"
-elif command -v dnf >/dev/null; then
-    PKG="dnf"; UPDATE="$PKG check-update || true"; INSTALL="$PKG install -y"
-elif command -v yum >/dev/null; then
-    PKG="yum"; UPDATE="$PKG check-update || true"; INSTALL="$PKG install -y"
-else
-    echo "Unsupported distro"; exit 1
-fi
-
-# Only install host dependencies if NOT in container mode
-if [[ "$1" != "container" ]]; then
-    $UPDATE
-    $INSTALL python3 python3-pip python3-venv auditd curl
-
-    python3 -m venv venv
-    source venv/bin/activate
-    pip install --upgrade pip
-    pip install -r requirements.txt
-
-    # Systemd & Auditd Setup
-    sudo mkdir -p /etc/audit/rules.d
-    sudo cp audit_rules.d/c2_beacon.rules /etc/audit/rules.d/ 2>/dev/null || true
-    if [ -f /etc/audit/rules.d/c2_beacon.rules ]; then
-        sudo auditctl -R /etc/audit/rules.d/c2_beacon.rules || true
-        sudo systemctl restart auditd || true
-    fi
-
-    sudo mkdir -p /etc/systemd/system
-    sudo cp systemd/c2_beacon_hunter.service /etc/systemd/system/ 2>/dev/null || true
-    sudo systemctl daemon-reload
-    sudo systemctl enable c2_beacon_hunter.service 2>/dev/null || true
-fi
-
-echo "=== Setup complete! ready ==="
-
-# Function to restore config on exit during test mode
-restore_config() {
-    echo ""
-    echo "[*] Teardown: Stopping test components..."
-
-    # Kill the background test script if running
-    if [ -n "$TEST_PID" ]; then
-        kill $TEST_PID 2>/dev/null || true
-    fi
-
-    # Restore Config
-    if [ -f config.ini.bak ]; then
-        echo "[*] Restoring original config.ini..."
-        mv config.ini.bak config.ini
+# --- HELPER: Detect Container Runtime ---
+get_runtime() {
+    if command -v docker >/dev/null; then
+        echo "docker"
+    elif command -v podman >/dev/null; then
+        echo "podman"
+    else
+        echo ""
     fi
 }
 
-case "$1" in
-    install) echo "Now run: sudo ./setup.sh run (native) or sudo ./setup.sh container" ;;
-    run)
-        sudo systemctl start c2_beacon_hunter.service
-        echo "Service started. Tailing detections..."
-        sleep 4
-        sudo "$0" verify
-        journalctl -u c2_beacon_hunter -f --no-pager -n 30
-        ;;
-    verify)
-        echo "=== Verification ==="
-        systemctl is-active --quiet c2_beacon_hunter && echo "✓ Service RUNNING" || echo "✗ Service NOT running"
-        ps aux | grep -v grep | grep -q "c2_beacon_hunter.py" && echo "✓ Python process ACTIVE" || echo "✗ No process"
-        [ -f output/detections.log ] && echo "✓ detections.log exists ($(wc -l < output/detections.log 2>/dev/null || echo 0) lines)" || echo "✗ No log yet"
-        tail -n 10 output/detections.log 2>/dev/null || echo "(No detections yet — normal)"
-        ;;
-    watch) tail -f output/detections.log ;;
-    stop|shutdown)
-        echo "=== Graceful Shutdown ==="
-        if [ -f graceful_shutdown.sh ]; then
-            sudo ./graceful_shutdown.sh
-        else
-            sudo systemctl stop c2_beacon_hunter.service
-        fi
-        ;;
-    test)
-        echo "=== LIVE TEST MODE ==="
+RUNTIME=$(get_runtime)
 
-        # Check for test script
-        TEST_SCRIPT="tests/live_c2_advanced.sh"
-        if [ ! -f "$TEST_SCRIPT" ]; then
-            echo "[-] Error: Test script not found at $TEST_SCRIPT"
-            exit 1
-        fi
-        chmod +x "$TEST_SCRIPT"
+# --- USAGE HELP ---
+if [[ -z "$1" || "$1" == "help" ]]; then
+    echo "Usage: sudo ./setup.sh [command]"
+    echo ""
+    echo "Commands:"
+    echo "  install    - Install host dependencies (Python venv, Auditd)"
+    echo "  container  - Build the Docker/Podman image"
+    echo "  test       - Run in TEST MODE (Fast polling + Loopback allowed)"
+    echo "  run        - Run in Production Mode (Foreground)"
+    echo "  start      - Start Systemd Service (Background)"
+    echo "  stop       - Stop Service/Container"
+    echo "  watch      - Tail the detection logs"
+    exit 0
+fi
 
-        # 1. Backup Config & Trap Exit
-        cp config.ini config.ini.bak
-        trap restore_config EXIT INT TERM
+# --- 1. INSTALL (Native Host) ---
+if [[ "$1" == "install" ]]; then
+    echo "=== Installing Host Dependencies ==="
 
-        # 2. Modify Config for Speed
-        echo "[*] Tuning config for test (Snapshot: 5s, Analyze: 30s)..."
-        sed -i 's/snapshot_interval = .*/snapshot_interval = 5/' config.ini
-        sed -i 's/analyze_interval = .*/analyze_interval = 30/' config.ini
+    # Distro Detection
+    if command -v apt-get >/dev/null; then
+        PKG="apt-get"; UPDATE="apt-get update -qq"; INSTALL="$PKG install -y"
+    elif command -v dnf >/dev/null; then
+        PKG="dnf"; UPDATE="$PKG check-update || true"; INSTALL="$PKG install -y"
+    elif command -v yum >/dev/null; then
+        PKG="yum"; UPDATE="$PKG check-update || true"; INSTALL="$PKG install -y"
+    else
+        echo "Unsupported distro. Please install python3-venv and auditd manually."
+        exit 1
+    fi
 
-        # 3. Start Traffic Generator in Background
-        echo "[*] Starting Traffic Generator ($TEST_SCRIPT)..."
-        "$TEST_SCRIPT" &
-        TEST_PID=$!
-        echo "[*] Traffic Generator PID: $TEST_PID"
+    $UPDATE
+    $INSTALL python3 python3-pip python3-venv auditd curl
 
-        # 4. Run Hunter (Container or Native)
-        if grep -q "enabled = true" config.ini; then
-            echo "[*] Mode: Container"
-            if command -v docker >/dev/null; then RUNTIME="docker"; elif command -v podman >/dev/null; then RUNTIME="podman"; else echo "No runtime"; exit 1; fi
+    # Python Venv
+    if [ ! -d "venv" ]; then
+        echo "[*] Creating Python virtual environment..."
+        python3 -m venv venv
+    fi
+    source venv/bin/activate
+    echo "[*] Installing Python libraries..."
+    pip install --upgrade pip
+    pip install -r requirements.txt
 
-            echo "[*] Rebuilding container..."
-            $RUNTIME build -t c2-beacon-hunter:latest . >/dev/null
+    # Auditd Rules
+    echo "[*] Configuring Auditd..."
+    sudo mkdir -p /etc/audit/rules.d
+    if [ -f audit_rules.d/c2_beacon.rules ]; then
+        sudo cp audit_rules.d/c2_beacon.rules /etc/audit/rules.d/
+        sudo auditctl -R /etc/audit/rules.d/c2_beacon.rules || true
+    fi
 
-            echo "[*] Starting Hunter (Foreground)..."
-            # Mount config explicitly so we can verify the change inside
-            $RUNTIME run --name c2-beacon-hunter --rm -it \
-              --privileged --pid=host --network=host \
-              --cap-add=NET_ADMIN --cap-add=SYS_ADMIN \
-              -v /var/log/audit:/var/log/audit:ro \
-              -v /proc:/host/proc:ro \
-              -v "$(pwd)/output:/app/output" \
-              -v "$(pwd)/config.ini:/app/config.ini" \
-              c2-beacon-hunter:latest
-        else
-            echo "[*] Mode: Native Service"
-            echo "[*] Restarting Service..."
-            sudo systemctl restart c2_beacon_hunter
-            echo "[*] Tailing logs (Ctrl+C to stop)..."
-            journalctl -u c2_beacon_hunter -f --no-pager
-        fi
-        ;;
-    container)
-        echo "=== Docker / Podman Container Mode ==="
+    # Systemd Service
+    echo "[*] Installing Systemd Service..."
+    cat <<EOF | sudo tee /etc/systemd/system/c2_beacon_hunter.service
+[Unit]
+Description=C2 Beacon Hunter (Native)
+After=network.target auditd.service
 
-        if command -v docker >/dev/null 2>&1; then RUNTIME="docker"; elif command -v podman >/dev/null 2>&1; then RUNTIME="podman"; else echo "[-] Error: Neither docker nor podman found."; exit 1; fi
-        echo "[+] Detected Runtime: $RUNTIME"
+[Service]
+Type=simple
+User=root
+WorkingDirectory=$PROJECT_DIR
+ExecStart=$PROJECT_DIR/venv/bin/python3 $PROJECT_DIR/c2_beacon_hunter.py
+Restart=always
+RestartSec=5
 
-        read -p "Build image now? (y/n): " build_choice
-        if [[ $build_choice == "y" ]]; then
-            echo "[*] Building c2-beacon-hunter:latest..."
-            $RUNTIME build -t c2-beacon-hunter:latest .
-        fi
+[Install]
+WantedBy=multi-user.target
+EOF
+    sudo systemctl daemon-reload
+    echo "[+] Install Complete. Run './setup.sh start' to launch."
+    exit 0
+fi
 
-        echo "[*] Removing old instances..."
-        $RUNTIME rm -f c2-beacon-hunter 2>/dev/null || true
+# --- 2. CONTAINER BUILD ---
+if [[ "$1" == "container" ]]; then
+    if [ -z "$RUNTIME" ]; then echo "Error: Docker or Podman not found."; exit 1; fi
+    echo "=== Building Container Image ($RUNTIME) ==="
+    $RUNTIME build -t c2-beacon-hunter:latest .
+    echo "[+] Build Complete."
+    exit 0
+fi
 
-        BASE_ARGS="--name c2-beacon-hunter --privileged --pid=host --network=host --cap-add=NET_ADMIN --cap-add=SYS_ADMIN "
+# --- 3. TEST MODE (The Smart Patch Logic) ---
+if [[ "$1" == "test" ]]; then
+    if [ -z "$RUNTIME" ]; then echo "Error: Docker or Podman not found."; exit 1; fi
 
-        # Mount config.ini so host changes reflect immediately
-        MOUNTS="-v /var/log/audit:/var/log/audit:ro \
-                -v /proc:/host/proc:ro \
-                -v $(pwd)/output:/app/output \
-                -v $(pwd)/config.ini:/app/config.ini"
+    echo -e "\n\033[1;33m=== TEST MODE: Fast Polling + Loopback Allowed ===\033[0m"
+    echo "    (Press Ctrl+C to stop and revert to Production Mode)"
 
-        if [ -f /etc/timezone ]; then MOUNTS="$MOUNTS -v /etc/timezone:/etc/timezone:ro"; fi
-        if [ -f /etc/localtime ]; then MOUNTS="$MOUNTS -v /etc/localtime:/etc/localtime:ro"; fi
+    # A. Backup Original Files
+    cp config.ini config.ini.bak
+    cp c2_beacon_hunter.py c2_beacon_hunter.py.bak
 
-        echo ""
-        echo "Select Run Mode:"
-        echo "  1) Foreground (Interactive - Ctrl+C to stop)"
-        echo "  2) Background (Daemon - Restart on boot)"
-        read -p "Choice [1]: " run_mode
-        run_mode=${run_mode:-1}
+    # B. Patch Config (Fast Intervals)
+    # Change snapshot to 5s, analyze to 30s
+    sed -i 's/snapshot_interval = .*/snapshot_interval = 5/' config.ini
+    sed -i 's/analyze_interval = .*/analyze_interval = 30/' config.ini
 
-        if [[ $run_mode == "1" ]]; then
-            echo "[*] Starting in Foreground..."
-            # shellcheck disable=SC2086
-            $RUNTIME run --rm -it $BASE_ARGS $MOUNTS c2-beacon-hunter:latest
-        elif [[ $run_mode == "2" ]]; then
-            echo "[*] Starting in Background..."
-            # shellcheck disable=SC2086
-            $RUNTIME run -d --restart unless-stopped $BASE_ARGS $MOUNTS c2-beacon-hunter:latest
-            echo "[+] Container started!"
-            echo "    View logs: $RUNTIME logs -f c2-beacon-hunter"
-        else
-            echo "Invalid choice."
-            exit 1
-        fi
-        ;;
-    *)
-        echo "Usage: sudo ./setup.sh [install|run|verify|watch|stop|shutdown|container|test]"
-        ;;
-esac
+    # C. Patch Code (Disable Loopback Filter)
+    # This allows the tool to see your local test traffic (127.0.0.1 / 192.168.x.x)
+    echo "[*] Temporarily patching c2_beacon_hunter.py to allow loopback traffic..."
+    sed -i "s/if raddr in (\"127.0.0.1\", \"::1\", \"0.0.0.0\"):/if False and raddr in (\"127.0.0.1\", \"::1\", \"0.0.0.0\"): # PATCHED/g" c2_beacon_hunter.py
+
+    # D. Cleanup Function (Reverts EVERYTHING on Exit)
+    cleanup() {
+        echo -e "\n\n\033[1;32m[*] Cleaning up & Reverting to Production Mode...\033[0m"
+
+        # Restore Originals
+        mv c2_beacon_hunter.py.bak c2_beacon_hunter.py
+        echo "    - Restored c2_beacon_hunter.py"
+
+        mv config.ini.bak config.ini
+        echo "    - Restored config.ini"
+
+        echo "[+] System Ready for Production."
+        exit
+    }
+    trap cleanup SIGINT SIGTERM EXIT
+
+    # E. Run Container (Mounting the patched files)
+    # We mount the LOCAL modified files over the container's files
+    echo "[*] Starting Container..."
+
+    $RUNTIME run --rm -it --network host --pid host --privileged \
+        --cap-add=NET_ADMIN --cap-add=SYS_ADMIN \
+        -v $(pwd)/config.ini:/app/config.ini \
+        -v $(pwd)/output:/app/output \
+        -v $(pwd)/c2_beacon_hunter.py:/app/c2_beacon_hunter.py \
+        c2-beacon-hunter:latest
+
+    exit 0
+fi
+
+# --- 4. RUN (Foreground Production) ---
+if [[ "$1" == "run" ]]; then
+    if [ -z "$RUNTIME" ]; then echo "Error: Docker or Podman not found."; exit 1; fi
+    echo "=== Running in Production Mode (Foreground) ==="
+
+    $RUNTIME run --rm -it --network host --pid host --privileged \
+        --cap-add=NET_ADMIN --cap-add=SYS_ADMIN \
+        -v /etc/timezone:/etc/timezone:ro \
+        -v /etc/localtime:/etc/localtime:ro \
+        -v $(pwd)/config.ini:/app/config.ini \
+        -v $(pwd)/output:/app/output \
+        c2-beacon-hunter:latest
+    exit 0
+fi
+
+# --- 5. START (Background Service) ---
+if [[ "$1" == "start" ]]; then
+    # Check if we should start Container or Native Service
+    # (Simple logic: if config says container.enabled=true, use docker, else systemd)
+    USE_CONTAINER=$(grep "enabled = true" config.ini || echo "")
+
+    if [[ -n "$USE_CONTAINER" && -n "$RUNTIME" ]]; then
+        echo "=== Starting Container Daemon ==="
+        $RUNTIME run -d --name c2-beacon-hunter --restart unless-stopped \
+            --network host --pid host --privileged \
+            --cap-add=NET_ADMIN --cap-add=SYS_ADMIN \
+            -v /etc/timezone:/etc/timezone:ro \
+            -v /etc/localtime:/etc/localtime:ro \
+            -v $(pwd)/config.ini:/app/config.ini \
+            -v $(pwd)/output:/app/output \
+            c2-beacon-hunter:latest
+        echo "[+] Container started in background."
+    else
+        echo "=== Starting Native Systemd Service ==="
+        sudo systemctl start c2_beacon_hunter
+        sudo systemctl enable c2_beacon_hunter
+        echo "[+] Service started."
+    fi
+    exit 0
+fi
+
+# --- 6. STOP ---
+if [[ "$1" == "stop" ]]; then
+    echo "=== Stopping Service ==="
+    if [ -n "$RUNTIME" ]; then
+        $RUNTIME stop c2-beacon-hunter 2>/dev/null || true
+        $RUNTIME rm c2-beacon-hunter 2>/dev/null || true
+    fi
+    sudo systemctl stop c2_beacon_hunter 2>/dev/null || true
+    echo "[+] Stopped."
+    exit 0
+fi
+
+# --- 7. WATCH LOGS ---
+if [[ "$1" == "watch" ]]; then
+    tail -f output/detections.log
+    exit 0
+fi

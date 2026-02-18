@@ -148,3 +148,8 @@ python test_MLBeacon.py
 - Statistical/spectral methods from SEI/CMU, RITA, Elastic, and Lomb-Scargle literature
 - Entropy detection inspired by DGA research
 - Project maintained for red/blue team use
+
+### Test Findings
+- Using podman (network isolation prevents loopback testing)
+- For deployment docker/podman will still work for known beaconing (just not loopback)
+- For testing, use native python venv instead

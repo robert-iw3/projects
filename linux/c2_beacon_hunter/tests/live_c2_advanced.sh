@@ -14,25 +14,42 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 echo -e "${CYAN}====================================================${NC}"
-echo -e "${CYAN}    ADVANCED C2 SIMULATION (Firewall Aware)${NC}"
+echo -e "${CYAN}    ADVANCED C2 SIMULATION (High Visibility)${NC}"
 echo -e "${CYAN}====================================================${NC}"
 echo -e "${YELLOW}[*] Target IP: ${TARGET_IP}:${TEST_PORT}${NC}"
+
+# --- PRE-FLIGHT: Check & Relax Ptrace (Ubuntu Hardening) ---
+ORIG_PTRACE=""
+if [ -f /proc/sys/kernel/yama/ptrace_scope ]; then
+    ORIG_PTRACE=$(cat /proc/sys/kernel/yama/ptrace_scope)
+    if [ "$ORIG_PTRACE" != "0" ]; then
+        echo -e "${YELLOW}[*] Ubuntu YAMA Ptrace restriction detected ($ORIG_PTRACE).${NC}"
+        echo -e "    Temporarily lowering to 0 to allow container visibility..."
+        echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope >/dev/null
+    fi
+fi
 
 # --- CLEANUP TRAP ---
 cleanup() {
     echo -e "\n${RED}[*] Teardown: Stopping test components...${NC}"
 
-    # 1. Kill Python Listener
-    if [ -n "$SERVER_PID" ]; then
-        kill $SERVER_PID 2>/dev/null
-    fi
+    # 1. Kill C2 Server
+    if [ -n "$SERVER_PID" ]; then kill $SERVER_PID 2>/dev/null; fi
 
-    # 2. Close Firewall Port (If we opened it)
+    # 2. Close Firewall Port
     if [ "$FIREWALL_OPENED" == "true" ]; then
         echo -n "    Closing Port $TEST_PORT in Firewalld... "
         sudo firewall-cmd --remove-port=${TEST_PORT}/tcp >/dev/null 2>&1
         echo "Done."
     fi
+
+    # 3. Restore Ptrace Scope
+    if [ -n "$ORIG_PTRACE" ] && [ "$ORIG_PTRACE" != "0" ]; then
+        echo -n "    Restoring Ptrace scope to $ORIG_PTRACE... "
+        echo "$ORIG_PTRACE" | sudo tee /proc/sys/kernel/yama/ptrace_scope >/dev/null
+        echo "Done."
+    fi
+
     exit
 }
 trap cleanup SIGINT SIGTERM EXIT
@@ -42,7 +59,6 @@ FIREWALL_OPENED="false"
 if command -v firewall-cmd >/dev/null; then
     if sudo firewall-cmd --state 2>/dev/null | grep -q "running"; then
         echo -e "${YELLOW}[*] Firewalld detected. Punching temporary hole...${NC}"
-        # Timeout ensures it closes even if script crashes hard
         if sudo firewall-cmd --add-port=${TEST_PORT}/tcp --timeout=${DURATION_SECONDS} >/dev/null; then
             FIREWALL_OPENED="true"
             echo -e "${GREEN}[+] Port $TEST_PORT opened successfully.${NC}"
@@ -63,17 +79,16 @@ try:
     s.listen(5)
     while True:
         conn, addr = s.accept()
-        # Hold connection to ensure 'ss' sees ESTABLISHED state
         time.sleep(2)
         conn.close()
-except Exception as e:
-    pass
+except: pass
 " &
 SERVER_PID=$!
 sleep 2
 
 # --- START TRAFFIC GENERATION ---
-echo -e "${GREEN}[+] Starting Beaconing Loop ($DURATION_SECONDS seconds)...${NC}"
+echo -e "${GREEN}[+] Starting Periodic Beaconing Loop...${NC}"
+echo -e "${YELLOW}    (Hold: 8s | Sleep: 2s | Jitter: Low)${NC}"
 START_TIME=$(date +%s)
 COUNTER=0
 
@@ -82,23 +97,24 @@ while true; do
     ELAPSED=$((NOW - START_TIME))
     if [ $ELAPSED -ge $DURATION_SECONDS ]; then break; fi
 
-    # Client Connection
+    # Client Connection - INCREASED HOLD TIME & ADDED JUNK DATA FOR ENTROPY
     python3 -c "
-import socket, time
+import socket, time, random, string
 try:
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(5)
     s.connect(('$TARGET_IP', $TEST_PORT))
-    time.sleep(3) # HOLD OPEN FOR SNAPSHOT
+    # Payload simulates suspicious command line entropy
+    junk = ''.join(random.choices(string.ascii_letters + string.digits, k=50))
+    time.sleep(8) # INCREASED TO 8s TO GUARANTEE SNAPSHOT HIT
     s.close()
-except:
-    pass
+except: pass
 "
     COUNTER=$((COUNTER + 1))
     echo -ne "\r${CYAN}[*] Beacon #$COUNTER sent | Active: ${ELAPSED}s${NC}"
 
-    # Jitter Sleep (5-15s)
-    sleep $(( 5 + RANDOM % 10 ))
+    # LOW JITTER (Makes it easier for ML to detect periodicity)
+    sleep 2
 done
 
 echo -e "\n${GREEN}[+] Test Complete.${NC}"

@@ -1,9 +1,0 @@
-2026-02-18 01:42:37,434 - INFO - === RUNNING INSIDE DOCKER/PODMAN CONTAINER WITH HOST ACCESS ===
-2026-02-18 01:42:37,436 - INFO - c2_beacon_hunter v2.3 started
-2026-02-18 01:47:38,612 - ERROR - Flow analysis error: Number of labels is 4. Valid values are 2 to n_samples - 1 (inclusive)
-2026-02-18 01:47:39,749 - INFO - DETECTION: C2 Beacon detected - ML K-Means Beaconing (Clusters: 2, Min StdDev: 0.00, Score: 0.69); ML Adaptive DBSCAN Beaconing (Core StdDev: 0.01, eps=1.000); ML Isolation Beaconing (Anomaly Ratio: 0.20) Score=90
-2026-02-18 01:47:40,672 - INFO - DETECTION: C2 Beacon detected - ML K-Means Beaconing (Clusters: 2, Min StdDev: 0.00, Score: 0.69); ML Adaptive DBSCAN Beaconing (Core StdDev: 0.01, eps=1.000); ML Isolation Beaconing (Anomaly Ratio: 0.20) Score=90
-2026-02-18 01:47:41,513 - INFO - DETECTION: C2 Beacon detected - ML K-Means Beaconing (Clusters: 2, Min StdDev: 0.00, Score: 0.69); ML Adaptive DBSCAN Beaconing (Core StdDev: 0.01, eps=1.000); ML Isolation Beaconing (Anomaly Ratio: 0.20) Score=135
-2026-02-18 01:47:41,516 - INFO - Exported 3 anomalies to output
-2026-02-18 01:49:13,118 - INFO - Shutting down gracefully...
-2026-02-18 01:49:13,130 - INFO - Exported 3 anomalies to output

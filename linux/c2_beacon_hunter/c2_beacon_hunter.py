@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 """
-c2_beacon_hunter - Linux C2 Beacon Detector (Patched Version)
+c2_beacon_hunter - Linux C2 Beacon Detector (v2.4)
 Author: Robert Weber
-Integrates BeaconML.py for advanced K-Means/DBSCAN/Isolation Forest detection on time intervals, plus statistical heuristics and optional DNS monitoring.
+Integrates BeaconML.py for advanced K-Means/DBSCAN/Isolation Forest detection on time intervals.
+
+Patch Log - v2.4:
+- [COMPATIBILITY] Dynamic 'ss' column detection for RHEL/CentOS/Fedora/Ubuntu.
+- [STABILITY] Robust IP parsing (strips %interface suffixes that caused crashes).
+- [VISIBILITY] "Self-Traffic" filter disabled: Now detects Lateral Movement (Host->Host attacks).
+- [VISIBILITY] "Private IP" filter disabled: Now detects Local Service beacons (NAS/IoT/Internal C2).
 """
 
 import argparse
@@ -148,7 +154,7 @@ class BeaconHunter:
     def snapshot(self):
         """
         Primary: fast ss -tupn → fallback to psutil
-        PATCHED: Handles RHEL/CentOS/Fedora column offsets and %interface suffixes.
+        IMPROVEMENT: Handles RHEL/CentOS/Fedora column offsets and %interface suffixes.
         """
         ts = time.time()
         try:
@@ -165,42 +171,39 @@ class BeaconHunter:
                 if len(parts) < 5:
                     continue
 
-                # --- PATCH: Dynamic Column Detection ---
+                # --- IMPROVEMENT: Dynamic Column Detection ---
+                # Solves compatibility issues with RHEL/CentOS/Fedora vs Ubuntu/Debian
                 # Standard: State(0) Recv(1) Send(2) Local(3) Remote(4)
-                # RHEL/Fedora: Netid(0) State(1) Recv(2) Send(3) Local(4) Remote(5)
+                # RHEL:     Netid(0) State(1) Recv(2) Send(3) Local(4) Remote(5)
                 state_idx = -1
                 if "ESTAB" in parts[0]:
                     state_idx = 0
                 elif len(parts) > 1 and "ESTAB" in parts[1]:
                     state_idx = 1
 
-                # Only process Established connections
                 if state_idx == -1:
-                    continue
+                    continue # Not established
 
-                # Ensure we have enough columns relative to the State column
+                # Ensure we have enough columns
                 if len(parts) < state_idx + 5:
                     continue
 
                 local_raw = parts[state_idx + 3]
                 remote_raw = parts[state_idx + 4]
 
-                # --- PATCH: Handle IPv6 brackets and %interface suffixes ---
-                # Example: [::1]:22 or 192.168.1.5%wlo1:443
-
-                # 1. Strip Interface Suffix (%)
+                # --- IMPROVEMENT: Robust IP Parsing ---
+                # Strips interface suffixes (e.g., 192.168.1.5%eth0) to prevent crashes
                 remote_clean = remote_raw.split('%')[0]
                 local_clean = local_raw.split('%')[0]
 
-                # 2. Parse Port (Handle Last Colon)
                 if ':' not in remote_clean:
                     continue
 
                 try:
                     raddr, rport_str = remote_clean.rsplit(':', 1)
-                    laddr, lport_str = local_clean.rsplit(':', 1)
+                    laddr, _ = local_clean.rsplit(':', 1)
 
-                    # Handle IPv6 brackets if present
+                    # Handle IPv6 brackets
                     raddr = raddr.strip('[]')
                     laddr = laddr.strip('[]')
 
@@ -208,18 +211,18 @@ class BeaconHunter:
                 except ValueError:
                     continue
 
-                # 3. Filter Loopback (Strict)
-                # Note: We allow LAN IPs (192.168.x.x) for testing purposes
+                # --- IMPROVEMENT: Visibility & Lateral Movement ---
+                # 1. We ONLY filter loopback (127.0.0.1) and all-zeros.
+                # 2. We allow "Self-Traffic" (Host IP -> Host IP) to catch local testing/attacks.
+                # 3. We allow "Private IPs" (192.168.x.x) to catch Local Services/Lateral Movement.
                 if raddr in ("127.0.0.1", "::1", "0.0.0.0"):
                     continue
 
-                # 4. Extract PID
-                # Format: users:(("process_name",pid=1234,fd=4))
+                # Extract PID
                 pid = 0
                 if "pid=" in line:
                     try:
                         pid_str = line.split("pid=")[1].split(",")[0]
-                        # Remove any closing parens just in case
                         pid_str = pid_str.split(")")[0]
                         pid = int(pid_str)
                     except:
@@ -227,7 +230,7 @@ class BeaconHunter:
 
                 key = (local_clean, raddr, rport)
 
-                # 5. Metadata Enrichment
+                # Process Enrichment
                 try:
                     p = psutil.Process(pid)
                     proc = {
@@ -404,14 +407,14 @@ class BeaconHunter:
         while self.running:
             with self.lock:
                 active = len(self.flows)
-            print(f"\r[MONITORING v2.3] Active flows: {active:5d} | Detections: {self.detection_count:4d} | "
+            print(f"\r[MONITORING v2.4] Active flows: {active:5d} | Detections: {self.detection_count:4d} | "
                   f"Last: {datetime.now().strftime('%H:%M:%S')}", end="", flush=True)
             time.sleep(10)
 
     def start(self):
         threading.Thread(target=self.snapshot_loop, daemon=True).start()
         threading.Thread(target=self.print_status, daemon=True).start()
-        logger.info("c2_beacon_hunter v2.3 started")
+        logger.info("c2_beacon_hunter v2.4 started")
         print(f"Output directory: {self.output_dir} | Ctrl+C to stop")
         try:
             while self.running:
@@ -430,7 +433,7 @@ class BeaconHunter:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="c2_beacon_hunter v2.3")
+    parser = argparse.ArgumentParser(description="c2_beacon_hunter v2.4")
     parser.add_argument("--output-dir", default=OUTPUT_DIR, help="Output directory for logs/CSV/JSON")
     args = parser.parse_args()
     hunter = BeaconHunter(output_dir=args.output_dir)
