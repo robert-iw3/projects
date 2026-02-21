@@ -138,6 +138,36 @@ Advanced profile specifically stresses the new Lomb-Scargle detection.
 
 ---
 
+### Real World Application
+
+These C2s almost always rely on **periodic beaconing with jitter** (random variation in sleep time).
+
+| C2 Framework     | Typical Behavior                          | How v2.5 Detects It                              | Expected Effectiveness |
+|------------------|-------------------------------------------|--------------------------------------------------|------------------------|
+| **Cobalt Strike** | 30–300s base sleep + 0–50% jitter        | Low-CV / K-Means/DBSCAN for low jitter<br>Lomb-Scargle for medium-high jitter | **High** (very strong) |
+| **Sliver**        | Default jitter enabled (~30s on 60s base) | Lomb-Scargle excels here                         | **High**               |
+| **Havoc (Demon)** | Configurable sleep + jitter + sleep obfuscation | Timing analysis + entropy/masquerade scoring     | **High**               |
+| **Adaptix**       | sleep_delay + jitter_delay                | Same as above                                    | **High**               |
+
+
+- **Lomb-Scargle** — Detects underlying periodicity **even with heavy jitter** (30–50%+), which defeats most traditional low-CV detectors.
+- **Multiple layered signals** — Timing + entropy + process tree/masquerading + unusual ports all contribute to the score.
+- **Realistic testing** — `--jitter 0.35` is a very good representation of how these C2s behave in the wild.
+
+---
+
 **Project maintained for red team, blue team, and detection engineering use.**
 
 **Last updated:** February 2026 (v2.5)
+
+---
+
+### v2.6 Roadmap
+
+| Priority | Feature                              | Difficulty | Expected Gain                     |
+|----------|--------------------------------------|------------|-----------------------------------|
+| 1        | Sparse/Long-sleep beacon tracking    | Easy       | Catches 4h+ sleep beacons         |
+| 2        | Packet size + direction features     | Medium     | Huge against malleable C2         |
+| 3        | Enhanced DNS beacon detection        | Easy       | Catches pure DNS C2               |
+| 4        | Per-process baseline (UEBA lite)     | Medium     | Reduces false positives           |
+| 5        | Optional eBPF mode (future)          | Hard       | Very high accuracy                |
