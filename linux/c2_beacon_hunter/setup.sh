@@ -11,7 +11,7 @@ set -e
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_DIR"
 
-# ====================== TEST DEFAULTS (edit if desired) ======================
+# ====================== TEST DEFAULTS ======================
 TEST_DEFAULT_IP="127.0.0.1"
 TEST_DEFAULT_PORT="1337"
 TEST_DEFAULT_DURATION=300
@@ -113,7 +113,7 @@ if [[ "$1" == "container" ]]; then
     exit 0
 fi
 
-# --- 3. COMPREHENSIVE TEST MODE (Dynamic TEST_MODE=true) ---
+# --- 3. COMPREHENSIVE TEST MODE ---
 if [[ "$1" == "test" ]]; then
     if [ -z "$RUNTIME" ]; then
         echo "Error: Docker or Podman not found."
@@ -122,7 +122,6 @@ if [[ "$1" == "test" ]]; then
 
     echo "=== Comprehensive Test Mode v2.5 ==="
 
-    # User selects test profile
     echo "Select test profile:"
     echo "  1) Basic   - Low jitter (classic detection)"
     echo "  2) Advanced- High jitter (Lomb-Scargle test)"
@@ -160,7 +159,7 @@ if [[ "$1" == "test" ]]; then
     # Backup only config
     cp config.ini config.ini.bak 2>/dev/null || true
 
-    # Fast polling for testing
+    # Fast polling
     sed -i 's/snapshot_interval = .*/snapshot_interval = 5/' config.ini
     sed -i 's/analyze_interval = .*/analyze_interval = 30/' config.ini
 
@@ -175,7 +174,7 @@ if [[ "$1" == "test" ]]; then
     }
     trap cleanup SIGINT SIGTERM EXIT
 
-    # Start container with TEST_MODE=true (enables loopback)
+    # Start container with TEST_MODE=true
     echo "[*] Starting hunter container in TEST MODE (loopback allowed)..."
     CONTAINER_ID=$($RUNTIME run -d --name c2-beacon-hunter-test \
         --network host --pid host --privileged \
@@ -190,9 +189,9 @@ if [[ "$1" == "test" ]]; then
     echo "[+] Hunter running in TEST MODE"
     sleep 5
 
-    # Launch simulator
+    # Launch simulator from tests/ directory
     echo "[*] Starting beacon simulator..."
-    ./test_beacon_simulator.py \
+    ./tests/test_beacon_simulator.py \
         --target-ip "$TARGET_IP" \
         --port "$PORT" \
         --period "$TEST_PERIOD" \
