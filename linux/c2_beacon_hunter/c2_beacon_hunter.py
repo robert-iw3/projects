@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
-c2_beacon_hunter - Linux C2 Beacon Detector (v2.4)
+c2_beacon_hunter - Linux C2 Beacon Detector (v2.5)
 Author: Robert Weber
-Integrates BeaconML.py for advanced K-Means/DBSCAN/Isolation Forest detection on time intervals.
 
-Patch Log - v2.4:
-- [COMPATIBILITY] Dynamic 'ss' column detection for RHEL/CentOS/Fedora/Ubuntu.
-- [STABILITY] Robust IP parsing (strips %interface suffixes that caused crashes).
-- [VISIBILITY] "Self-Traffic" filter disabled: Now detects Lateral Movement (Host->Host attacks).
-- [VISIBILITY] "Private IP" filter disabled: Now detects Local Service beacons (NAS/IoT/Internal C2).
+Patch Log - v2.5:
+- Lomb-Scargle + circular phase clustering for jitter-resistant stealthy beacons
+- Analysis limited to 300 most-recent active flows (performance improvement)
+- Dynamic TEST_MODE support (loopback allowed only in test mode)
+- Full backward compatibility with production behavior
 """
 
 import argparse
@@ -42,7 +41,6 @@ except ImportError:
 try:
     from BeaconML import detect_beaconing_list
 except ImportError:
-    # Fallback if BeaconML is missing during lightweight tests
     def detect_beaconing_list(*args, **kwargs): return None
 
 # ====================== CONFIG ======================
@@ -63,8 +61,8 @@ ML_MAX_SAMPLES = int(config.get('ml', 'max_samples', fallback=2000))
 
 Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
 
-# ====================== CONTAINER DETECTION ======================
 IN_CONTAINER = os.path.exists('/.dockerenv') or os.path.exists('/run/.containerenv')
+TEST_MODE = os.environ.get('TEST_MODE', 'false').lower() == 'true'
 
 # ====================== LOGGING ======================
 logger = logging.getLogger("c2_beacon_hunter")
@@ -98,10 +96,11 @@ MITRE_MAP = {
     "masquerade": ("TA0005", "T1036", "Masquerading"),
 }
 
+
 class BeaconHunter:
     def __init__(self, output_dir=OUTPUT_DIR):
         self.output_dir = Path(output_dir)
-        self.flows = defaultdict(lambda: deque(maxlen=300))   # memory-capped
+        self.flows = defaultdict(lambda: deque(maxlen=300))
         self.last_analyzed = {}
         self.anomalies = []
         self.running = True
@@ -126,7 +125,6 @@ class BeaconHunter:
         return -sum(p * math.log2(p) for p in probs if p > 0)
 
     def get_process_tree(self, pid):
-        """Full parent chain for masquerading detection"""
         tree = []
         try:
             current = psutil.Process(pid)
@@ -136,7 +134,7 @@ class BeaconHunter:
                 current = current.parent()
         except:
             pass
-        return tree[::-1]  # root → leaf
+        return tree[::-1]
 
     def _dns_sniffer(self):
         def pkt_handler(pkt):
@@ -152,17 +150,10 @@ class BeaconHunter:
             pass
 
     def snapshot(self):
-        """
-        Primary: fast ss -tupn → fallback to psutil
-        IMPROVEMENT: Handles RHEL/CentOS/Fedora column offsets and %interface suffixes.
-        """
         ts = time.time()
         try:
-            # --numeric to avoid DNS lookups slowing us down
             output = subprocess.check_output(["ss", "-tupn", "--numeric"], timeout=3).decode('utf-8', errors='ignore')
             lines = output.splitlines()
-
-            # Skip header if present
             if len(lines) > 0 and ("State" in lines[0] or "Netid" in lines[0]):
                 lines = lines[1:]
 
@@ -171,28 +162,12 @@ class BeaconHunter:
                 if len(parts) < 5:
                     continue
 
-                # --- IMPROVEMENT: Dynamic Column Detection ---
-                # Solves compatibility issues with RHEL/CentOS/Fedora vs Ubuntu/Debian
-                # Standard: State(0) Recv(1) Send(2) Local(3) Remote(4)
-                # RHEL:     Netid(0) State(1) Recv(2) Send(3) Local(4) Remote(5)
-                state_idx = -1
-                if "ESTAB" in parts[0]:
-                    state_idx = 0
-                elif len(parts) > 1 and "ESTAB" in parts[1]:
-                    state_idx = 1
-
-                if state_idx == -1:
-                    continue # Not established
-
-                # Ensure we have enough columns
-                if len(parts) < state_idx + 5:
+                state_idx = 0 if "ESTAB" in parts[0] else 1 if len(parts) > 1 and "ESTAB" in parts[1] else -1
+                if state_idx == -1 or len(parts) < state_idx + 5:
                     continue
 
                 local_raw = parts[state_idx + 3]
                 remote_raw = parts[state_idx + 4]
-
-                # --- IMPROVEMENT: Robust IP Parsing ---
-                # Strips interface suffixes (e.g., 192.168.1.5%eth0) to prevent crashes
                 remote_clean = remote_raw.split('%')[0]
                 local_clean = local_raw.split('%')[0]
 
@@ -201,36 +176,26 @@ class BeaconHunter:
 
                 try:
                     raddr, rport_str = remote_clean.rsplit(':', 1)
-                    laddr, _ = local_clean.rsplit(':', 1)
-
-                    # Handle IPv6 brackets
                     raddr = raddr.strip('[]')
-                    laddr = laddr.strip('[]')
-
                     rport = int(rport_str)
                 except ValueError:
                     continue
 
-                # --- IMPROVEMENT: Visibility & Lateral Movement ---
-                # 1. We ONLY filter loopback (127.0.0.1) and all-zeros.
-                # 2. We allow "Self-Traffic" (Host IP -> Host IP) to catch local testing/attacks.
-                # 3. We allow "Private IPs" (192.168.x.x) to catch Local Services/Lateral Movement.
-                if raddr in ("127.0.0.1", "::1", "0.0.0.0"):
+                # === DYNAMIC LOOPBACK CONTROL ===
+                # TEST_MODE=true  → allow loopback (for simulator)
+                # TEST_MODE=false → filter loopback (production)
+                if not TEST_MODE and raddr in ("127.0.0.1", "::1", "0.0.0.0"):
                     continue
 
-                # Extract PID
                 pid = 0
                 if "pid=" in line:
                     try:
-                        pid_str = line.split("pid=")[1].split(",")[0]
-                        pid_str = pid_str.split(")")[0]
-                        pid = int(pid_str)
+                        pid = int(line.split("pid=")[1].split(",")[0].split(")")[0])
                     except:
                         pass
 
                 key = (local_clean, raddr, rport)
 
-                # Process Enrichment
                 try:
                     p = psutil.Process(pid)
                     proc = {
@@ -249,7 +214,8 @@ class BeaconHunter:
             try:
                 for conn in psutil.net_connections(kind="inet"):
                     if (conn.status == psutil.CONN_ESTABLISHED and
-                        conn.raddr and conn.raddr.ip not in ("127.0.0.1", "::1")):
+                        conn.raddr and
+                        (TEST_MODE or conn.raddr.ip not in ("127.0.0.1", "::1"))):
                         key = (str(conn.laddr), conn.raddr.ip, conn.raddr.port)
                         try:
                             p = psutil.Process(conn.pid)
@@ -277,8 +243,6 @@ class BeaconHunter:
     def analyze_flow(self, key, events):
         now = time.time()
         last = self.last_analyzed.get(key, 0)
-
-        # Min samples check (Needs at least 5 connections to form a pattern)
         if len(events) < 5 or (now - last < 30):
             return None
         self.last_analyzed[key] = now
@@ -295,9 +259,10 @@ class BeaconHunter:
             port = key[2]
             unusual_port = port not in COMMON_PORTS and port > 1024
 
-            # Advanced ML (BeaconML with adaptive DBSCAN)
+            # ML call with timestamps (enables Lomb-Scargle)
             ml_result = detect_beaconing_list(
                 deltas,
+                timestamps=timestamps.tolist(),
                 std_threshold=ML_STD_THRESHOLD,
                 min_samples=3,
                 use_dbscan=ML_USE_DBSCAN,
@@ -313,7 +278,7 @@ class BeaconHunter:
             if cv < 0.25 and mean_delta > 5:
                 score += 30
                 reasons.append("low_cv_periodic")
-            if ml_result and "Beaconing" in ml_result:
+            if ml_result:
                 score += 60
                 reasons.append(f"Advanced_ML: {ml_result}")
                 mitre = MITRE_MAP["beacon_periodic"]
@@ -365,7 +330,6 @@ class BeaconHunter:
                     "mitre_name": mitre[2],
                     "description": f"C2 Beacon detected - {ml_result or 'Statistical match'}"
                 }
-                # Log to file immediately
                 with open(DETECTION_LOG, "a") as f:
                     f.write(f"{datetime.now().isoformat()} [SCORE {score}] {anomaly['description']} "
                             f"→ {raddr}:{port} ({anomaly['process']})\n")
@@ -378,17 +342,26 @@ class BeaconHunter:
     def run_analysis(self):
         with self.lock:
             current_flows = dict(self.flows)
+
+        # PERFORMANCE: only 300 most-recent active flows
+        active_flows = {k: list(v) for k, v in current_flows.items() if len(v) >= 5}
+        if len(active_flows) > 300:
+            sorted_active = sorted(
+                active_flows.items(),
+                key=lambda item: item[1][-1][0] if item[1] else 0,
+                reverse=True
+            )
+            active_flows = dict(sorted_active[:300])
+
         new_anomalies = []
-        for key, events in current_flows.items():
-            # Analyze if we have enough data points
-            if len(events) >= 5:
-                anomaly = self.analyze_flow(key, list(events))
-                if anomaly:
-                    new_anomalies.append(anomaly)
-                    self.detection_count += 1
-                    # Red color for visibility in terminal
-                    print(f"\033[91m[DETECTION #{self.detection_count}] {anomaly['description']}\033[0m")
-                    logger.info(f"DETECTION: {anomaly['description']} Score={anomaly['score']}")
+        for key, events in active_flows.items():
+            anomaly = self.analyze_flow(key, events)
+            if anomaly:
+                new_anomalies.append(anomaly)
+                self.detection_count += 1
+                print(f"\033[91m[DETECTION #{self.detection_count}] {anomaly['description']}\033[0m")
+                logger.info(f"DETECTION: {anomaly['description']} Score={anomaly['score']}")
+
         if new_anomalies:
             self.anomalies.extend(new_anomalies)
             self.export_all()
@@ -407,18 +380,17 @@ class BeaconHunter:
         while self.running:
             with self.lock:
                 active = len(self.flows)
-            print(f"\r[MONITORING v2.4] Active flows: {active:5d} | Detections: {self.detection_count:4d} | "
+            print(f"\r[MONITORING v2.5] Active flows: {active:5d} | Detections: {self.detection_count:4d} | "
                   f"Last: {datetime.now().strftime('%H:%M:%S')}", end="", flush=True)
             time.sleep(10)
 
     def start(self):
         threading.Thread(target=self.snapshot_loop, daemon=True).start()
         threading.Thread(target=self.print_status, daemon=True).start()
-        logger.info("c2_beacon_hunter v2.4 started")
+        logger.info("c2_beacon_hunter v2.5 started")
         print(f"Output directory: {self.output_dir} | Ctrl+C to stop")
         try:
             while self.running:
-                # Main thread handles analysis loop
                 time.sleep(ANALYZE_INTERVAL)
                 self.run_analysis()
         except KeyboardInterrupt:
@@ -433,7 +405,7 @@ class BeaconHunter:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="c2_beacon_hunter v2.4")
+    parser = argparse.ArgumentParser(description="c2_beacon_hunter v2.5")
     parser.add_argument("--output-dir", default=OUTPUT_DIR, help="Output directory for logs/CSV/JSON")
     args = parser.parse_args()
     hunter = BeaconHunter(output_dir=args.output_dir)
