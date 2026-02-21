@@ -1,37 +1,40 @@
-# Clear existing rules to prevent duplicates
+# =============================================================================
+# c2_beacon_hunter Audit Rules - v2.6
+# Purpose: Detect process execution, network C2, fileless techniques, and persistence
+# Copy: sudo cp audit_rules.d/c2_beacon.rules /etc/audit/rules.d/
+# Load with: sudo auditctl -R /etc/audit/rules.d/c2_beacon.rules
+# =============================================================================
+
 -D
 
-# === Process Execution (High Performance) ===
+# === Process Execution (Core) ===
 -a always,exit -F arch=b64 -S execve,execveat -k process_exec
 -a always,exit -F arch=b32 -S execve,execveat -k process_exec
 
-# === Network Connections ===
-# Split lines to handle "Unknown Syscall" errors gracefully per-distro
--a always,exit -F arch=b64 -S connect,bind,accept4 -F success=1 -k network_connect
--a always,exit -F arch=b32 -S connect,bind,socketcall -F success=1 -k network_connect
-# Optional: some older RHEL/Debian kernels specifically need 'accept' on its own
--a always,exit -F arch=b64 -S accept -F success=1 -k network_connect
+# === Network Connections (C2 Beaconing) ===
+-a always,exit -F arch=b64 -S connect -F success=1 -k network_connect
+-a always,exit -F arch=b32 -S connect -F success=1 -k network_connect
 
-# === Process Tree & Masquerading (Replaced -w with -a) ===
-# This replaces the "Old style watch" on /proc with a faster syscall filter
--a always,exit -F arch=b64 -F dir=/proc -F perm=wa -k proc_monitor
--a always,exit -F arch=b32 -F dir=/proc -F perm=wa -k proc_monitor
-
-# === Fileless Execution ===
+# === Fileless / Memory Execution ===
 -a always,exit -F arch=b64 -S memfd_create -k fileless_exec
 -a always,exit -F arch=b32 -S memfd_create -k fileless_exec
 
-# === Suspicious Directory Execution (Modern Syscall Style) ===
-# Using -a with -F arch eliminates the "perm used without arch is slower" warning
+# === Suspicious Temporary Directory Execution ===
 -a always,exit -F arch=b64 -F dir=/tmp -F perm=x -k suspicious_exec
 -a always,exit -F arch=b32 -F dir=/tmp -F perm=x -k suspicious_exec
-
 -a always,exit -F arch=b64 -F dir=/dev/shm -F perm=x -k suspicious_exec
 -a always,exit -F arch=b32 -F dir=/dev/shm -F perm=x -k suspicious_exec
-
 -a always,exit -F arch=b64 -F dir=/run -F perm=x -k suspicious_exec
 -a always,exit -F arch=b32 -F dir=/run -F perm=x -k suspicious_exec
 
+# === Process Tree & Masquerading Monitoring (Targeted) ===
+-a always,exit -F arch=b64 -S prctl,setuid,setgid -k proc_cred
+-a always,exit -F arch=b32 -S prctl,setuid,setgid -k proc_cred
+
+# === Optional: High-value C2 indicators ===
+# -a always,exit -F arch=b64 -S socket -F a0=2 -F a1=1 -k suspicious_socket   # TCP sockets
+# -a always,exit -F arch=b64 -S clone,fork -F success=1 -k process_fork
+
 # =============================================================================
-# Load with: sudo auditctl -R /etc/audit/rules.d/c2_beacon.rules
+# End of rules
 # =============================================================================
