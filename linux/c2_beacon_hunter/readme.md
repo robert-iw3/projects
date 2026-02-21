@@ -164,14 +164,7 @@ use_enhanced_dns = true         # Enable dedicated DNS beacon detection
 # Multi-line values without continuation configparser does not automatically handle multi-line values like this.
 # This is for more readability, reference the current config.ini
 [whitelist]
-benign_processes = NetworkManager, firefox, firefox-bin, chrome, chromium,
-                   gnome-shell, systemd, dbus-daemon, pipewire, pulseaudio,
-                   nautilus, tracker, teams, slack, discord, zoom, code,
-                   github-desktop, git, ssh, sshd, conmon, crun, podman
-                                   # List of legitimate processes that are almost always benign.
-                                   # Traffic from these is skipped early to reduce noise.
-                                   # WARNING: Do not add powershell, cmd, python, bash, etc.
-                                   # (threat actors can abuse these for stealthy C2)
+benign_processes = NetworkManager,pipewire,pulseaudio,nautilus,tracker
 
 benign_destinations = 192.168., 10., 172.16., 172.17., 172.18., 172.19.,
                       172.20., 172.21., 172.22., 172.23., 172.24., 172.25.,

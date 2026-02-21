@@ -1,19 +1,32 @@
 # =============================================================================
 # c2_beacon_hunter Audit Rules - v2.6
-# Purpose: Detect process execution, network C2, fileless techniques, and persistence
+# Combines General C2 Detection + Strong DNS C2 Focus
 # Copy: sudo cp audit_rules.d/c2_beacon.rules /etc/audit/rules.d/
 # Load with: sudo auditctl -R /etc/audit/rules.d/c2_beacon.rules
+# Reload with: sudo systemctl restart auditd
 # =============================================================================
 
 -D
 
-# === Process Execution (Core) ===
+# === Process Execution ===
 -a always,exit -F arch=b64 -S execve,execveat -k process_exec
 -a always,exit -F arch=b32 -S execve,execveat -k process_exec
 
-# === Network Connections (C2 Beaconing) ===
+# === Network Connections (General C2 Beaconing) ===
 -a always,exit -F arch=b64 -S connect -F success=1 -k network_connect
 -a always,exit -F arch=b32 -S connect -F success=1 -k network_connect
+
+# === DNS C2 Detection (Compatible Version) ===
+-a always,exit -F arch=b64 -S sendto,sendmsg,sendmmsg -k dns_traffic
+-a always,exit -F arch=b32 -S sendto,sendmsg,sendmmsg -k dns_traffic
+
+-a always,exit -F arch=b64 -S recvfrom,recvmsg,recvmmsg -k dns_traffic
+-a always,exit -F arch=b32 -S recvfrom,recvmsg,recvmmsg -k dns_traffic
+
+# Suspicious DNS activity (non-browser heavy DNS is often C2)
+# Note: Removed comm!= filter for broad kernel compatibility
+-a always,exit -F arch=b64 -S sendto,sendmsg -k suspicious_dns
+-a always,exit -F arch=b32 -S sendto,sendmsg -k suspicious_dns
 
 # === Fileless / Memory Execution ===
 -a always,exit -F arch=b64 -S memfd_create -k fileless_exec
@@ -27,14 +40,10 @@
 -a always,exit -F arch=b64 -F dir=/run -F perm=x -k suspicious_exec
 -a always,exit -F arch=b32 -F dir=/run -F perm=x -k suspicious_exec
 
-# === Process Tree & Masquerading Monitoring (Targeted) ===
+# === Process Cred / Masquerading ===
 -a always,exit -F arch=b64 -S prctl,setuid,setgid -k proc_cred
 -a always,exit -F arch=b32 -S prctl,setuid,setgid -k proc_cred
 
-# === Optional: High-value C2 indicators ===
-# -a always,exit -F arch=b64 -S socket -F a0=2 -F a1=1 -k suspicious_socket   # TCP sockets
-# -a always,exit -F arch=b64 -S clone,fork -F success=1 -k process_fork
-
 # =============================================================================
-# End of rules
+# End of rules - Compatible & Optimized
 # =============================================================================
