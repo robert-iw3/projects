@@ -1,28 +1,44 @@
 ### Advanced Beaconing Algorithms in Cybersecurity
 
-Beaconing is a technique where malware or compromised systems periodically "phone home" to command-and-control (C2) servers for instructions, data exfiltration, or persistence. Traditional detection relies on simple interval matching or low-variance timing, but advanced algorithms address evasion tactics like jitter (random delays), domain flux, and protocol mimicry. Below, is a outline key categories, drawing from recent research and frameworks.
+Beaconing is a technique where malware or compromised systems periodically "phone home" to command-and-control (C2) servers. Traditional detection relies on simple interval matching, but modern C2 frameworks (Cobalt Strike, Sliver, Havoc, Adaptix, etc.) heavily use **jitter**, long sleep intervals, malleable profiles, and DNS-only communication to evade detection.
 
-#### 1. **Statistical and Time-Series-Based Algorithms**
-These analyze temporal patterns in network traffic to isolate periodic signals.
-- **Time Series Decomposition (TSD)**: Decomposes traffic logs into trend, seasonal, and residual components using methods like STL (Seasonal-Trend decomposition using LOESS). Low residuals indicate beacons. This is effective for long-term data analysis, reducing false positives by separating noise from structured communications.
-- **Jitter Analysis**: Examines randomized delays in intervals using statistical tests (e.g., Kolmogorov-Smirnov for distribution similarity). Tools like Jitter-Trap detect non-random jitter by comparing to baseline variance.
-- **Autocorrelation and Periodogram**: Autocorrelation Function (ACF) measures self-similarity in intervals; high ACF at specific lags flags periodicity. Lomb-Scargle periodogram detects hidden frequencies in uneven data, useful for jittered beacons.
+This project implements a multi-layered detection approach.
 
-#### 2. **Machine Learning and Clustering Algorithms**
-Unsupervised ML excels in identifying patterns without labeled data, scaling to large datasets.
-- **Clustering Models (K-Means/DBSCAN)**: Groups inter-arrival times or features (e.g., packet size, entropy). K-Means partitions into clusters; low inertia/tight clusters signal beacons. DBSCAN handles noise/outliers better, detecting density-based anomalies. Silhouette scoring optimizes cluster count.
-- **Anomaly Detection (Isolation Forest/Autoencoders)**: Isolation Forest isolates outliers in multi-dimensional features (timing, volume) faster than traditional methods. Autoencoders reconstruct "normal" traffic; high error flags beacons.
-- **User and Entity Behavior Analytics (UEBA)**: ML models baseline normal behavior, flagging deviations like unusual connection frequencies.
+#### 1. Statistical and Time-Series-Based Algorithms
+- Low coefficient of variation (CV) and tight standard deviation for classic periodic beacons
+- **Sparse/Long-sleep tracking** (v2.6) — Dynamically lowers minimum sample requirements and extends history to 48 hours to catch beacons with 30+ minute (or multi-hour) intervals
+- Jitter analysis using adaptive thresholds
 
-#### 3. **Probabilistic and Hidden Markov Models (HMM)**
-These model state transitions probabilistically, ideal for sequential data.
-- **Continuous-Time HMM (CT-HMM)**: Treats beaconing as hidden states (e.g., "idle" vs. "active"). Fits to interval sequences using Viterbi for path decoding, capturing probabilistic jitter. Reduces false positives in noisy environments.
-- **Bayesian Inference**: Estimates beacon probability from priors (e.g., known C2 patterns), updating with new data for adaptive detection.
+#### 2. Machine Learning and Clustering Algorithms
+- K-Means clustering with silhouette scoring for optimal cluster count
+- Adaptive DBSCAN with dynamic epsilon calculation
+- Isolation Forest for outlier detection
+- **Packet direction & outbound consistency scoring** (v2.6) — Detects highly malleable C2 that maintains consistent outbound-only traffic patterns (common in Cobalt Strike, Sliver, etc.)
 
-#### 4. **Graph and Behavioral Algorithms**
-Represent traffic as graphs for relational analysis.
-- **Graph Community Detection**: Nodes as IPs/hostnames, edges as connections with timing attributes. Louvain algorithm finds beacon clusters; high centrality indicates C2 hubs.
-- **Elastic Frameworks**: Aggregate DNS/HTTP logs in tools like Elasticsearch for pattern matching, combining rules with ML for hybrid detection.
+#### 3. Spectral Analysis
+- **Lomb-Scargle periodogram + circular phase clustering** (added in v2.5) — Extremely effective against jittered beacons (30–50%+ jitter) that defeat traditional low-CV methods
+
+#### 4. Enhanced DNS Beacon Detection (v2.6)
+- Dedicated real-time DNS sniffer using Scapy
+- Periodic DNS query analysis combined with ML interval detection
+- Flags both regular periodic DNS beacons and high-entropy (DGA-like) patterns
+
+#### 5. Behavioral & UEBA Features (v2.6)
+- **Per-process baseline (UEBA lite)** — Learns normal connection interval behavior per process name and flags statistical deviations
+- Process tree analysis + masquerading detection
+- Entropy scoring on command lines and destination IPs
+
+#### 6. Implementation Notes (Project-Specific)
+- Combines multiple signals with weighted scoring (timing + direction + entropy + UEBA + ML)
+- Dynamic `TEST_MODE` for safe simulator testing
+- Optimized for low overhead and long-term sparse beacon detection
+- Exports structured data for SIEM integration
 
 #### Evasion and Countermeasures
-Attackers use DGAs (thousands of domains), CDNs, or fast flux to evade. Counter with real-time DPI, DNS sinkholing, and EDR integration (e.g., Microsoft Defender). Tools like Splunk/Elastic use these algorithms; open-source options include Zeek with ML plugins. For implementation, start with statistical methods before ML for scalability.
+Modern C2 tries to mimic legitimate traffic (malleable profiles on 443, long sleep, DNS-only). This tool counters them with:
+- Spectral analysis (Lomb-Scargle)
+- Direction/consistency checks
+- Long-term sparse tracking
+- Per-process behavioral baselining
+
+**Last updated:** February 2026 (v2.6)

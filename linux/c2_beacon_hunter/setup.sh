@@ -4,6 +4,11 @@
 # - Added comprehensive test mode with loopback support and Lomb-Scargle triggering
 # - Improved container build and run logic
 # - Added systemd service for native host installation
+# V2.6
+# - Strong Pre-Filter + Reduced False Positives
+# - Added configurable whitelist pre-filter
+# - Improved test mode with better v2.6 feature testing
+# - Dynamic TEST_MODE for loopback
 # @RW
 
 set -e
@@ -37,7 +42,7 @@ if [[ -z "$1" || "$1" == "help" ]]; then
     echo "Commands:"
     echo "  install    - Install host dependencies"
     echo "  container  - Build the Docker/Podman image"
-    echo "  test       - Comprehensive interactive test mode (loopback enabled)"
+    echo "  test       - Comprehensive interactive test mode (v2.6 pre-filter testing)"
     echo "  run        - Run in Production Mode (Foreground)"
     echo "  start      - Start background service/container"
     echo "  stop       - Stop service/container"
@@ -47,7 +52,7 @@ fi
 
 # --- 1. INSTALL ---
 if [[ "$1" == "install" ]]; then
-    echo "=== Installing Host Dependencies (v2.5) ==="
+    echo "=== Installing Host Dependencies (v2.6) ==="
     if command -v apt-get >/dev/null; then
         PKG="apt-get"; UPDATE="apt-get update -qq"; INSTALL="$PKG install -y"
     elif command -v dnf >/dev/null; then
@@ -81,7 +86,7 @@ if [[ "$1" == "install" ]]; then
     echo "[*] Installing Systemd Service..."
     cat <<EOF | sudo tee /etc/systemd/system/c2_beacon_hunter.service
 [Unit]
-Description=C2 Beacon Hunter v2.5 (Native)
+Description=C2 Beacon Hunter v2.6 (Native)
 After=network.target auditd.service
 
 [Service]
@@ -107,8 +112,8 @@ if [[ "$1" == "container" ]]; then
         echo "Error: Docker or Podman not found."
         exit 1
     fi
-    echo "=== Building Container Image v2.5 ($RUNTIME) ==="
-    $RUNTIME build -t c2-beacon-hunter:v2.5 .
+    echo "=== Building Container Image v2.6 ($RUNTIME) ==="
+    $RUNTIME build -t c2-beacon-hunter:v2.6 .
     echo "[+] Build complete."
     exit 0
 fi
@@ -120,21 +125,25 @@ if [[ "$1" == "test" ]]; then
         exit 1
     fi
 
-    echo "=== Comprehensive Test Mode v2.5 ==="
+    echo "=== Comprehensive Test Mode v2.6 (Pre-filter + Sparse + Malleable) ==="
 
     echo "Select test profile:"
-    echo "  1) Basic   - Low jitter (classic detection)"
-    echo "  2) Advanced- High jitter (Lomb-Scargle test)"
-    echo "  3) Custom"
+    echo "  1) Basic     - Low jitter + whitelist test"
+    echo "  2) Advanced  - High jitter + Lomb-Scargle"
+    echo "  3) Sparse    - Long-sleep beacon test"
+    echo "  4) Custom"
     read -p "Choice [2]: " choice
     choice=${choice:-2}
 
     if [[ "$choice" == "1" ]]; then
-        TEST_PERIOD=12
+        TEST_PERIOD=60
         TEST_JITTER=0.05
     elif [[ "$choice" == "2" ]]; then
         TEST_PERIOD=60
         TEST_JITTER=0.35
+    elif [[ "$choice" == "3" ]]; then
+        TEST_PERIOD=1800
+        TEST_JITTER=0.2
     else
         read -p "Base period (seconds) [60]: " TEST_PERIOD
         TEST_PERIOD=${TEST_PERIOD:-60}
@@ -159,7 +168,7 @@ if [[ "$1" == "test" ]]; then
     # Backup only config
     cp config.ini config.ini.bak 2>/dev/null || true
 
-    # Fast polling
+    # Fast polling for testing
     sed -i 's/snapshot_interval = .*/snapshot_interval = 5/' config.ini
     sed -i 's/analyze_interval = .*/analyze_interval = 30/' config.ini
 
@@ -175,7 +184,7 @@ if [[ "$1" == "test" ]]; then
     trap cleanup SIGINT SIGTERM EXIT
 
     # Start container with TEST_MODE=true
-    echo "[*] Starting hunter container in TEST MODE (loopback allowed)..."
+    echo "[*] Starting hunter container in TEST MODE (loopback + pre-filter enabled)..."
     CONTAINER_ID=$($RUNTIME run -d --name c2-beacon-hunter-test \
         --network host --pid host --privileged \
         --cap-add=NET_ADMIN --cap-add=SYS_ADMIN \
@@ -184,7 +193,7 @@ if [[ "$1" == "test" ]]; then
         -v $(pwd)/c2_beacon_hunter.py:/app/c2_beacon_hunter.py \
         -v $(pwd)/BeaconML.py:/app/BeaconML.py \
         -v $(pwd)/output:/app/output \
-        c2-beacon-hunter:v2.5)
+        c2-beacon-hunter:v2.6)
 
     echo "[+] Hunter running in TEST MODE"
     sleep 5
@@ -207,7 +216,7 @@ if [[ "$1" == "run" ]]; then
         echo "Error: Docker or Podman not found."
         exit 1
     fi
-    echo "=== Running c2_beacon_hunter v2.5 in Production Mode ==="
+    echo "=== Running c2_beacon_hunter v2.6 in Production Mode ==="
     $RUNTIME run --rm -it --network host --pid host --privileged \
         --cap-add=NET_ADMIN --cap-add=SYS_ADMIN \
         -v /etc/timezone:/etc/timezone:ro \
@@ -216,7 +225,7 @@ if [[ "$1" == "run" ]]; then
         -v $(pwd)/c2_beacon_hunter.py:/app/c2_beacon_hunter.py \
         -v $(pwd)/BeaconML.py:/app/BeaconML.py \
         -v $(pwd)/output:/app/output \
-        c2-beacon-hunter:v2.5
+        c2-beacon-hunter:v2.6
     exit 0
 fi
 
@@ -224,7 +233,7 @@ fi
 if [[ "$1" == "start" ]]; then
     USE_CONTAINER=$(grep -q "enabled = true" config.ini && echo "true" || echo "false")
     if [[ "$USE_CONTAINER" == "true" && -n "$RUNTIME" ]]; then
-        echo "=== Starting c2_beacon_hunter v2.5 Container (Production) ==="
+        echo "=== Starting c2_beacon_hunter v2.6 Container (Production) ==="
         $RUNTIME run -d --name c2-beacon-hunter --restart unless-stopped \
             --network host --pid host --privileged \
             --cap-add=NET_ADMIN --cap-add=SYS_ADMIN \
@@ -234,7 +243,7 @@ if [[ "$1" == "start" ]]; then
             -v $(pwd)/c2_beacon_hunter.py:/app/c2_beacon_hunter.py \
             -v $(pwd)/BeaconML.py:/app/BeaconML.py \
             -v $(pwd)/output:/app/output \
-            c2-beacon-hunter:v2.5
+            c2-beacon-hunter:v2.6
         echo "[+] Container started."
     else
         echo "=== Starting Native Systemd Service ==="
@@ -247,7 +256,7 @@ fi
 
 # --- 6. STOP ---
 if [[ "$1" == "stop" ]]; then
-    echo "=== Stopping c2_beacon_hunter v2.5 ==="
+    echo "=== Stopping c2_beacon_hunter v2.6 ==="
     if [ -n "$RUNTIME" ]; then
         $RUNTIME stop c2-beacon-hunter 2>/dev/null || true
         $RUNTIME rm -f c2-beacon-hunter 2>/dev/null || true
