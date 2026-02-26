@@ -1,4 +1,9 @@
+psutil>=5.9.0
+pandas
 numpy
 scikit-learn
+astropy
+scipy
 joblib
-pandas
+scapy
+bcc # For eBPF support
