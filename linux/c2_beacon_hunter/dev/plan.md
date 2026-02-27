@@ -2,6 +2,27 @@
 
 ---
 
+```bash
+├── dev/                         # ← All v2.7 development work
+│   ├── src/                     # Core source code
+│   │   ├── baseline_learner.py
+│   │   ├── ebpf_collector_base.py
+│   │   ├── bcc_collector.py
+│   │   ├── libbpf_collector.py
+│   │   └── collector_factory.py
+│   │
+│   ├── probes/                  # eBPF C source files
+│   │   └── c2_probe.bpf.c
+│   │
+│   ├── tests/                   # Dedicated tests for v2.7 components
+│   │   ├── test_baseline_learner.py
+│   │   ├── test_ebpf_collector.py
+│   │   └── test_collector_factory.py
+│   │
+│   ├── run_full_stack.py        # Unified launcher for testing
+│   └── config_dev.ini           # Development-specific config
+```
+
 ### High-Level Game Plan for Phase 3B & Long-term Modularity
 
 **Goal**:
@@ -63,3 +84,17 @@ enabled = false
 - Unit test both backends
 - Performance comparison (CPU / memory)
 - Graceful fallback if libbpf fails
+
+**Compilation Instructions for the C Probe**
+
+- Run these commands in the dev/probes/ folder:
+
+```bash
+cd dev/probes
+
+# Compile to CO-RE object (no kernel headers needed at runtime)
+clang -target bpf -O2 -g -Wall -Werror -c c2_probe.bpf.c -o c2_probe.bpf.o
+
+# Verify
+ls -l c2_probe.bpf.o
+```
