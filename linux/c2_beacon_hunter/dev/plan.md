@@ -2,34 +2,44 @@
 
 ---
 
+**current modifications**
+
+Directory Additions:
+
+- Add Makefile to the dev/probes/ directory for automated Clang/LLVM compilation.
+- Add test_c2_simulation_libbpf.py to the dev/tests/ directory to generate normal and C2 beaconing traffic for evaluation.
+- Explicitly document that LibbpfCollector and BCCCollector must preserve and pass MITRE ATT&CK mappings to the baseline_learner.py.
+
 ```bash
 dev/
-├── config_dev.ini                  # Development-specific config (different from main config.ini)
-│                                   # Controls ebpf backend, intervals, whitelists, etc.
+├── config_dev.ini                   # Development-specific config (different from main config.ini)
+│                                    # Controls ebpf backend, intervals, whitelists, etc.
 │
-├── run_full_stack.py               # Unified launcher: starts hunter + learner + collector together
+├── run_full_stack.py                # Unified launcher: starts hunter + learner + collector together
 │
-├── requirements.txt                # Python dependencies needed only for v2.7 dev
+├── requirements.txt                 # Python dependencies needed only for v2.7 dev
 │
-├── plan.md                         # Development roadmap and notes for v2.7
+├── plan.md                          # Development roadmap and notes for v2.7
 │
-├── src/                            # Core Python source code (organized as a package)
-│   ├── __init__.py                 # Makes src/ a proper Python package (allows clean imports)
-│   ├── baseline_learner.py         # Core learning engine - builds statistical + ML baselines
-│   ├── ebpf_collector_base.py      # Abstract base class - defines common interface for collectors
-│   ├── bcc_collector.py            # BCC-based eBPF collector (development-friendly)
-│   ├── libbpf_collector.py         # libbpf + CO-RE collector (production-optimized)
-│   └── collector_factory.py        # Factory that chooses BCC or libbpf based on config
+├── src/                             # Core Python source code (organized as a package)
+│   ├── __init__.py                  # Makes src/ a proper Python package (allows clean imports)
+│   ├── baseline_learner.py          # Core learning engine - builds statistical + ML baselines
+│   ├── ebpf_collector_base.py       # Abstract base class - defines common interface for collectors
+│   ├── bcc_collector.py             # BCC-based eBPF collector (development-friendly)
+│   ├── libbpf_collector.py          # libbpf + CO-RE collector (production-optimized)
+│   └── collector_factory.py         # Factory that chooses BCC or libbpf based on config
 │
-├── probes/                         # Raw eBPF C source files
-│   └── c2_probe.bpf.c              # The actual eBPF probe code (CO-RE compatible)
+├── probes/                          # Raw eBPF C source files
+│   └── c2_probe.bpf.c               # The actual eBPF probe code (CO-RE compatible)
+│   └── Makefile                     # Automated CO-RE compilation
 │
-└── tests/                          # Unit and integration tests for v2.7 components
-    ├── __init__.py                 # Makes tests/ a proper Python package
-    ├── test_baseline_learner.py    # Tests for baseline_learner.py
-    ├── test_collector_factory.py   # Tests for the factory pattern
-    ├── test_ebpf_collector.py      # Tests for eBPF collector interface
-    └── test_libbpf_collector.py    # Tests for the libbpf backend specifically
+└── tests/                           # Unit and integration tests for v2.7 components
+    ├── __init__.py                  # Makes tests/ a proper Python package
+    ├── test_baseline_learner.py     # Tests for baseline_learner.py
+    ├── test_c2_simulation_libbpf.py # NEW: Traffic generation and ML validation
+    ├── test_collector_factory.py    # Tests for the factory pattern
+    ├── test_ebpf_collector.py       # Tests for eBPF collector interface
+    └── test_libbpf_collector.py     # Tests for the libbpf backend specifically
 ```
 
 ### High-Level Game Plan for Phase 3B & Long-term Modularity
@@ -101,8 +111,9 @@ enabled = false
 ```bash
 cd dev/probes
 
-# Compile to CO-RE object (no kernel headers needed at runtime)
-clang -target bpf -O2 -g -Wall -Werror -c c2_probe.bpf.c -o c2_probe.bpf.o
+sudo apt update
+sudo apt install clang llvm libbpf-dev linux-tools-common linux-tools-$(uname -r)
+make
 
 # Verify
 ls -l c2_probe.bpf.o
