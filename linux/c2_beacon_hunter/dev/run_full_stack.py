@@ -8,58 +8,75 @@ import subprocess
 import time
 import sys
 import os
+import logging
 from pathlib import Path
+import argparse
 
-def main():
-    print("="*80)
-    print("          c2_beacon_hunter v2.7 - Full Stack Launcher")
-    print("="*80)
-    print("Starting: Hunter + Baseline Learner + eBPF Collector")
-    print("")
+# Logging setup
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+def main(args):
+    logger.info("="*80)
+    logger.info("          c2_beacon_hunter v2.7 - Full Stack Launcher")
+    logger.info("="*80)
+    logger.info("Starting: Hunter + Baseline Learner + eBPF Collector")
+    logger.info("")
 
     processes = []
 
     try:
         # 1. Start Baseline Learner
-        print("[1/3] Starting Baseline Learner...")
+        logger.info("[1/3] Starting Baseline Learner...")
         learner = subprocess.Popen([sys.executable, "src/baseline_learner.py"],
                                    cwd="dev", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         processes.append(learner)
 
         # 2. Start eBPF Collector
-        print("[2/3] Starting eBPF Collector...")
+        logger.info("[2/3] Starting eBPF Collector...")
         collector = subprocess.Popen([sys.executable, "src/collector_factory.py"],
                                      cwd="dev", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         processes.append(collector)
 
         # 3. Start Main Hunter
-        print("[3/3] Starting Main Hunter...")
+        logger.info("[3/3] Starting Main Hunter...")
         hunter = subprocess.Popen([sys.executable, "../../c2_beacon_hunter.py"])
         processes.append(hunter)
 
-        print("\nAll components started successfully!")
-        print("Press Ctrl+C to stop everything gracefully.\n")
+        logger.info("\nAll components started successfully!")
+        logger.info("Press Ctrl+C to stop everything gracefully.\n")
 
         # Keep main thread alive
         hunter.wait()
 
     except KeyboardInterrupt:
-        print("\n\nShutting down all components...")
+        logger.info("\n\nShutting down all components...")
         for p in processes:
             if p.poll() is None:
                 p.terminate()
-                p.wait(timeout=5)
-        print("All components stopped.")
+                try:
+                    p.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    p.kill()
+        logger.info("All components stopped.")
 
     except Exception as e:
-        print(f"Launcher error: {e}")
+        logger.error(f"Launcher error: {e}")
         for p in processes:
             if p.poll() is None:
                 p.kill()
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="v2.7 Launcher")
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+    args = parser.parse_args()
+
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+
     if os.geteuid() != 0:
-        print("Warning: eBPF collector requires root privileges.")
-        print("Run with: sudo python3 run_full_stack.py")
+        logger.warning("Warning: eBPF collector requires root privileges.")
+        logger.warning("Run with: sudo python3 run_full_stack.py")
         sys.exit(1)
-    main()
+
+    main(args)

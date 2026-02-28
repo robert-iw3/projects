@@ -1,4 +1,4 @@
-// c2_probe.bpf.c - Optimized CO-RE probe for v2.7
+// c2_probe.bpf.c - CO-RE probe for v2.7
 #include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
@@ -11,10 +11,10 @@ struct data_t {
     u32 type;           // 1=exec, 2=connect, 3=send, 4=recv, 5=memfd
     u32 packet_size;
     u32 is_outbound;
-    u32 daddr;          // Destination IPv4 address
-    u16 dport;          // Destination Port
-    u16 _padding;       // Padding for 64-bit alignment
-    u64 interval_ns;    // Time since last network event for this PID
+    u32 saddr;          # Source IPv4 address (new)
+    u32 daddr;          # Destination IPv4 address
+    u16 dport;          # Destination Port
+    u64 interval_ns;    # Time since last network event for this PID
 };
 
 struct {
@@ -26,8 +26,8 @@ struct {
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 10240);
-    __type(key, u32);   // PID
-    __type(value, u64); // Last seen timestamp
+    __type(key, u32);   # PID
+    __type(value, u64); # Last seen timestamp
 } last_seen_ts SEC(".maps");
 
 static __always_inline void calculate_interval(struct data_t *data) {
@@ -64,6 +64,7 @@ int BPF_KPROBE(trace_tcp_v4_connect, struct sock *sk) {
     data->type = 2;
     data->is_outbound = 1;
 
+    bpf_probe_read_kernel(&data->saddr, sizeof(data->saddr), &sk->__sk_common.skc_saddr);  # New: source addr
     bpf_probe_read_kernel(&data->daddr, sizeof(data->daddr), &sk->__sk_common.skc_daddr);
     bpf_probe_read_kernel(&data->dport, sizeof(data->dport), &sk->__sk_common.skc_dport);
 

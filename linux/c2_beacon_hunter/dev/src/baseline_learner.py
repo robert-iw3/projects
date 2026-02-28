@@ -3,32 +3,32 @@
 baseline_learner.py - v2.7 Advanced Behavioral Learning Engine
 
 Features:
-- MITRE ATT&CK mapping integration
 - Per-process, per-destination (/24), per-hour, per-weekday/weekend baselines
-- Batch database inserts & WAL mode for high throughput
-- Hybrid statistical + Isolation Forest models
+- Batch database inserts with timeout handling
+- Hybrid statistical + Isolation Forest models (batch-fitted for large data)
+- Automatic data retention (30 days)
+- Model versioning
 """
 
 import sqlite3
 import time
+import json
 import numpy as np
 from pathlib import Path
-from datetime import datetime
-import joblib
-from sklearn.ensemble import IsolationForest
-import queue
+from collections import defaultdict
 import threading
+from datetime import datetime
+from sklearn.ensemble import IsolationForest
+import joblib
+import queue
 
 DB_PATH = Path("baseline.db")
 MODEL_PATH = Path("baseline_model.joblib")
 LEARNING_INTERVAL = 3600 * 6
 RETENTION_DAYS = 30
-
-MITRE_MAPPINGS = {
-    "C2_Beaconing": "T1071.001",
-    "Data_Exfiltration": "T1048",
-    "Process_Injection": "T1055"
-}
+BATCH_SIZE = 100
+QUEUE_TIMEOUT = 2.0
+CHUNK_SIZE = 1000    # For batch Isolation Forest fitting
 
 class BaselineLearner:
     def __init__(self):
@@ -41,7 +41,7 @@ class BaselineLearner:
         self.writer_thread = threading.Thread(target=self._batch_writer, daemon=True)
         self.writer_thread.start()
 
-        print(f"[{datetime.now()}] baseline_learner.py v2.7 started - ML context active")
+        print(f"[{datetime.now()}] baseline_learner.py v2.7 started - Advanced learning active")
 
     def _init_db(self):
         self.db.execute('''
@@ -77,7 +77,7 @@ class BaselineLearner:
         flow_data = (time.time(), process_name, dst_ip, dst_prefix, hour, is_weekend,
                      interval, cv, outbound_ratio, entropy,
                      packet_size_mean, packet_size_std, packet_size_min, packet_size_max,
-                     MITRE_MAPPINGS.get(mitre_tactic, "Unknown"))
+                     mitre_tactic)
 
         self.flow_queue.put(flow_data)
 
@@ -85,23 +85,32 @@ class BaselineLearner:
         batch = []
         while self.running:
             try:
-                item = self.flow_queue.get(timeout=2)
+                item = self.flow_queue.get(timeout=QUEUE_TIMEOUT)
                 batch.append(item)
 
-                if len(batch) >= 100 or self.flow_queue.empty():
-                    self.db.executemany('''
-                        INSERT INTO flows
-                        (timestamp, process_name, dst_ip, dst_prefix, hour_bucket, is_weekend,
-                         interval, cv, outbound_ratio, entropy,
-                         packet_size_mean, packet_size_std, packet_size_min, packet_size_max, mitre_tactic)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', batch)
-                    self.db.commit()
+                if len(batch) >= BATCH_SIZE:
+                    self._write_batch(batch)
                     batch = []
             except queue.Empty:
-                continue
+                if batch:
+                    self._write_batch(batch)
+                    batch = []
             except Exception as e:
-                print(f"Batch write error: {e}")
+                print(f"Batch writer error: {e}")
+
+    def _write_batch(self, batch):
+        try:
+            self.db.executemany('''
+                INSERT INTO flows
+                (timestamp, process_name, dst_ip, dst_prefix, hour_bucket, is_weekend,
+                 interval, cv, outbound_ratio, entropy,
+                 packet_size_mean, packet_size_std, packet_size_min, packet_size_max,
+                 mitre_tactic)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', batch)
+            self.db.commit()
+        except Exception as e:
+            print(f"Batch insert error: {e}")
 
     def learn(self):
         cursor = self.db.cursor()
@@ -128,6 +137,7 @@ class BaselineLearner:
 
         for row in cursor.fetchall():
             proc, prefix, hour, is_weekend, avg_int, avg_cv, avg_out, avg_ent, avg_ps, avg_ps_std, ps_min, ps_max, count = row
+
             key = f"{proc}|{prefix}|{hour:02d}|{'weekend' if is_weekend else 'weekday'}"
 
             model["profiles"][key] = {
@@ -145,17 +155,20 @@ class BaselineLearner:
             }
 
             training_data.append([float(avg_int), float(avg_cv), float(avg_out), float(avg_ent), float(avg_ps)])
+
             keys.append(key)
 
+        # Batch-fit Isolation Forest for large datasets
         if training_data:
             clf = IsolationForest(contamination=0.05, random_state=42)
-            clf.fit(training_data)
+            for i in range(0, len(training_data), CHUNK_SIZE):
+                chunk = training_data[i:i+CHUNK_SIZE]
+                clf.fit(chunk)
             model["isolation_forest"] = clf
 
-        with open(MODEL_PATH, "wb") as f:
-            joblib.dump(model, f)
+        joblib.dump(model, MODEL_PATH)
 
-        print(f"[{datetime.now()}] Baseline updated — v2.7 ready.")
+        print(f"[{datetime.now()}] Baseline updated with {len(model['profiles'])} profiles")
 
     def cleanup_old_data(self):
         cutoff = time.time() - 86400 * RETENTION_DAYS
@@ -175,10 +188,11 @@ class BaselineLearner:
         self.running = False
         self.writer_thread.join(timeout=3)
 
+
 if __name__ == "__main__":
     learner = BaselineLearner()
     try:
         learner.run()
     except KeyboardInterrupt:
         learner.stop()
-        print("\nbaseline_learner.py stopped.")
+        print("\n baseline_learner.py stopped.")
