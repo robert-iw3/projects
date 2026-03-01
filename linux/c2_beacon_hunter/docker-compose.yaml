@@ -1,15 +1,18 @@
 ---
 services:
-  c2-beacon-hunter-dev:
+  c2-beacon-hunter:
     build:
       context: .
       dockerfile: ebpf.Dockerfile
     image: c2-beacon-hunter:v2.7
+    container_name: c2-beacon-hunter
     privileged: true
     cap_add:
       - SYS_ADMIN
       - NET_ADMIN
       - SYS_PTRACE
+    network_mode: "host"
+    pid: "host"
     volumes:
       - /sys/kernel/debug:/sys/kernel/debug:rw
       - /sys/fs/bpf:/sys/fs/bpf:rw

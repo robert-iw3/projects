@@ -5,8 +5,11 @@ RUN \
     apt-get update; \
     apt-get install -y \
         clang \
+        gcc \
         llvm \
         libbpf-dev \
+        libelf-dev \
+        zlib1g-dev \
         linux-headers-$(uname -r) \
         make \
         linux-tools-common \
@@ -20,7 +23,7 @@ COPY dev/probes /build/probes
 
 RUN cd probes && make
 
-# Use the same base as your host system for better compatibility
+# Final image
 FROM docker.io/ubuntu:25.10
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -29,21 +32,24 @@ RUN \
     apt-get install -y \
         iproute2 \
         procps \
-        auditd \
         curl \
         python3 \
         python3-venv \
         bpfcc-tools \
-        python3-bpfcc; \
+        python3-bpfcc \
+        libbpf1 \
+        libelf1; \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY . /app
 COPY --from=builder /build/probes/c2_probe.bpf.o /app/dev/probes/c2_probe.bpf.o
+COPY --from=builder /build/probes/c2_loader /app/dev/probes/c2_loader
 
 RUN python3 -m venv --system-site-packages /app/venv
 RUN /app/venv/bin/pip install --no-cache-dir -r requirements.txt
 RUN mkdir -p /app/output
+RUN chmod +x /app/dev/probes/c2_loader
 
 USER root
 CMD ["/app/venv/bin/python", "dev/run_full_stack.py"]

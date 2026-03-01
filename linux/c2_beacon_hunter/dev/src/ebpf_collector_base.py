@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
 ebpf_collector_base.py - Abstract base class for eBPF collectors v2.7
+
+This module defines the EBPFCollectorBase class, which serves as an abstract
+base class for eBPF collectors. It provides a common interface for loading probes,
+running the collector, and recording flows to the baseline learner
 """
 
 from abc import ABC, abstractmethod
@@ -25,7 +29,8 @@ class EBPFCollectorBase(ABC):
 
     def record_flow(self, process_name, dst_ip, interval=0.0, cv=0.0, outbound_ratio=0.0,
                     entropy=0.0, packet_size_mean=0, packet_size_std=0,
-                    packet_size_min=0, packet_size_max=0, mitre_tactic="C2_Beaconing"):
+                    packet_size_min=0, packet_size_max=0, mitre_tactic="C2_Beaconing",
+                    pid=0, cmd_entropy=0.0):
         """Safe callback to baseline learner with full metric and MITRE support"""
         try:
             self.learner.record_flow(
@@ -39,7 +44,9 @@ class EBPFCollectorBase(ABC):
                 packet_size_std=packet_size_std,
                 packet_size_min=packet_size_min,
                 packet_size_max=packet_size_max,
-                mitre_tactic=mitre_tactic
+                mitre_tactic=mitre_tactic,
+                pid=pid,
+                cmd_entropy=cmd_entropy
             )
         except Exception as e:
             print(f"Warning: Failed to record flow to learner: {e}")

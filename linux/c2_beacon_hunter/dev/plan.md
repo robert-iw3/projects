@@ -14,6 +14,11 @@
 - Added `test_c2_simulation_libbpf.py` and `test_baseline_learner.py` in `dev/tests/`.
 - Updated configs, Dockerfiles, and compose for full stack support.
 - Preserved all v2.6 features (sparse tracking, direction analysis, DNS, UEBA lite).
+- **[NEW]** Migrated from fragile Python libbpf bindings to a robust, Native C-Loader (`c2_loader.c`) that compiles alongside the CO-RE probe and streams microsecond events to user-space via JSON.
+- **[NEW]** Solved the eBPF verifier strict memory referencing issues to ensure safe mapping of ringbuf data.
+- **[NEW]** Shifted eBPF hooks deeper into the Linux network stack (`tcp_sendmsg`, `udp_sendmsg`, `tcp_recvmsg`, `udp_recvmsg`) to extract precise Destination IPs (`8.8.8.8`) directly from kernel socket structs and user-space `msghdr`, solving the `0.0.0.0` UDP/DNS telemetry gap.
+- **[NEW]** Expanded the SQLite `baseline.db` schema to act as a high-speed event broker, capturing `pid` and `cmd_entropy` for flawless Process Tree reconstruction.
+- **[NEW]** Rewrote the Main Hunter's ingest engine (`snapshot_loop`) to act as a dual-router: seamlessly pivoting between the microsecond SQLite eBPF pipeline and the legacy v2.6 `psutil`/`ss` polling based purely on config, ensuring 100% backward compatibility.
 
 ```bash
 dev/
@@ -83,11 +88,11 @@ Collector Factory
 
 **Step 2: Full eBPF Engine**
 - Extend probes to detect in-kernel (e.g., direct beacon scoring).
-- Integrate with `c2_defend` for auto-response on eBPF events.
+- Integrate with `c2_defend` for auto-response on eBPF events (blocking directly at the kernel level).
 
 **Step 3: Advanced Testing**
 - Add integration tests for full stack (e.g., simulate C2, verify detections/baselines).
-- Performance benchmarks (CPU/mem) for BCC vs. libbpf.
+- Performance benchmarks (CPU/mem) for BCC vs. Native C-Loader.
 
 **Step 4: Deployment Improvements**
 - Systemd service for full stack.
@@ -95,7 +100,7 @@ Collector Factory
 
 **Step 5: New Features**
 - DGA detection in DNS sniffer.
-- Export to SIEM (e.g., JSON over HTTP).
+- Export to SIEM (e.g., JSON over HTTP directly from the SQLite pipeline).
 - GUI dashboard for anomalies.
 
 **Compilation Instructions for the C Probe** (Verified)

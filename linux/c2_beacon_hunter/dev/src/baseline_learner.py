@@ -38,21 +38,16 @@ class BaselineLearner:
         self.flow_queue = queue.Queue()
         self.running = True
 
-        self.writer_thread = threading.Thread(target=self._batch_writer, daemon=True)
+        self.writer_thread = threading.Thread(target=self._queue_writer, daemon=True)
         self.writer_thread.start()
 
-        print(f"[{datetime.now()}] baseline_learner.py v2.7 started - Advanced learning active")
-
     def _init_db(self):
-        self.db.execute('''
+        self.db.execute("""
             CREATE TABLE IF NOT EXISTS flows (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 timestamp REAL,
                 process_name TEXT,
                 dst_ip TEXT,
-                dst_prefix TEXT,
-                hour_bucket INTEGER,
-                is_weekend INTEGER,
                 interval REAL,
                 cv REAL,
                 outbound_ratio REAL,
@@ -61,110 +56,106 @@ class BaselineLearner:
                 packet_size_std REAL,
                 packet_size_min REAL,
                 packet_size_max REAL,
-                mitre_tactic TEXT
+                mitre_tactic TEXT,
+                pid INTEGER,          -- NEW: Process ID
+                cmd_entropy REAL      -- NEW: Command line entropy
             )
-        ''')
+        """)
         self.db.commit()
 
-    def record_flow(self, process_name, dst_ip, interval, cv, outbound_ratio, entropy,
-                    packet_size_mean=0, packet_size_std=0, packet_size_min=0, packet_size_max=0,
-                    mitre_tactic="C2_Beaconing"):
-        dst_prefix = ".".join(dst_ip.split('.')[:3]) + ".0"
-        dt = datetime.fromtimestamp(time.time())
-        hour = dt.hour
-        is_weekend = 1 if dt.weekday() >= 5 else 0
-
-        flow_data = (time.time(), process_name, dst_ip, dst_prefix, hour, is_weekend,
-                     interval, cv, outbound_ratio, entropy,
-                     packet_size_mean, packet_size_std, packet_size_min, packet_size_max,
-                     mitre_tactic)
-
-        self.flow_queue.put(flow_data)
-
-    def _batch_writer(self):
-        batch = []
-        while self.running:
+    def _queue_writer(self):
+        while self.running or not self.flow_queue.empty():
+            batch = []
             try:
-                item = self.flow_queue.get(timeout=QUEUE_TIMEOUT)
-                batch.append(item)
-
-                if len(batch) >= BATCH_SIZE:
-                    self._write_batch(batch)
-                    batch = []
+                while len(batch) < BATCH_SIZE and self.running:
+                    item = self.flow_queue.get(timeout=QUEUE_TIMEOUT)
+                    batch.append(item)
             except queue.Empty:
-                if batch:
-                    self._write_batch(batch)
-                    batch = []
-            except Exception as e:
-                print(f"Batch writer error: {e}")
+                pass
 
-    def _write_batch(self, batch):
-        try:
-            self.db.executemany('''
-                INSERT INTO flows
-                (timestamp, process_name, dst_ip, dst_prefix, hour_bucket, is_weekend,
-                 interval, cv, outbound_ratio, entropy,
-                 packet_size_mean, packet_size_std, packet_size_min, packet_size_max,
-                 mitre_tactic)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', batch)
-            self.db.commit()
-        except Exception as e:
-            print(f"Batch insert error: {e}")
+            if batch:
+                try:
+                    self.db.executemany("""
+                        INSERT INTO flows (timestamp, process_name, dst_ip, interval, cv, outbound_ratio, entropy,
+                                           packet_size_mean, packet_size_std, packet_size_min, packet_size_max, mitre_tactic,
+                                           pid, cmd_entropy)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, batch)
+                    self.db.commit()
+                except Exception as e:
+                    print(f"Batch insert error: {e}")
+
+    def record_flow(self, process_name, dst_ip, interval=0.0, cv=0.0, outbound_ratio=0.0,
+                    entropy=0.0, packet_size_mean=0, packet_size_std=0,
+                    packet_size_min=0, packet_size_max=0, mitre_tactic="C2_Beaconing",
+                    pid=0, cmd_entropy=0.0):  # NEW: pid and cmd_entropy params with defaults
+        """Records a flow event to the queue for batch insertion."""
+        ts = time.time()
+        self.flow_queue.put((
+            ts, process_name, dst_ip, interval, cv, outbound_ratio, entropy,
+            packet_size_mean, packet_size_std, packet_size_min, packet_size_max, mitre_tactic,
+            pid, cmd_entropy
+        ))
 
     def learn(self):
+        """Builds baseline model from accumulated data."""
         cursor = self.db.cursor()
-        cursor.execute('''
-            SELECT process_name, dst_prefix, hour_bucket, is_weekend,
-                   AVG(interval), AVG(cv), AVG(outbound_ratio), AVG(entropy),
-                   AVG(packet_size_mean), AVG(packet_size_std),
-                   MIN(packet_size_min), MAX(packet_size_max),
-                   COUNT(*) as sample_count
-            FROM flows
-            WHERE timestamp > ?
-            GROUP BY process_name, dst_prefix, hour_bucket, is_weekend
-            HAVING sample_count >= 8
-        ''', (time.time() - 86400 * RETENTION_DAYS,))
+        cursor.execute("SELECT process_name, dst_ip, interval, cv, outbound_ratio, entropy, packet_size_mean, packet_size_std, packet_size_min, packet_size_max, mitre_tactic FROM flows")
+        data = cursor.fetchall()
 
-        model = {
-            "version": "2.7",
-            "last_updated": time.time(),
-            "profiles": {}
-        }
+        model = {"version": 1, "profiles": {}}
 
-        training_data = []
-        keys = []
+        profiles = defaultdict(lambda: {
+            "intervals": [], "cvs": [], "outbound_ratios": [], "entropies": [],
+            "packet_means": [], "packet_stds": [], "packet_mins": [], "packet_maxs": [],
+            "mitre_tactics": Counter()
+        })
 
-        for row in cursor.fetchall():
-            proc, prefix, hour, is_weekend, avg_int, avg_cv, avg_out, avg_ent, avg_ps, avg_ps_std, ps_min, ps_max, count = row
+        for row in data:
+            process_name, dst_ip, interval, cv, outbound_ratio, entropy, p_mean, p_std, p_min, p_max, tactic = row
+            prefix = ".".join(dst_ip.split('.')[:3]) + ".0"
+            hour = datetime.fromtimestamp(time.time()).hour
+            is_weekend = datetime.fromtimestamp(time.time()).weekday() >= 5
+            key = f"{process_name}|{prefix}|{hour:02d}|{'weekend' if is_weekend else 'weekday'}"
 
-            key = f"{proc}|{prefix}|{hour:02d}|{'weekend' if is_weekend else 'weekday'}"
+            prof = profiles[key]
+            prof["intervals"].append(interval)
+            prof["cvs"].append(cv)
+            prof["outbound_ratios"].append(outbound_ratio)
+            prof["entropies"].append(entropy)
+            prof["packet_means"].append(p_mean)
+            prof["packet_stds"].append(p_std)
+            prof["packet_mins"].append(p_min)
+            prof["packet_maxs"].append(p_max)
+            prof["mitre_tactics"][tactic] += 1
+
+        for key, prof in profiles.items():
+            if len(prof["intervals"]) < 5: continue
 
             model["profiles"][key] = {
                 "stats": {
-                    "mean_interval": float(avg_int),
-                    "mean_cv": float(avg_cv),
-                    "mean_outbound_ratio": float(avg_out),
-                    "mean_entropy": float(avg_ent),
-                    "mean_packet_size": float(avg_ps),
-                    "std_packet_size": float(avg_ps_std),
-                    "min_packet_size": float(ps_min),
-                    "max_packet_size": float(ps_max),
-                    "sample_count": int(count)
+                    "mean_interval": np.mean(prof["intervals"]),
+                    "mean_cv": np.mean(prof["cvs"]),
+                    "mean_outbound_ratio": np.mean(prof["outbound_ratios"]),
+                    "mean_entropy": np.mean(prof["entropies"]),
+                    "mean_packet_mean": np.mean(prof["packet_means"]),
+                    "mean_packet_std": np.mean(prof["packet_stds"]),
+                    "mean_packet_min": np.mean(prof["packet_mins"]),
+                    "mean_packet_max": np.mean(prof["packet_maxs"]),
+                    "top_mitre": prof["mitre_tactics"].most_common(1)[0][0] if prof["mitre_tactics"] else "Unknown"
                 }
             }
 
-            training_data.append([float(avg_int), float(avg_cv), float(avg_out), float(avg_ent), float(avg_ps)])
-
-            keys.append(key)
-
-        # Batch-fit Isolation Forest for large datasets
-        if training_data:
+            # Batch-fit Isolation Forest on multi-dimensional data
+            training_data = np.column_stack((
+                prof["intervals"], prof["cvs"], prof["outbound_ratios"], prof["entropies"],
+                prof["packet_means"], prof["packet_stds"], prof["packet_mins"], prof["packet_maxs"]
+            ))
             clf = IsolationForest(contamination=0.05, random_state=42)
             for i in range(0, len(training_data), CHUNK_SIZE):
                 chunk = training_data[i:i+CHUNK_SIZE]
                 clf.fit(chunk)
-            model["isolation_forest"] = clf
+            model["profiles"][key]["isolation_forest"] = clf
 
         joblib.dump(model, MODEL_PATH)
 

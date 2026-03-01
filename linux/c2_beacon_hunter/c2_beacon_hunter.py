@@ -30,6 +30,9 @@ import numpy as np
 import pandas as pd
 import psutil
 
+import sqlite3
+from pathlib import Path
+
 # Optional DNS monitoring
 try:
     from scapy.all import sniff, DNSQR
@@ -131,7 +134,7 @@ MITRE_MAP = {
 class BeaconHunter:
     def __init__(self, output_dir=OUTPUT_DIR):
         self.output_dir = Path(output_dir)
-        self.flows = defaultdict(lambda: deque(maxlen=2000))
+        self.flows = defaultdict(dict)
         self.last_analyzed = {}
         self.anomalies = []
         self.running = True
@@ -234,7 +237,34 @@ class BeaconHunter:
                 except:
                     proc = {"name": "unknown", "cmd": "", "entropy_cmd": 0.0}
                 with self.lock:
-                    self.flows[key].append((ts, pid, proc, is_outbound))
+                    if key not in self.flows:
+                        self.flows[key] = {
+                            "process": proc,
+                            "dst_ip": raddr,
+                            "dst_port": rport,
+                            "pid": pid,
+                            "intervals": [],
+                            "last_seen": ts,
+                            "count": 0,
+                            "outbound_ratio": 0.0,
+                            "packet_sizes": [],
+                            "mitre_tactic": "Unknown"
+                        }
+                    flow = self.flows[key]
+                    interval = ts - flow["last_seen"] if flow["count"] > 0 else 0
+                    if interval > 0:
+                        flow["intervals"].append(interval)
+                    flow["last_seen"] = ts
+                    flow["count"] += 1
+                    # Update outbound ratio (simplified average)
+                    flow["outbound_ratio"] = ((flow["outbound_ratio"] * (flow["count"] - 1)) + int(is_outbound)) / flow["count"]
+                    # Packet size stub (0 for non-eBPF mode; eBPF provides real sizes)
+                    flow["packet_sizes"].append(0)
+                    # Keep recent history
+                    if len(flow["intervals"]) > 500:
+                        flow["intervals"].pop(0)
+                    if len(flow["packet_sizes"]) > 500:
+                        flow["packet_sizes"].pop(0)
         except Exception as e:
             logger.warning(f"ss snapshot failed ({e}), falling back to psutil")
             try:
@@ -254,28 +284,99 @@ class BeaconHunter:
                         except:
                             proc = {"name": "unknown", "cmd": "", "entropy_cmd": 0.0}
                         with self.lock:
-                            self.flows[key].append((ts, conn.pid or 0, proc, is_outbound))
+                            if key not in self.flows:
+                                self.flows[key] = {
+                                    "process": proc,
+                                    "dst_ip": conn.raddr.ip,
+                                    "dst_port": conn.raddr.port,
+                                    "pid": conn.pid or 0,
+                                    "intervals": [],
+                                    "last_seen": ts,
+                                    "count": 0,
+                                    "outbound_ratio": 0.0,
+                                    "packet_sizes": [],
+                                    "mitre_tactic": "Unknown"
+                                }
+                            flow = self.flows[key]
+                            interval = ts - flow["last_seen"] if flow["count"] > 0 else 0
+                            if interval > 0:
+                                flow["intervals"].append(interval)
+                            flow["last_seen"] = ts
+                            flow["count"] += 1
+                            flow["outbound_ratio"] = ((flow["outbound_ratio"] * (flow["count"] - 1)) + int(is_outbound)) / flow["count"]
+                            flow["packet_sizes"].append(0)  # Stub
+                            if len(flow["intervals"]) > 500:
+                                flow["intervals"].pop(0)
+                            if len(flow["packet_sizes"]) > 500:
+                                flow["packet_sizes"].pop(0)
             except Exception as fb_e:
                 logger.error(f"Both snapshot methods failed: {fb_e}")
 
         cutoff = ts - MAX_FLOW_AGE
         with self.lock:
             for k in list(self.flows.keys()):
-                self.flows[k] = deque((e for e in self.flows[k] if e[0] > cutoff), maxlen=2000)
-            if len(self.flows) > MAX_FLOWS:
-                sorted_keys = sorted(self.flows.keys(), key=lambda k: len(self.flows[k]), reverse=True)
-                self.flows = defaultdict(lambda: deque(maxlen=2000), {k: self.flows[k] for k in sorted_keys[:MAX_FLOWS]})
+                if self.flows[k]["last_seen"] < cutoff:
+                    del self.flows[k]
 
-    def analyze_flow(self, key, events):
+    def snapshot_db(self):
+        """Fetches flow data from baseline.db (populated by eBPF collector)."""
+        try:
+            conn = sqlite3.connect("baseline.db")
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT process_name, dst_ip, interval, cv, outbound_ratio, entropy,
+                       packet_size_mean, packet_size_std, packet_size_min, packet_size_max, mitre_tactic,
+                       pid, cmd_entropy
+                FROM flows WHERE timestamp > ?
+            """, (time.time() - MAX_FLOW_AGE,))
+            rows = cursor.fetchall()
+            conn.close()
+
+            if not rows:
+                logger.info("DB mode active but no recent flows found.")
+
+            with self.lock:
+                for row in rows:
+                    proc, dst, interval, cv, out_ratio, entropy, size_mean, size_std, size_min, size_max, tactic, pid, cmd_entropy = row
+                    flow_key = (proc, dst)  # Simplified key; adjust as needed
+                    if flow_key not in self.flows:
+                        self.flows[flow_key] = {
+                            "process_name": proc,
+                            "dst_ip": dst,
+                            "pid": pid,
+                            "intervals": [],
+                            "last_seen": time.time(),
+                            "count": 0,
+                            "outbound_ratio": 0.0,
+                            "packet_sizes": [],
+                            "mitre_tactic": tactic,
+                            "cmd_entropy": cmd_entropy
+                        }
+                    flow = self.flows[flow_key]
+                    if interval > 0:
+                        flow["intervals"].append(interval)
+                    flow["last_seen"] = time.time()
+                    flow["count"] += 1
+                    flow["outbound_ratio"] = out_ratio
+                    flow["packet_sizes"].append(size_mean)  # Use mean as proxy
+                    if len(flow["intervals"]) > 500:
+                        flow["intervals"].pop(0)
+                    if len(flow["packet_sizes"]) > 500:
+                        flow["packet_sizes"].pop(0)
+        except Exception as e:
+            logger.error(f"Error reading baseline.db: {e}")
+
+    def analyze_flow(self, key, flow):
         now = time.time()
         last = self.last_analyzed.get(key, 0)
-        if len(events) < 3 or (now - last < 30):
+        if flow["count"] < 3 or (now - last < 30):
             return None
         self.last_analyzed[key] = now
 
-        proc_name = events[0][2].get("name", "").lower()
-        raddr = key[1]
-        port = key[2]
+        proc_name = flow["process_name"].lower()
+        raddr = flow["dst_ip"]
+        # port = key[2]  # If needed; not in db structure, assume 0 or add to db
+        port = 0  # Placeholder; extend db if ports needed
 
         # 1. Benign process whitelist
         if any(b in proc_name for b in BENIGN_PROCESSES):
@@ -290,21 +391,21 @@ class BeaconHunter:
             return None
 
         try:
-            timestamps = np.array([e[0] for e in events])
-            deltas = np.diff(np.sort(timestamps)).tolist()
-            mean_delta = float(np.mean(deltas))
+            deltas = flow["intervals"]
+            mean_delta = float(np.mean(deltas)) if deltas else 0
             cv = float(np.std(deltas) / mean_delta) if mean_delta > 0 else 0
             min_samples = MIN_SAMPLES_SPARSE if mean_delta > LONG_SLEEP_THRESHOLD else 5
-            if len(events) < min_samples:
+            if len(deltas) < min_samples - 1:  # Since deltas = len(intervals) - 1
                 return None
 
             entropy_ip = self.shannon_entropy(raddr)
-            avg_cmd_entropy = float(np.mean([e[2].get("entropy_cmd", 0) for e in events]))
+            avg_cmd_entropy = flow.get("cmd_entropy", 0.0)  # Use placeholder if missing
             unusual_port = port not in COMMON_PORTS and port > 1024
-            outbound_ratio = sum(1 for e in events if e[3]) / len(events)
+            outbound_ratio = flow["outbound_ratio"]
 
             ml_result = detect_beaconing_list(
-                deltas, timestamps=timestamps.tolist(),
+                deltas,
+                timestamps=None,  # No timestamps in db; if needed, add to db
                 std_threshold=ML_STD_THRESHOLD, min_samples=3,
                 use_dbscan=ML_USE_DBSCAN, use_isolation=ML_USE_ISOLATION,
                 n_jobs=-1, max_samples=ML_MAX_SAMPLES
@@ -343,7 +444,7 @@ class BeaconHunter:
                 mitre = MITRE_MAP["suspicious_process"]
 
             if USE_UEBA:
-                proc_name_full = events[0][2].get("name", "unknown")
+                proc_name_full = flow["process_name"]
                 self.process_baselines[proc_name_full].append(mean_delta)
                 if len(self.process_baselines[proc_name_full]) > 20:
                     baseline_lite = np.array(self.process_baselines[proc_name_full][-20:])
@@ -358,9 +459,9 @@ class BeaconHunter:
                     dt = datetime.fromtimestamp(now)
                     hour = dt.hour
                     is_weekend = 1 if dt.weekday() >= 5 else 0
-                    key = f"{proc_name_full}|{prefix}|{hour:02d}|{is_weekend}"
-                    if key in baseline_model.get("profiles", {}):
-                        stats = baseline_model["profiles"][key]["stats"]
+                    baseline_key = f"{proc_name_full}|{prefix}|{hour:02d}|{is_weekend}"
+                    if baseline_key in baseline_model.get("profiles", {}):
+                        stats = baseline_model["profiles"][baseline_key]["stats"]
                         interval_dev = abs(mean_delta - stats["mean_interval"]) / (stats["mean_interval"] + 1e-6)
                         cv_dev = abs(cv - stats["mean_cv"])
                         out_dev = abs(outbound_ratio - stats["mean_outbound_ratio"])
@@ -368,7 +469,7 @@ class BeaconHunter:
                             score += 25
                             reasons.append(f"ueba_deviation_advanced (Int:{interval_dev:.2f}, CV:{cv_dev:.2f}, Out:{out_dev:.2f})")
 
-            pid = events[0][1]
+            pid = flow.get("pid", 0)
             tree = self.get_process_tree(pid)
             tree_str = " → ".join([f"{name}({pid})" for pid, name, _ in tree])
             masquerade = False
@@ -385,9 +486,9 @@ class BeaconHunter:
                 anomaly = {
                     "timestamp": datetime.now().isoformat(),
                     "dst_ip": raddr,
-                    "dst_port": int(port),
-                    "process": events[0][2].get("name", "unknown"),
-                    "cmd_snippet": events[0][2].get("cmd", "")[:100],
+                    "dst_port": port,
+                    "process": proc_name,
+                    "cmd_snippet": "",  # Not in db; extend if needed
                     "pid": int(pid),
                     "process_tree": tree_str,
                     "masquerade_detected": masquerade,
@@ -415,18 +516,18 @@ class BeaconHunter:
     def run_analysis(self):
         with self.lock:
             current_flows = dict(self.flows)
-        active_flows = {k: list(v) for k, v in current_flows.items() if len(v) >= 3}
+        active_flows = {k: v for k, v in current_flows.items() if v["count"] >= 3}
         if len(active_flows) > 300:
             sorted_active = sorted(
                 active_flows.items(),
-                key=lambda item: item[1][-1][0] if item[1] else 0,
+                key=lambda item: item[1]["last_seen"],
                 reverse=True
             )
             active_flows = dict(sorted_active[:300])
 
         new_anomalies = []
-        for key, events in active_flows.items():
-            anomaly = self.analyze_flow(key, events)
+        for key, flow in active_flows.items():
+            anomaly = self.analyze_flow(key, flow)
             if anomaly:
                 new_anomalies.append(anomaly)
                 self.detection_count += 1
@@ -474,8 +575,13 @@ class BeaconHunter:
             logger.critical(f"Main loop error: {e}")
 
     def snapshot_loop(self):
+        """Routes traffic collection based on the configuration."""
         while self.running:
-            self.snapshot()
+            if USE_EBPF:
+                self.snapshot_db()
+            else:
+                self.snapshot()  # Uses classic psutil/auditd logic
+
             time.sleep(SNAPSHOT_INTERVAL)
 
 if __name__ == "__main__":

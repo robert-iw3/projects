@@ -8,3 +8,4 @@ joblib
 scapy
 # eBPF backends
 pybpf
+bcc

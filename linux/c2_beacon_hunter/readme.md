@@ -126,6 +126,13 @@ sudo ./run.sh
   - **Score Adjustments**: UEBA deviations from baselines boost anomaly scores.
   - **Full Stack**: `run_full_stack.py` launches everything together for holistic operation.
 
+## The eBPF Pipeline
+
+1. **Kernel Hooks:** `c2_probe.bpf.o` attaches to the Linux kernel, intercepting deep network stack events to extract precise IP addresses, process IDs, and packet sizes.
+2. **The Streamer:** `c2_loader` reads the eBPF ring buffer and pipes strict JSON to the Python backend.
+3. **The Broker:** The collector ingests the data and writes it to a high-speed SQLite database (`baseline.db`) to ensure zero dropped events.
+4. **The Hunter:** `c2_beacon_hunter.py` reads the database concurrently, reconstructing process trees and piping the microsecond intervals into the Machine Learning engine (K-Means, DBSCAN, Isolation Forests) to catch the beacon.
+
 Exports anomalies to CSV/JSONL/logs for SIEM integration.
 
 ---
@@ -170,7 +177,7 @@ std_threshold = 10.0
 use_dbscan = true
 use_isolation = true
 max_samples = 2000
-use_ueba = true
+use_ueba = true\s+$
 use_enhanced_dns = true
 
 [ebpf]
@@ -210,6 +217,9 @@ sudo docker-compose up  # or podman-compose
 [c2-beacon-hunter-dev] | 2026-03-01 01:24:50,951 - INFO - Starting: Hunter + Baseline Learner + eBPF Collector
 [c2-beacon-hunter-dev] | ...
 [MONITORING v2.7] Active flows:     0 | Detections:    0 | Last: 01:24:52
+
+# see if event capture/collection is occuring
+podman exec -it c2-beacon-hunter /app/venv/bin/python -c "import sqlite3; [print(row) for row in sqlite3.connect('/app/baseline.db').execute('SELECT process_name, dst_ip, interval, packet_size_mean, mitre_tactic FROM flows ORDER BY id DESC LIMIT 15')]"
 ```
 
 ---
