@@ -10,7 +10,8 @@ RUN \
         linux-headers-$(uname -r) \
         make \
         linux-tools-common \
-        linux-tools-generic; \
+        linux-tools-generic \
+        bpftool; \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
@@ -40,7 +41,7 @@ WORKDIR /app
 COPY . /app
 COPY --from=builder /build/probes/c2_probe.bpf.o /app/dev/probes/c2_probe.bpf.o
 
-RUN python3 -m venv /app/venv
+RUN python3 -m venv --system-site-packages /app/venv
 RUN /app/venv/bin/pip install --no-cache-dir -r requirements.txt
 RUN mkdir -p /app/output
 

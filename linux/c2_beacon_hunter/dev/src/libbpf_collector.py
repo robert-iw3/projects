@@ -18,7 +18,7 @@ class EventData(ctypes.Structure):
         ("type", ctypes.c_uint32),
         ("packet_size", ctypes.c_uint32),
         ("is_outbound", ctypes.c_uint32),
-        ("saddr", ctypes.c_uint32),    # New: source addr
+        ("saddr", ctypes.c_uint32),
         ("daddr", ctypes.c_uint32),
         ("dport", ctypes.c_uint16),
         ("interval_ns", ctypes.c_uint64)

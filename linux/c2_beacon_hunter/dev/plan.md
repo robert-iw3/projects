@@ -2,13 +2,18 @@
 
 ---
 
-**current modifications**
+**Completed Modifications (v2.7)**
 
-Directory Additions:
-
-- Add Makefile to the dev/probes/ directory for automated Clang/LLVM compilation.
-- Add test_c2_simulation_libbpf.py to the dev/tests/ directory to generate normal and C2 beaconing traffic for evaluation.
-- Explicitly document that LibbpfCollector and BCCCollector must preserve and pass MITRE ATT&CK mappings to the baseline_learner.py.
+- Implemented `baseline_learner.py` with per-process/dest/hour/weekend baselines, batch DB inserts, Isolation Forest, and data retention.
+- Integrated baseline model loading in `c2_beacon_hunter.py` for UEBA score adjustments.
+- Added modular eBPF collectors: `ebpf_collector_base.py` (abstract), `bcc_collector.py` (dev), `libbpf_collector.py` (prod with CO-RE).
+- Created `collector_factory.py` for config-driven backend selection (auto/BCC/libbpf).
+- Added `c2_probe.bpf.c` and `Makefile` in `dev/probes/` for CO-RE compilation.
+- Ensured collectors pass MITRE ATT&CK mappings to learner via `record_flow()`.
+- Developed `run_full_stack.py` to launch hunter + learner + collector.
+- Added `test_c2_simulation_libbpf.py` and `test_baseline_learner.py` in `dev/tests/`.
+- Updated configs, Dockerfiles, and compose for full stack support.
+- Preserved all v2.6 features (sparse tracking, direction analysis, DNS, UEBA lite).
 
 ```bash
 dev/
@@ -36,75 +41,64 @@ dev/
 └── tests/                           # Unit and integration tests for v2.7 components
     ├── __init__.py                  # Makes tests/ a proper Python package
     ├── test_baseline_learner.py     # Tests for baseline_learner.py
-    ├── test_c2_simulation_libbpf.py # NEW: Traffic generation and ML validation
-    ├── test_collector_factory.py    # Tests for the factory pattern
-    ├── test_ebpf_collector.py       # Tests for eBPF collector interface
-    └── test_libbpf_collector.py     # Tests for the libbpf backend specifically
+    └── test_c2_simulation_libbpf.py # Simulates normal and C2 traffic for eBPF/learner evaluation
 ```
 
-### High-Level Game Plan for Phase 3B & Long-term Modularity
+**Long-term Modularity**
 
 **Goal**:
 Build a **modular eBPF collector** that supports two backends:
-- **BCC** → Fast development, easy debugging, great for testing
-- **libbpf + CO-RE** → Production-grade performance, lower overhead, better portability
+- **BCC** → Fast development, easy debugging, great for testing (implemented)
+- **libbpf + CO-RE** → Production-grade performance, lower overhead, better portability (implemented)
 
 ---
 
-### Overall Architecture
+### Overall Architecture (Implemented)
 
 ```
 Collector Factory
        │
-       ├── BCCCollector (current, dev-friendly)
-       └── LibbpfCollector (new, production-optimized, CO-RE)
+       ├── BCCCollector (dev-friendly)
+       └── LibbpfCollector (production-optimized, CO-RE)
                 │
          Calls same record_flow() → baseline_learner.py
 ```
 
 ---
 
-### Detailed Next Steps (Phase 3B)
+### Completed Phases (v2.7)
 
-**Step 1: Create Modular Foundation (Immediate)**
+1. **Phase 1** – Built `baseline_learner.py` + integration into hunter for UEBA adjustments.
+2. **Phase 2** – Improved baseline model (added packet size, direction, entropy via eBPF data).
+3. **Phase 3** – Implemented eBPF data collection (non-intrusive, modular backends).
+4. **Phase 4** – Optional full eBPF detection engine (deferred; current focuses on collection for baselines).
 
-Create these files:
+---
 
-- `ebpf_collector_base.py` → Abstract base class with common interface
-- `collector_factory.py` → Decides which backend to use (config-driven)
-- Keep existing `ebpf_collector.py` as `bcc_collector.py`
+### Detailed Next Steps (v2.8 Ideas)
 
-**Step 2: Port Core Probes to libbpf + CO-RE**
+**Step 1: Enhance Baselines**
+- Incorporate more eBPF metrics (e.g., interval_ns, packet_size_min/max) into models.
+- Add real-time anomaly feedback loop from hunter to learner.
 
-Write clean C code for the essential probes:
-- `execve` + parent PID
-- `connect`
-- `sendmsg` / `recvmsg` (with packet size)
-- `memfd_create`
-- `socket`
+**Step 2: Full eBPF Engine**
+- Extend probes to detect in-kernel (e.g., direct beacon scoring).
+- Integrate with `c2_defend` for auto-response on eBPF events.
 
-Compile once with Clang + libbpf, then load from Python.
+**Step 3: Advanced Testing**
+- Add integration tests for full stack (e.g., simulate C2, verify detections/baselines).
+- Performance benchmarks (CPU/mem) for BCC vs. libbpf.
 
-**Step 3: Python libbpf Loader**
+**Step 4: Deployment Improvements**
+- Systemd service for full stack.
+- Kubernetes manifests for containerized prod.
 
-Use `libbpf-python` or `ctypes` + `libbpf` to load the pre-compiled `.o` object.
+**Step 5: New Features**
+- DGA detection in DNS sniffer.
+- Export to SIEM (e.g., JSON over HTTP).
+- GUI dashboard for anomalies.
 
-**Step 4: Configuration & Fallback**
-
-Add to `config.ini`:
-```ini
-[ebpf]
-backend = auto        # auto, bcc, or libbpf
-enabled = false
-```
-
-**Step 5: Testing Strategy**
-
-- Unit test both backends
-- Performance comparison (CPU / memory)
-- Graceful fallback if libbpf fails
-
-**Compilation Instructions for the C Probe**
+**Compilation Instructions for the C Probe** (Verified)
 
 - Run these commands in the dev/probes/ folder:
 
@@ -119,13 +113,14 @@ make
 ls -l c2_probe.bpf.o
 ```
 
-**Pre-reqs**
+**Pre-reqs** (Updated for v2.7)
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+pip install -r dev/requirements.txt  # For eBPF/ML extras
 
-sudo apt install bpfcc-tools python3-bpfcc linux-headers-$(uname -r)   # Ubuntu/Debian
+sudo apt install bpfcc-tools python3-bpfcc linux-headers-$(uname -r) libbpf-dev   # Ubuntu/Debian
 # or
-sudo dnf install bcc-tools python3-bcc kernel-devel                  # Fedora/RHEL
+sudo dnf install bcc-tools python3-bcc kernel-devel libbpf-devel                # Fedora/RHEL
 ```

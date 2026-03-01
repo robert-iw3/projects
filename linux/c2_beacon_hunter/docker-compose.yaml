@@ -17,6 +17,7 @@ services:
       - ./output:/app/output:rw
       - /lib/modules:/lib/modules:ro
       - /usr/src:/usr/src:ro
+      - /proc:/host/proc:ro
     environment:
       - TEST_MODE=true
     command: /app/venv/bin/python dev/run_full_stack.py

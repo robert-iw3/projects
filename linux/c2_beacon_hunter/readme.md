@@ -1,19 +1,19 @@
 # **c2_beacon_hunter**
-**Native Linux C2 Beacon & Stealthy Channel Detector (v2.6)**
+**Native Linux C2 Beacon & Stealthy Channel Detector (v2.7)**
 
-*Advanced host-based detection with sparse beacon tracking, malleable C2 resistance, and enhanced DNS detection*
+*Advanced host-based detection with adaptive learning, eBPF integration, sparse beacon tracking, malleable C2 resistance, and enhanced DNS detection*
 
 ---
 
 ### Overview
-`c2_beacon_hunter` is a lightweight, **100% native Linux** tool that detects command-and-control (C2) beacons in real time using statistical analysis, machine learning, and spectral methods.
+`c2_beacon_hunter` is a lightweight, **100% native Linux** tool that detects command-and-control (C2) beacons in real time using statistical analysis, machine learning, spectral methods, and now adaptive baselines with eBPF for low-level monitoring.
 
-**v2.6** adds long-sleep/sparse beacon detection, packet direction analysis, enhanced DNS detection, and per-process behavioral baselining.
+**v2.7** introduces adaptive learning via `baseline_learner.py`, modular eBPF collectors (BCC and libbpf backends), packet size/direction/entropy enhancements in models, and full stack integration—while preserving all v2.6 features like long-sleep/sparse beacon detection, packet direction analysis, enhanced DNS detection, and per-process behavioral baselining.
 
 ---
 
 ### Proactive Protection
-A new companion tool is included:
+A companion tool is included:
 
 **`c2_defend/`** — Turns detections into active containment:
 - Kill suspicious processes
@@ -32,15 +32,17 @@ c2_beacon_hunter/
 ├── setup.sh
 ├── config.ini
 ├── requirements.txt
-├── c2_beacon_hunter.py               # v2.6 detection engine
+├── c2_beacon_hunter.py               # v2.7 detection engine
 ├── BeaconML.py
 ├── Dockerfile
+├── ebpf.Dockerfile                   # For eBPF dev container
+├── docker-compose.yaml               # For full stack dev container
 ├── beaconing_algorithms_summary.md
 │
 ├── tests/
 │   └── test_beacon_simulator.py
 │
-├── c2_defend/                        # ← New Proactive Protection
+├── c2_defend/                        # Proactive Protection
 │   ├── README.md
 │   ├── run.sh
 │   ├── analyzer.py
@@ -55,7 +57,30 @@ c2_beacon_hunter/
 │
 ├── audit_rules.d/
 ├── systemd/
-└── venv/
+├── venv/
+│
+└── dev/                              # v2.7 development components
+    ├── config_dev.ini                # Dev-specific config (eBPF backend, etc.)
+    ├── run_full_stack.py             # Unified launcher for hunter + learner + collector
+    ├── requirements.txt              # Dev dependencies (eBPF, ML extras)
+    ├── plan.md                       # Roadmap and notes
+    │
+    ├── src/                          # Core v2.7 Python package
+    │   ├── __init__.py
+    │   ├── baseline_learner.py       # Builds statistical + ML baselines
+    │   ├── ebpf_collector_base.py    # Abstract base for collectors
+    │   ├── bcc_collector.py          # BCC eBPF collector (dev mode)
+    │   ├── libbpf_collector.py       # libbpf + CO-RE collector (prod mode)
+    │   └── collector_factory.py      # Selects backend based on config
+    │
+    ├── probes/                       # eBPF C probes
+    │   ├── c2_probe.bpf.c            # CO-RE compatible probe code
+    │   └── Makefile                  # For compiling probes
+    │
+    └── tests/                        # v2.7 tests
+        ├── __init__.py
+        ├── test_baseline_learner.py  # Baseline learner tests
+        └── test_c2_simulation_libbpf.py  # Simulates traffic for eBPF testing
 ```
 
 ---
@@ -65,7 +90,7 @@ c2_beacon_hunter/
 ```bash
 chmod +x setup.sh
 sudo ./setup.sh install      # Install dependencies + systemd
-sudo ./setup.sh container    # Build container image (recommended)
+sudo ./setup.sh container    # Build container image (recommended for eBPF dev)
 ```
 
 **Run full test (recommended):**
@@ -73,10 +98,16 @@ sudo ./setup.sh container    # Build container image (recommended)
 sudo ./setup.sh test
 ```
 
-**Start detection:**
+**Start detection (standalone hunter):**
 ```bash
 sudo ./setup.sh start
 sudo ./setup.sh watch        # Live detections
+```
+
+**Start full v2.7 stack (hunter + learner + eBPF collector):**
+```bash
+cd dev
+sudo python3 run_full_stack.py
 ```
 
 **Activate proactive protection:**
@@ -87,260 +118,103 @@ sudo ./run.sh
 
 ---
 
-### How to Use c2_defend
+### How It Works
+- **Core Detection (from v2.6)**: Polls connections via `ss` (fallback psutil), analyzes intervals/CV/entropy/outbound ratios, runs ML (K-Means/DBSCAN/Isolation Forest/Lomb-Scargle), checks process trees/masquerading.
+- **v2.7 Enhancements**:
+  - **Adaptive Baselines**: `baseline_learner.py` builds per-process/dest/hour/weekend models (stats + Isolation Forest) from eBPF data.
+  - **eBPF Collectors**: Modular backends capture syscalls/packets (execve, connect, sendmsg, etc.), feed learner with MITRE-mapped metrics.
+  - **Score Adjustments**: UEBA deviations from baselines boost anomaly scores.
+  - **Full Stack**: `run_full_stack.py` launches everything together for holistic operation.
 
-```bash
-cd c2_defend
-sudo ./run.sh
-```
-
-Choose:
-- **1** → Analyzer (view detections)
-- **2** → Defender (kill + block)
-- **3** → Undo previous blocks
+Exports anomalies to CSV/JSONL/logs for SIEM integration.
 
 ---
 
-### v2.5
-- Lomb-Scargle + circular phase clustering (detects heavily jittered beacons)
-- Dynamic `TEST_MODE=true` (loopback works in test mode, filtered in production)
-- Fully interactive comprehensive test mode in `setup.sh`
-- All test scripts moved to dedicated `tests/` directory
-- Automatic firewalld handling + exact restore in simulator
-- Performance: analysis limited to 300 most-recent active flows
+### Features
+- Real-time beacon detection (periodic, jittered, sparse/long-sleep)
+- Malleable C2 resistance (outbound consistency, entropy scoring)
+- Enhanced DNS beaconing (Scapy sniffer + ML intervals)
+- Per-process UEBA (lite in-memory + advanced baselines)
+- Process tree analysis + masquerading detection
+- Configurable whitelists (processes, destinations)
+- Container support with host visibility
+- MITRE ATT&CK mappings in anomalies
+- Low overhead (threaded, limited flows)
 
-### v2.6
-- Strong pre-filter layer (configurable whitelist for processes & destinations to reduce noise)
-- Sparse / long-sleep beacon tracking (up to 48 hours)
-- Packet direction & outbound consistency scoring (strong against malleable C2)
-- Enhanced DNS beacon detection
-- Per-process UEBA lite baseline (further reduces false positives)
-- New `c2_defend/` proactive protection module (kill + firewall blocking + undo)
+See `beaconing_algorithms_summary.md` for detection details.
 
 ---
 
-## Configuration (`config.ini`)
-
-**Important Note:**
-**Do not add comments on the same line as a value.**
-`configparser` will read the comment as part of the value and cause errors (e.g. `ValueError: invalid literal for int()`).
-
-**Correct format:**
-```ini
-long_sleep_threshold = 1800
-```
-
-**Incorrect format:**
-```ini
-long_sleep_threshold = 1800    # this will break
-```
+### Dependencies
+- Python 3.12+ (venv recommended)
+- Core: psutil, numpy, pandas, scikit-learn, astropy, scipy, joblib, scapy
+- eBPF (v2.7): bpfcc-tools, python3-bpfcc (BCC), libbpf-dev, libbpf-python (libbpf)
+- Install via `requirements.txt` and system packages (see `ebpf.Dockerfile`)
 
 ---
 
-#### Configuration Reference
-
+### Configuration (`config.ini`)
 ```ini
 [general]
-snapshot_interval = 60          # Seconds between connection snapshots (recommended: 30-60)
-analyze_interval = 300          # Seconds between analysis runs (recommended: 180-600)
-score_threshold = 60            # Minimum score to trigger an alert (higher = fewer false positives)
-max_flow_age_hours = 48         # How long to keep flow history (increased in v2.6 for sparse beacons)
-max_flows = 5000                # Maximum number of flows to track in memory
-output_dir = output             # Directory for logs and exported data
-
-# Sparse / long-sleep beacon settings (v2.6)
-long_sleep_threshold = 1800     # Seconds. If average interval > this → treat as sparse beacon (default 30 min)
-min_samples_sparse = 3          # Minimum connections needed for sparse beacons (lowered for long sleep)
+snapshot_interval = 60
+analyze_interval = 300
+score_threshold = 60
+max_flow_age_hours = 48
+max_flows = 5000
+output_dir = output
+long_sleep_threshold = 1800
+min_samples_sparse = 3
 
 [ml]
-std_threshold = 10.0            # Maximum standard deviation for "tight" clusters
-use_dbscan = true               # Enable Adaptive DBSCAN clustering
-use_isolation = true            # Enable Isolation Forest anomaly detection
-max_samples = 2000              # Subsample large flows for performance
-use_ueba = true                 # Enable per-process baseline (UEBA lite) - reduces false positives
-use_enhanced_dns = true         # Enable dedicated DNS beacon detection
+std_threshold = 10.0
+use_dbscan = true
+use_isolation = true
+max_samples = 2000
+use_ueba = true
+use_enhanced_dns = true
 
-# ====================== Pre-Filter Whitelist ======================
-# Multi-line values without continuation configparser does not automatically handle multi-line values like this.
-# This is for more readability, reference the current config.ini
+[ebpf]
+backend = auto  # auto, bcc, libbpf
+enabled = true
+
 [whitelist]
 benign_processes = NetworkManager,pipewire,pulseaudio,nautilus,tracker
-
-benign_destinations = 192.168., 10., 172.16., 172.17., 172.18., 172.19.,
-                      172.20., 172.21., 172.22., 172.23., 172.24., 172.25.,
-                      8.8.8.8, 8.8.4.4, 1.1.1.1, 1.0.0.1, 9.9.9.9
-                                   # IP prefixes and addresses considered "known good".
-                                   # Traffic to these destinations is skipped early.
-                                   # Private ranges + major public DNS servers are included by default.
+benign_destinations = 192.168.,10.,172.16.,172.17.,172.18.,172.19.,172.20.,172.21.,172.22.,172.23.,172.24.,172.25.,8.8.8.8,8.8.4.4,1.1.1.1,1.0.0.1,9.9.9.9
 
 [container]
-enabled = false                 # Set to true to prefer container mode
-runtime = auto                  # docker, podman, or auto
+enabled = true
+runtime = auto
 ```
 
 ---
 
-## Testing
+### Testing
+- `tests/test_beacon_simulator.py`: Simulates beacons for core detection.
+- `dev/tests/test_c2_simulation_libbpf.py`: Generates traffic for eBPF/learner validation.
+- `dev/tests/test_baseline_learner.py`: Verifies model building.
 
-Use the interactive test mode for the easiest and most complete validation:
+Run `sudo ./setup.sh test` for end-to-end.
+
+---
+
+### eBPF Dev Container
+Build/run full stack in container for isolated testing:
 
 ```bash
-sudo ./setup.sh test
-```
+sudo docker-compose up  # or podman-compose
 
-This automatically starts the hunter in TEST MODE and launches the simulator with guided profiles.
-
-#### Manual Simulator Tests (Recommended for v2.6)
-
-```bash
-cd tests
-
-# 1. Pre-filter test (should be completely skipped / no alert)
-./test_beacon_simulator.py --process-name firefox --period 60 --jitter 0.05 --duration 120
-
-# 2. Sparse / Long-sleep beacon test (tests new long-sleep tracking)
-./test_beacon_simulator.py --long-sleep --period 1800 --jitter 0.25 --duration 7200
-
-# 3. Malleable C2 test (tests outbound consistency scoring)
-./test_beacon_simulator.py --high-outbound --period 60 --jitter 0.35 --duration 300
-
-# 4. UEBA + suspicious process test (tests baseline deviation)
-./test_beacon_simulator.py --process-name python --period 45 --jitter 0.40 --duration 240
-
-# 5. Classic high-jitter test (Lomb-Scargle)
-./test_beacon_simulator.py --period 60 --jitter 0.35 --duration 300
-```
-
-#### What Each Test Validates
-
-| Test | Feature Being Tested                  | Expected Result                     |
-|------|---------------------------------------|-------------------------------------|
-| 1    | Pre-filter whitelist                  | No detection (skipped)              |
-| 2    | Sparse / long-sleep tracking          | Detection with sparse beacon logic  |
-| 3    | Malleable C2 resistance               | `consistent_outbound_malleable`     |
-| 4    | UEBA baseline                         | `ueba_deviation` if abnormal        |
-| 5    | Lomb-Scargle jitter detection         | Strong ML + LombScargle alert       |
-
----
-
-### Outputs
-- `detections.log` → Human readable alerts
-- `anomalies.csv` / `anomalies.jsonl` → SIEM-ready
-
----
-
-### MITRE ATT&CK
-- `TA0011` / `T1071` → Application Layer Protocol (periodic beaconing)
-- `TA0011` / `T1568.002` → High entropy / DGA-like behavior
-- `TA0011` / `T1090` → Unusual ports
-- `TA0005` / `T1036` → Process masquerading
-
----
-
-## Real World Application (v2.6)
-
-This tool is specifically designed to detect modern C2 frameworks that use **jitter, long sleep intervals, malleable profiles, and DNS-only** communication.
-
-| C2 Framework       | Typical Behavior                              | How v2.6 Detects It                                              | Expected Effectiveness |
-|--------------------|-----------------------------------------------|------------------------------------------------------------------|------------------------|
-| **Cobalt Strike**  | 30–300s base + 0–50% jitter, malleable C2     | Lomb-Scargle + outbound consistency + UEBA baseline              | **Very High**          |
-| **Sliver**         | Default jitter + optional long sleep          | Sparse/long-sleep tracking + Lomb-Scargle + direction scoring    | **Very High**          |
-| **Havoc (Demon)**  | Configurable sleep + jitter + obfuscation     | Long-sleep tracking + enhanced DNS + process masquerade scoring  | **High**               |
-| **Adaptix**        | sleep_delay + jitter_delay                    | Full timing suite + malleable outbound detection                 | **High**               |
-
-#### v2.6 Detections
-- **Sparse/Long-sleep tracking** — Detects beacons with very long intervals (30 minutes to many hours)
-- **Packet direction & outbound consistency** — Excellent against malleable C2 profiles on common ports (443/80)
-- **Enhanced DNS beacon detection** — Strong coverage for pure DNS C2 channels
-- **Per-process UEBA lite baseline** — Learns normal behavior per process to reduce false positives
-- **Lomb-Scargle spectral analysis** — Still the strongest feature against jittered beacons (30–50%+ jitter)
-
-**Realistic testing tip**:
-Use `--jitter 0.30` to `0.45` in the simulator to closely mimic real Cobalt Strike / Sliver / Havoc behavior.
-
----
-
-**Project maintained for red team, blue team, and detection engineering use.**
-
-**Last updated:** February 2026 (v2.6)
-
----
-
-# v2.7 Roadmap Strategy
-
-| Priority | Feature                  | Difficulty | Strategy / Approach                                                                 | Expected Impact |
-|----------|--------------------------|------------|-------------------------------------------------------------------------------------|-----------------|
-| 1        | `baseline_learner.py`    | Medium     | Separate long-running learner + lightweight model export                           | **Major** reduction in false positives |
-| 2        | Optional eBPF mode       | Hard       | Hybrid: Start with eBPF data collection only, then optional full eBPF detection    | Very high accuracy (future) |
-
----
-
-### Detailed Strategy for `baseline_learner.py` (Priority 1)
-
-**Goal**: Build a **per-process, per-destination behavioral baseline** that learns what is normal on this specific system over days/weeks.
-
-**High-level Design:**
-
-1. **Data Collection** (Background mode)
-   - Runs in parallel with the main hunter
-   - Records for every flow: process name, destination IP/CIDR, avg interval, CV, outbound ratio, packet size stats, entropy, etc.
-   - Stores in a lightweight database (SQLite) or JSONL files
-
-2. **Learning Engine**
-   - Uses statistical models (mean, std, percentiles) + simple ML (Isolation Forest or One-Class SVM)
-   - Builds a **profile** for each `(process_name, destination_prefix)` pair
-   - Updates continuously or on a schedule (e.g. every 6–12 hours)
-
-3. **Integration with Main Detector**
-   - Main `c2_beacon_hunter.py` loads the latest baseline model on startup or every analysis cycle
-   - In `analyze_flow()`: Compare current flow against the learned baseline
-   - If behavior deviates significantly → boost score or trigger alert
-   - If behavior matches baseline → suppress or heavily discount the alert
-
-**Key Benefits**:
-- Dramatically reduces false positives from firefox, NetworkManager, github-desktop, etc.
-- Adapts to your unique environment (no more generic whitelists)
-- Still catches new/abnormal C2 behavior quickly
-
----
-
-### High-Level Plan for Optional eBPF Mode (Priority 2)
-
-- Phase 1: Add eBPF data collection (using `bcc` or `bpftrace`) to gather richer metrics (syscalls, packet sizes, exact connection events)
-- Phase 2: Optional eBPF-based detection engine (very accurate but complex)
-
----
-
-### Phases for v2.7
-
-1. **Phase 1 (Next)** – Build `baseline_learner.py` + integration
-2. **Phase 2** – Improve baseline model (add packet size, direction, entropy)
-3. **Phase 3** – eBPF data collection (non-intrusive first)
-4. **Phase 4** – Optional full eBPF detection engine
-
-### ebpf Dev Container
-```bash
-sudo podman-compose up
-
-# or docker
-sudo docker-compose up
-
-# example runtime
+# Example logs
 [c2-beacon-hunter-dev] | 2026-03-01 01:24:50,951 - INFO - ================================================================================
 [c2-beacon-hunter-dev] | 2026-03-01 01:24:50,951 - INFO -  c2_beacon_hunter v2.7 - Full Stack Launcher
 [c2-beacon-hunter-dev] | 2026-03-01 01:24:50,951 - INFO - ================================================================================
 [c2-beacon-hunter-dev] | 2026-03-01 01:24:50,951 - INFO - Starting: Hunter + Baseline Learner + eBPF Collector
-[c2-beacon-hunter-dev] | 2026-03-01 01:24:50,951 - INFO -
-[c2-beacon-hunter-dev] | 2026-03-01 01:24:50,951 - INFO - [1/3] Starting Baseline Learner...
-[c2-beacon-hunter-dev] | 2026-03-01 01:24:50,952 - INFO - [2/3] Starting eBPF Collector...
-[c2-beacon-hunter-dev] | 2026-03-01 01:24:50,952 - INFO - [3/3] Starting Main Hunter...
-[c2-beacon-hunter-dev] | 2026-03-01 01:24:50,952 - INFO -
-[c2-beacon-hunter-dev] | All components started successfully!
-[c2-beacon-hunter-dev] | 2026-03-01 01:24:50,952 - INFO - Press Ctrl+C to stop everything gracefully.
-[c2-beacon-hunter-dev] |
-[c2-beacon-hunter-dev] | 2026-03-01 01:24:52,218 - INFO - === RUNNING INSIDE DOCKER/PODMAN CONTAINER WITH HOST ACCESS ===
-[c2-beacon-hunter-dev] | === RUNNING INSIDE DOCKER/PODMAN CONTAINER WITH HOST ACCESS ===
-[MONITORING v2.6] Active flows:     0 | Detections:    0 | Last: 01:24:522026-03-01 01:24:52,220 - INFO - c2_beacon_hunter v2.6 started
-[c2-beacon-hunter-dev] | c2_beacon_hunter v2.6 started
-[c2-beacon-hunter-dev] | Output directory: output | Ctrl+C to stop
+[c2-beacon-hunter-dev] | ...
+[MONITORING v2.7] Active flows:     0 | Detections:    0 | Last: 01:24:52
 ```
+
+---
+
+### Roadmap
+See `dev/plan.md` for completed phases and future ideas (e.g., packet entropy in models, full eBPF engine).
+
+**Last updated:** February 2026 (v2.7)

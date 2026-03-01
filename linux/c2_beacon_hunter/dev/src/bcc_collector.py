@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-bcc_collector.py - Optimized BCC backend
+bcc_collector.py - BCC backend
 """
 
 from ebpf_collector_base import EBPFCollectorBase
@@ -86,11 +86,11 @@ class BCCCollector(EBPFCollectorBase):
             """
 
             self.bpf = BPF(text=bpf_text)
-            self.bpf.attach_kprobe(event="sys_execve", fn_name="trace_exec")
-            self.bpf.attach_kprobe(event="sys_connect", fn_name="trace_connect")
-            self.bpf.attach_kprobe(event="sys_sendmsg", fn_name="trace_sendmsg")
-            self.bpf.attach_kprobe(event="sys_recvmsg", fn_name="trace_recvmsg")
-            self.bpf.attach_kprobe(event="sys_memfd_create", fn_name="trace_memfd")
+            self.bpf.attach_kprobe(event="__x64_sys_execve", fn_name="trace_exec")
+            self.bpf.attach_kprobe(event="__x64_sys_connect", fn_name="trace_connect")
+            self.bpf.attach_kprobe(event="__x64_sys_sendmsg", fn_name="trace_sendmsg")
+            self.bpf.attach_kprobe(event="__x64_sys_recvmsg", fn_name="trace_recvmsg")
+            self.bpf.attach_kprobe(event="__x64_sys_memfd_create", fn_name="trace_memfd")
 
             print(f"[{datetime.now()}] BCC probes loaded successfully")
             return True

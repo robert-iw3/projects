@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """
-c2_beacon_hunter - Linux C2 Beacon Detector (v2.6)
+c2_beacon_hunter - Linux C2 Beacon Detector (v2.7)
 Author: Robert Weber
 
-v2.6 - Sparse, Malleable & DNS Resistant Edition
-- Sparse/long-sleep beacon tracking
-- Packet direction + outbound consistency scoring (vs malleable C2)
-- Enhanced DNS beacon detection
-- Per-process UEBA lite baseline
-- Configurable whitelist for processes and destinations
-- Early skip for known good traffic
+v2.7 - Adaptive Learning + eBPF Integration
+- Loads baseline model from baseline_learner.py
+- Optional eBPF collector integration (via collector_factory)
+- Adjusts scores based on learned baselines
+- All previous v2.6 features preserved
 """
 
 import argparse
@@ -49,31 +47,7 @@ except ImportError:
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-SNAPSHOT_INTERVAL = int(config.get('general', 'snapshot_interval', fallback=60))
-ANALYZE_INTERVAL = int(config.get('general', 'analyze_interval', fallback=300))
-SCORE_THRESHOLD = int(config.get('general', 'score_threshold', fallback=60))
-MAX_FLOW_AGE = int(config.get('general', 'max_flow_age_hours', fallback=48)) * 3600
-MAX_FLOWS = int(config.get('general', 'max_flows', fallback=5000))
 OUTPUT_DIR = config.get('general', 'output_dir', fallback='output')
-
-ML_STD_THRESHOLD = float(config.get('ml', 'std_threshold', fallback=10.0))
-ML_USE_DBSCAN = config.getboolean('ml', 'use_dbscan', fallback=True)
-ML_USE_ISOLATION = config.getboolean('ml', 'use_isolation', fallback=True)
-ML_MAX_SAMPLES = int(config.get('ml', 'max_samples', fallback=2000))
-
-LONG_SLEEP_THRESHOLD = int(config.get('general', 'long_sleep_threshold', fallback=1800))
-MIN_SAMPLES_SPARSE = int(config.get('general', 'min_samples_sparse', fallback=3))
-USE_UEBA = config.getboolean('ml', 'use_ueba', fallback=True)
-USE_ENHANCED_DNS = config.getboolean('ml', 'use_enhanced_dns', fallback=True)
-
-# v2.6 Pre-Filter Whitelist
-BENIGN_PROCESSES = [p.strip().lower() for p in config.get('whitelist', 'benign_processes', fallback="").split(',') if p.strip()]
-BENIGN_DESTINATIONS = [d.strip() for d in config.get('whitelist', 'benign_destinations', fallback="").split(',') if d.strip()]
-
-Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
-
-IN_CONTAINER = os.path.exists('/.dockerenv') or os.path.exists('/run/.containerenv')
-TEST_MODE = os.environ.get('TEST_MODE', 'false').lower() == 'true'
 
 # ====================== LOGGING ======================
 logger = logging.getLogger("c2_beacon_hunter")
@@ -90,15 +64,62 @@ console_handler = logging.StreamHandler(sys.stdout)
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
+# v2.7 eBPF integration
+USE_EBPF = config.getboolean('ebpf', 'enabled', fallback=False)
+if USE_EBPF:
+    try:
+        sys.path.append('dev/src')
+        from collector_factory import CollectorFactory
+    except ImportError:
+        logger.warning("eBPF integration not available. Falling back to standard mode.")
+        USE_EBPF = False
+
+SNAPSHOT_INTERVAL = int(config.get('general', 'snapshot_interval', fallback=60))
+ANALYZE_INTERVAL = int(config.get('general', 'analyze_interval', fallback=300))
+SCORE_THRESHOLD = int(config.get('general', 'score_threshold', fallback=60))
+MAX_FLOW_AGE = int(config.get('general', 'max_flow_age_hours', fallback=48)) * 3600
+MAX_FLOWS = int(config.get('general', 'max_flows', fallback=5000))
+ML_STD_THRESHOLD = float(config.get('ml', 'std_threshold', fallback=10.0))
+ML_USE_DBSCAN = config.getboolean('ml', 'use_dbscan', fallback=True)
+ML_USE_ISOLATION = config.getboolean('ml', 'use_isolation', fallback=True)
+ML_MAX_SAMPLES = int(config.get('ml', 'max_samples', fallback=2000))
+LONG_SLEEP_THRESHOLD = int(config.get('general', 'long_sleep_threshold', fallback=1800))
+MIN_SAMPLES_SPARSE = int(config.get('general', 'min_samples_sparse', fallback=3))
+USE_UEBA = config.getboolean('ml', 'use_ueba', fallback=True)
+USE_ENHANCED_DNS = config.getboolean('ml', 'use_enhanced_dns', fallback=True)
+
+# v2.6 Pre-Filter Whitelist
+BENIGN_PROCESSES = [p.strip().lower() for p in config.get('whitelist', 'benign_processes', fallback="").split(',') if p.strip()]
+BENIGN_DESTINATIONS = [d.strip() for d in config.get('whitelist', 'benign_destinations', fallback="").split(',') if d.strip()]
+
+Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+
+IN_CONTAINER = os.path.exists('/.dockerenv') or os.path.exists('/run/.containerenv')
+TEST_MODE = os.environ.get('TEST_MODE', 'false').lower() == 'true'
+
+# v2.7 Baseline Model
+BASELINE_MODEL_PATH = Path("baseline_model.joblib")
+baseline_model = None
+if BASELINE_MODEL_PATH.exists():
+    try:
+        import joblib
+        baseline_model = joblib.load(BASELINE_MODEL_PATH)
+    except ImportError:
+        logger.warning("joblib not available. Running without baseline model enhancement.")
+    except Exception as e:
+        logger.warning(f"Failed to load baseline model: {e}. Running without UEBA enhancement.")
+
 if IN_CONTAINER:
     logger.info("=== RUNNING INSIDE DOCKER/PODMAN CONTAINER WITH HOST ACCESS ===")
+    # Patch psutil to use host /proc for network stats visibility
+    psutil.PROCFS_PATH = '/host/proc'
+    logger.info("Patched psutil to use host /proc for network stats visibility.")
 
 DETECTION_LOG = f"{OUTPUT_DIR}/detections.log"
 ANOMALY_CSV = f"{OUTPUT_DIR}/anomalies.csv"
 ANOMALY_JSONL = f"{OUTPUT_DIR}/anomalies.jsonl"
 
 COMMON_PORTS = {53, 80, 443, 22, 25, 465, 587, 993, 995, 8080, 8443}
-
 MITRE_MAP = {
     "beacon_periodic": ("TA0011", "T1071", "Application Layer Protocol"),
     "high_entropy": ("TA0011", "T1568.002", "Domain Generation Algorithms"),
@@ -106,7 +127,6 @@ MITRE_MAP = {
     "suspicious_process": ("TA0002", "T1059", "Command and Scripting Interpreter"),
     "masquerade": ("TA0005", "T1036", "Masquerading"),
 }
-
 
 class BeaconHunter:
     def __init__(self, output_dir=OUTPUT_DIR):
@@ -117,16 +137,28 @@ class BeaconHunter:
         self.running = True
         self.lock = threading.Lock()
         self.detection_count = 0
-        self.process_baselines = defaultdict(list)   # UEBA lite
+        self.process_baselines = defaultdict(list)  # UEBA lite
+        self.dns_timestamps = []  # For DNS sniffer
+
+        # v2.7 eBPF integration
+        self.ebpf_collector = None
+        if USE_EBPF:
+            logger.info("Starting eBPF collector...")
+            self.ebpf_collector = CollectorFactory.create_collector()
+            threading.Thread(target=self.ebpf_collector.run, daemon=True).start()
+            logger.info("eBPF collector started and integrated.")
 
         signal.signal(signal.SIGTERM, self.shutdown)
         signal.signal(signal.SIGINT, self.shutdown)
-        if SCAPY_AVAILABLE:
+
+        if SCAPY_AVAILABLE and USE_ENHANCED_DNS:
             threading.Thread(target=self._dns_sniffer, daemon=True).start()
 
     def shutdown(self, *args):
         self.running = False
         logger.info("Shutting down gracefully...")
+        if self.ebpf_collector:
+            self.ebpf_collector.stop()
         self.export_all()
         sys.exit(0)
 
@@ -166,41 +198,32 @@ class BeaconHunter:
             lines = output.splitlines()
             if len(lines) > 0 and ("State" in lines[0] or "Netid" in lines[0]):
                 lines = lines[1:]
-
             for line in lines:
                 parts = line.split()
                 if len(parts) < 5: continue
-
                 state_idx = 0 if "ESTAB" in parts[0] else 1 if len(parts) > 1 and "ESTAB" in parts[1] else -1
                 if state_idx == -1 or len(parts) < state_idx + 5: continue
-
                 local_raw = parts[state_idx + 3]
                 remote_raw = parts[state_idx + 4]
                 remote_clean = remote_raw.split('%')[0]
                 local_clean = local_raw.split('%')[0]
-
                 if ':' not in remote_clean: continue
-
                 try:
                     raddr, rport_str = remote_clean.rsplit(':', 1)
                     raddr = raddr.strip('[]')
                     rport = int(rport_str)
                 except ValueError:
                     continue
-
                 if not TEST_MODE and raddr in ("127.0.0.1", "::1", "0.0.0.0"):
                     continue
-
                 pid = 0
                 if "pid=" in line:
                     try:
                         pid = int(line.split("pid=")[1].split(",")[0].split(")")[0])
                     except:
                         pass
-
                 key = (local_clean, raddr, rport)
                 is_outbound = rport > 1024
-
                 try:
                     p = psutil.Process(pid)
                     proc = {
@@ -210,10 +233,8 @@ class BeaconHunter:
                     }
                 except:
                     proc = {"name": "unknown", "cmd": "", "entropy_cmd": 0.0}
-
                 with self.lock:
                     self.flows[key].append((ts, pid, proc, is_outbound))
-
         except Exception as e:
             logger.warning(f"ss snapshot failed ({e}), falling back to psutil")
             try:
@@ -237,7 +258,6 @@ class BeaconHunter:
             except Exception as fb_e:
                 logger.error(f"Both snapshot methods failed: {fb_e}")
 
-        # Prune old data
         cutoff = ts - MAX_FLOW_AGE
         with self.lock:
             for k in list(self.flows.keys()):
@@ -253,7 +273,6 @@ class BeaconHunter:
             return None
         self.last_analyzed[key] = now
 
-        # ====================== PRE-FILTER ======================
         proc_name = events[0][2].get("name", "").lower()
         raddr = key[1]
         port = key[2]
@@ -270,14 +289,11 @@ class BeaconHunter:
         if any(raddr.startswith(prefix) for prefix in BENIGN_DESTINATIONS):
             return None
 
-        # ====================== End Pre-Filter ======================
-
         try:
             timestamps = np.array([e[0] for e in events])
             deltas = np.diff(np.sort(timestamps)).tolist()
             mean_delta = float(np.mean(deltas))
             cv = float(np.std(deltas) / mean_delta) if mean_delta > 0 else 0
-
             min_samples = MIN_SAMPLES_SPARSE if mean_delta > LONG_SLEEP_THRESHOLD else 5
             if len(events) < min_samples:
                 return None
@@ -301,21 +317,26 @@ class BeaconHunter:
             if cv < 0.25 and mean_delta > 5:
                 score += 30
                 reasons.append("low_cv_periodic")
+
             if ml_result:
                 score += 60
                 reasons.append(f"Advanced_ML: {ml_result}")
                 mitre = MITRE_MAP["beacon_periodic"]
+
             if outbound_ratio > 0.8 and cv < 0.25:
                 score += 20
                 reasons.append("consistent_outbound_malleable")
+
             if max(entropy_ip, avg_cmd_entropy) > 3.8:
                 score += 25
                 reasons.append("high_entropy")
                 mitre = MITRE_MAP["high_entropy"]
+
             if unusual_port:
                 score += 15
                 reasons.append("unusual_port")
                 mitre = MITRE_MAP["unusual_port"]
+
             if avg_cmd_entropy > 4.5:
                 score += 20
                 reasons.append("suspicious_process")
@@ -325,11 +346,27 @@ class BeaconHunter:
                 proc_name_full = events[0][2].get("name", "unknown")
                 self.process_baselines[proc_name_full].append(mean_delta)
                 if len(self.process_baselines[proc_name_full]) > 20:
-                    baseline = np.array(self.process_baselines[proc_name_full][-20:])
-                    deviation = abs(mean_delta - np.mean(baseline)) / (np.std(baseline) + 1e-6)
-                    if deviation > 4.0:
+                    baseline_lite = np.array(self.process_baselines[proc_name_full][-20:])
+                    deviation_lite = abs(mean_delta - np.mean(baseline_lite)) / (np.std(baseline_lite) + 1e-6)
+                    if deviation_lite > 4.0:
                         score += 25
-                        reasons.append("ueba_deviation")
+                        reasons.append("ueba_deviation_lite")
+
+                # v2.7 Advanced UEBA with loaded baseline model
+                if baseline_model:
+                    prefix = ".".join(raddr.split('.')[:3]) + ".0"
+                    dt = datetime.fromtimestamp(now)
+                    hour = dt.hour
+                    is_weekend = 1 if dt.weekday() >= 5 else 0
+                    key = f"{proc_name_full}|{prefix}|{hour:02d}|{is_weekend}"
+                    if key in baseline_model.get("profiles", {}):
+                        stats = baseline_model["profiles"][key]["stats"]
+                        interval_dev = abs(mean_delta - stats["mean_interval"]) / (stats["mean_interval"] + 1e-6)
+                        cv_dev = abs(cv - stats["mean_cv"])
+                        out_dev = abs(outbound_ratio - stats["mean_outbound_ratio"])
+                        if interval_dev > 0.5 or cv_dev > 0.2 or out_dev > 0.3:
+                            score += 25
+                            reasons.append(f"ueba_deviation_advanced (Int:{interval_dev:.2f}, CV:{cv_dev:.2f}, Out:{out_dev:.2f})")
 
             pid = events[0][1]
             tree = self.get_process_tree(pid)
@@ -378,7 +415,6 @@ class BeaconHunter:
     def run_analysis(self):
         with self.lock:
             current_flows = dict(self.flows)
-
         active_flows = {k: list(v) for k, v in current_flows.items() if len(v) >= 3}
         if len(active_flows) > 300:
             sorted_active = sorted(
@@ -419,14 +455,14 @@ class BeaconHunter:
         while self.running:
             with self.lock:
                 active = len(self.flows)
-            print(f"\r[MONITORING v2.6] Active flows: {active:5d} | Detections: {self.detection_count:4d} | "
+            print(f"\r[MONITORING v2.7] Active flows: {active:5d} | Detections: {self.detection_count:4d} | "
                   f"Last: {datetime.now().strftime('%H:%M:%S')}", end="", flush=True)
             time.sleep(10)
 
     def start(self):
         threading.Thread(target=self.snapshot_loop, daemon=True).start()
         threading.Thread(target=self.print_status, daemon=True).start()
-        logger.info("c2_beacon_hunter v2.6 started")
+        logger.info("c2_beacon_hunter v2.7 started")
         print(f"Output directory: {self.output_dir} | Ctrl+C to stop")
         try:
             while self.running:
@@ -442,9 +478,8 @@ class BeaconHunter:
             self.snapshot()
             time.sleep(SNAPSHOT_INTERVAL)
 
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="c2_beacon_hunter v2.6")
+    parser = argparse.ArgumentParser(description="c2_beacon_hunter v2.7")
     parser.add_argument("--output-dir", default=OUTPUT_DIR, help="Output directory for logs/CSV/JSON")
     args = parser.parse_args()
     hunter = BeaconHunter(output_dir=args.output_dir)
