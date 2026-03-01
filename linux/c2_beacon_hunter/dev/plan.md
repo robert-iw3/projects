@@ -153,6 +153,7 @@ We use **Weighted Shortest Job First (WSJF)** to sequence our Epics. Rapid, clos
 
 ### Iteration 2.8.1: Epic 1 - Closed-Loop Active Response (`c2_defend`)
 **Type:** Business Epic
+
 **Objective:** Deliver an immediate MVP for automated threat mitigation to stop active beacons while we build more advanced capabilities.
 
 * **Story 1.1:** Develop the `c2_defend.py` daemon to monitor `anomalies.jsonl` or `baseline.db` for detections with a score >= 90.
@@ -162,6 +163,7 @@ We use **Weighted Shortest Job First (WSJF)** to sequence our Epics. Rapid, clos
 
 ### Iteration 2.8.2: Epic 2 - Enterprise Export & Visualization
 **Type:** Business Epic
+
 **Objective:** Transition the tool from a standalone script to an enterprise-ready security sensor.
 
 * **Story 2.1:** Build an asynchronous HTTP POST shipper inside `c2_beacon_hunter.py` to forward JSON anomalies directly to an ELK (Elasticsearch/Logstash/Kibana) or Splunk listener.
@@ -170,6 +172,7 @@ We use **Weighted Shortest Job First (WSJF)** to sequence our Epics. Rapid, clos
 
 ### Iteration 2.8.3: Epic 3 - Architectural Enablers (In-Kernel Upgrades)
 **Type:** Enabler Epic
+
 **Objective:** Deprecate slow Python dependencies (`scapy`) and shift heavy lifting to the eBPF kernel pipeline to prepare for wire-speed blocking.
 
 * **Story 3.1:** Write a BPF tail-call or direct parser in `c2_probe.bpf.c` to intercept UDP port 53 traffic and extract the queried DNS domain string directly from the packet payload.
@@ -178,9 +181,8 @@ We use **Weighted Shortest Job First (WSJF)** to sequence our Epics. Rapid, clos
 
 ### Iteration 2.8.4: Epic 4 - The "Holy Grail" (eBPF Enforcement)
 **Type:** Architectural Epic
+
 **Objective:** Implement wire-speed, sub-millisecond threat mitigation.
-
-
 
 * **Story 4.1:** Utilize the `bpf_send_signal(SIGKILL)` helper in the eBPF probe. If the `tcp_v4_connect` hook detects a process attempting to connect to an IP actively listed in our BPF map blocklist, kill the process instantly.
 * **Story 4.2:** Develop an XDP (eXpress Data Path) BPF program attached directly to the network interface card (NIC) driver to drop inbound/outbound packets to flagged IPs before the Linux network stack even allocates memory for them.
