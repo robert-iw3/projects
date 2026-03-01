@@ -19,7 +19,7 @@ struct data_t {
 
 struct {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
-    __uint(max_entries, 1 << 24); // 16MB ring buffer
+    __uint(max_entries, 1 << 24);
 } events SEC(".maps");
 
 // Hash map to track connection intervals
@@ -30,7 +30,6 @@ struct {
     __type(value, u64); // Last seen timestamp
 } last_seen_ts SEC(".maps");
 
-// Helper function to calculate interval since last network event for the same PID
 static __always_inline void calculate_interval(struct data_t *data) {
     u64 *last_ts = bpf_map_lookup_elem(&last_seen_ts, &data->pid);
     if (last_ts) {
@@ -41,7 +40,6 @@ static __always_inline void calculate_interval(struct data_t *data) {
     bpf_map_update_elem(&last_seen_ts, &data->pid, &data->ts, BPF_ANY);
 }
 
-// Trace execve syscall
 SEC("kprobe/sys_execve")
 int trace_exec(struct pt_regs *ctx) {
     struct data_t *data = bpf_ringbuf_reserve(&events, sizeof(struct data_t), 0);
@@ -55,7 +53,6 @@ int trace_exec(struct pt_regs *ctx) {
     return 0;
 }
 
-// Trace tcp_v4_connect for outbound connections
 SEC("kprobe/tcp_v4_connect")
 int BPF_KPROBE(trace_tcp_v4_connect, struct sock *sk) {
     struct data_t *data = bpf_ringbuf_reserve(&events, sizeof(struct data_t), 0);
@@ -67,16 +64,15 @@ int BPF_KPROBE(trace_tcp_v4_connect, struct sock *sk) {
     data->type = 2;
     data->is_outbound = 1;
 
-    bpf_probe_read_kernel(&data->saddr, sizeof(data->saddr), &sk->__sk_common.skc_saddr);  // source addr
-    bpf_probe_read_kernel(&data->daddr, sizeof(data->daddr), &sk->__sk_common.skc_daddr);  // destination addr
-    bpf_probe_read_kernel(&data->dport, sizeof(data->dport), &sk->__sk_common.skc_dport);  // destination port (network byte order)
+    bpf_probe_read_kernel(&data->saddr, sizeof(data->saddr), &sk->__sk_common.skc_rcv_saddr);  // Source IP
+    bpf_probe_read_kernel(&data->daddr, sizeof(data->daddr), &sk->__sk_common.skc_daddr); // Destination IP
+    bpf_probe_read_kernel(&data->dport, sizeof(data->dport), &sk->__sk_common.skc_dport); // Destination Port (network byte order)
 
     calculate_interval(data);
     bpf_ringbuf_submit(data, 0);
     return 0;
 }
 
-// Trace tcp_v4_do_rcv for inbound connections
 SEC("kretprobe/sys_sendmsg")
 int trace_sendmsg_ret(struct pt_regs *ctx) {
     int ret = PT_REGS_RC(ctx);
@@ -102,7 +98,6 @@ int trace_sendmsg_ret(struct pt_regs *ctx) {
     return 0;
 }
 
-// Trace tcp_v4_do_rcv for inbound connections
 SEC("kretprobe/sys_recvmsg")
 int trace_recvmsg_ret(struct pt_regs *ctx) {
     int ret = PT_REGS_RC(ctx);
@@ -127,7 +122,6 @@ int trace_recvmsg_ret(struct pt_regs *ctx) {
     return 0;
 }
 
-// Trace memfd_create syscall
 SEC("kprobe/sys_memfd_create")
 int trace_memfd(struct pt_regs *ctx) {
     struct data_t *data = bpf_ringbuf_reserve(&events, sizeof(struct data_t), 0);

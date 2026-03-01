@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def main(args):
     logger.info("="*80)
-    logger.info("          c2_beacon_hunter v2.7 - Full Stack Launcher")
+    logger.info(" c2_beacon_hunter v2.7 - Full Stack Launcher")
     logger.info("="*80)
     logger.info("Starting: Hunter + Baseline Learner + eBPF Collector")
     logger.info("")
@@ -26,21 +26,24 @@ def main(args):
     processes = []
 
     try:
+        # Determine path to main hunter (works in Docker or local)
+        hunter_path = Path("../c2_beacon_hunter.py") if Path("../c2_beacon_hunter.py").exists() else Path("c2_beacon_hunter.py")
+
         # 1. Start Baseline Learner
         logger.info("[1/3] Starting Baseline Learner...")
         learner = subprocess.Popen([sys.executable, "src/baseline_learner.py"],
-                                   cwd="dev", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         processes.append(learner)
 
         # 2. Start eBPF Collector
         logger.info("[2/3] Starting eBPF Collector...")
         collector = subprocess.Popen([sys.executable, "src/collector_factory.py"],
-                                     cwd="dev", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         processes.append(collector)
 
         # 3. Start Main Hunter
         logger.info("[3/3] Starting Main Hunter...")
-        hunter = subprocess.Popen([sys.executable, "../../c2_beacon_hunter.py"])
+        hunter = subprocess.Popen([sys.executable, str(hunter_path)])
         processes.append(hunter)
 
         logger.info("\nAll components started successfully!")

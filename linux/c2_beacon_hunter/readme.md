@@ -317,3 +317,30 @@ Use `--jitter 0.30` to `0.45` in the simulator to closely mimic real Cobalt Stri
 2. **Phase 2** – Improve baseline model (add packet size, direction, entropy)
 3. **Phase 3** – eBPF data collection (non-intrusive first)
 4. **Phase 4** – Optional full eBPF detection engine
+
+### ebpf Dev Container
+```bash
+sudo podman-compose up
+
+# or docker
+sudo docker-compose up
+
+# example runtime
+[c2-beacon-hunter-dev] | 2026-03-01 01:24:50,951 - INFO - ================================================================================
+[c2-beacon-hunter-dev] | 2026-03-01 01:24:50,951 - INFO -  c2_beacon_hunter v2.7 - Full Stack Launcher
+[c2-beacon-hunter-dev] | 2026-03-01 01:24:50,951 - INFO - ================================================================================
+[c2-beacon-hunter-dev] | 2026-03-01 01:24:50,951 - INFO - Starting: Hunter + Baseline Learner + eBPF Collector
+[c2-beacon-hunter-dev] | 2026-03-01 01:24:50,951 - INFO -
+[c2-beacon-hunter-dev] | 2026-03-01 01:24:50,951 - INFO - [1/3] Starting Baseline Learner...
+[c2-beacon-hunter-dev] | 2026-03-01 01:24:50,952 - INFO - [2/3] Starting eBPF Collector...
+[c2-beacon-hunter-dev] | 2026-03-01 01:24:50,952 - INFO - [3/3] Starting Main Hunter...
+[c2-beacon-hunter-dev] | 2026-03-01 01:24:50,952 - INFO -
+[c2-beacon-hunter-dev] | All components started successfully!
+[c2-beacon-hunter-dev] | 2026-03-01 01:24:50,952 - INFO - Press Ctrl+C to stop everything gracefully.
+[c2-beacon-hunter-dev] |
+[c2-beacon-hunter-dev] | 2026-03-01 01:24:52,218 - INFO - === RUNNING INSIDE DOCKER/PODMAN CONTAINER WITH HOST ACCESS ===
+[c2-beacon-hunter-dev] | === RUNNING INSIDE DOCKER/PODMAN CONTAINER WITH HOST ACCESS ===
+[MONITORING v2.6] Active flows:     0 | Detections:    0 | Last: 01:24:522026-03-01 01:24:52,220 - INFO - c2_beacon_hunter v2.6 started
+[c2-beacon-hunter-dev] | c2_beacon_hunter v2.6 started
+[c2-beacon-hunter-dev] | Output directory: output | Ctrl+C to stop
+```

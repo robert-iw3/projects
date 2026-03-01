@@ -1,0 +1,22 @@
+---
+services:
+  c2-beacon-hunter-dev:
+    build:
+      context: .
+      dockerfile: ebpf.Dockerfile
+    image: c2-beacon-hunter:v2.7
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+      - SYS_PTRACE
+    volumes:
+      - /sys/kernel/debug:/sys/kernel/debug:rw
+      - /sys/fs/bpf:/sys/fs/bpf:rw
+      - /sys/kernel/btf/vmlinux:/sys/kernel/btf/vmlinux:ro
+      - ./output:/app/output:rw
+      - /lib/modules:/lib/modules:ro
+      - /usr/src:/usr/src:ro
+    environment:
+      - TEST_MODE=true
+    command: /app/venv/bin/python dev/run_full_stack.py

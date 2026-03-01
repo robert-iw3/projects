@@ -8,7 +8,7 @@ scipy>=1.10.0
 
 # eBPF backends
 bcc>=0.29.0                    # For BCC backend (development)
-# libbpf-python                 # For libbpf + CO-RE (uncomment when ready)
+libbpf-python                 # For libbpf + CO-RE (uncomment when ready)
 
 # Optional utilities
 psutil>=5.9.0

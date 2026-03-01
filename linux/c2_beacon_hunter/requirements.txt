@@ -6,3 +6,5 @@ astropy
 scipy
 joblib
 scapy
+# eBPF backends
+pybpf
