@@ -87,33 +87,56 @@ c2_beacon_hunter/
 
 ## Quick Start
 
+Make the script executable and install the required host dependencies (including `auditd` and systemd templates):
 ```bash
 chmod +x setup.sh
-sudo ./setup.sh install      # Install dependencies + systemd
-sudo ./setup.sh container    # Build container image (recommended for eBPF dev)
+sudo ./setup.sh install
 ```
 
-**Run full test (recommended):**
+### Choose Your Engine
+v2.7 introduces a dual-routing architecture. You can run the new high-speed eBPF kernel pipeline, or fall back to the classic v2.6 Legacy modes.
+
+**Option A: eBPF Full Stack (Recommended)**
+Runs the Native C-Loader, SQLite event broker, and Baseline Learner via `docker-compose`.
+```bash
+sudo ./setup.sh container --ebpf  # Build the eBPF probe and container
+sudo ./setup.sh run --ebpf        # Start the full stack in the background
+```
+
+**Option B: Legacy Container Mode**
+Runs the classic v2.6 engine using a standard Docker/Podman container and host `psutil` scraping.
+```bash
+sudo ./setup.sh container         # Build the legacy image
+sudo ./setup.sh run --container   # Start the background container
+```
+
+**Option C: Legacy Native Service**
+Runs directly on the host metal utilizing `auditd` telemetry and systemd persistence.
+```bash
+sudo ./setup.sh run               # Starts the native c2_beacon_hunter.service
+```
+
+---
+
+### Testing & Mitigation
+
+**Run a Full Test:**
+Simulates a live C2 beacon on your local machine to verify the ML engine is catching anomalies.
 ```bash
 sudo ./setup.sh test
 ```
 
-**Start detection (standalone hunter):**
-```bash
-sudo ./setup.sh start
-sudo ./setup.sh watch        # Live detections
-```
-
-**Start full v2.7 stack (hunter + learner + eBPF collector):**
-```bash
-cd dev
-sudo python3 run_full_stack.py
-```
-
-**Activate proactive protection:**
+**Activate Proactive Protection:**
+Turns detections into active containment (process termination & IP blackholing).
 ```bash
 cd c2_defend
 sudo ./run.sh
+```
+
+**Graceful Shutdown:**
+Safely flushes all databases, terminates collectors, and stops whichever engine you are currently running.
+```bash
+sudo ./setup.sh stop
 ```
 
 ---
