@@ -227,4 +227,42 @@ podman exec -it c2-beacon-hunter /app/venv/bin/python -c "import sqlite3; [print
 ### Roadmap
 See `dev/plan.md` for completed phases and future ideas (e.g., packet entropy in models, full eBPF engine).
 
-**Last updated:** February 2026 (v2.7)
+**Last updated:** March 2026 (v2.7)
+
+---
+
+### Monitoring and Tuning Steps:
+
+- Events will start to populate that mimic c2 behavior, over time the ```baseline_learner.py```will eventually learn that your specific machine constantly runs certain processes, and the UEBA logic will begin to naturally suppress the score.
+
+- Add to the benign_processes in the config.ini
+
+```ini
+[whitelist]
+benign_processes = firefox-bin, code, chrome_childiot, socket thread, gvfsd-wsdd
+```
+
+***Example***
+
+```json
+{"timestamp": "2026-03-01T19:26:33.358749", "dst_ip": "0.0.0.0", "dst_port": 0, "process": "python3", "cmd_snippet": "", "pid": 5902, "process_tree": "systemd(1) \u2192 systemd(3312) \u2192 gvfsd(3559) \u2192 gvfsd-wsdd(5897) \u2192 python3(5902)", "masquerade_detected": true, "avg_interval_sec": 0.16, "cv": 0.9961, "entropy": 0.985, "outbound_ratio": 1.0, "ml_result": "ML K-Means Beaconing (Clusters: 5, Min StdDev: 0.01, Score: 0.85); ML Adaptive DBSCAN Beaconing (Core StdDev: 0.16, eps=0.500)", "score": 85, "reasons": ["Advanced_ML: ML K-Means Beaconing (Clusters: 5, Min StdDev: 0.01, Score: 0.85); ML Adaptive DBSCAN Beaconing (Core StdDev: 0.16, eps=0.500)", "process_masquerade"], "mitre_tactic": "TA0005", "mitre_technique": "T1036", "mitre_name": "Masquerading", "description": "C2 Beacon detected - ML K-Means Beaconing (Clusters: 5, Min StdDev: 0.01, Score: 0.85); ML Adaptive DBSCAN Beaconing (Core StdDev: 0.16, eps=0.500)"}
+{"timestamp": "2026-03-01T19:31:38.816719", "dst_ip": "0.0.0.0", "dst_port": 0, "process": "python3", "cmd_snippet": "", "pid": 5902, "process_tree": "systemd(1) \u2192 systemd(3312) \u2192 gvfsd(3559) \u2192 gvfsd-wsdd(5897) \u2192 python3(5902)", "masquerade_detected": true, "avg_interval_sec": 0.16, "cv": 0.9961, "entropy": 0.985, "outbound_ratio": 1.0, "ml_result": "ML K-Means Beaconing (Clusters: 5, Min StdDev: 0.01, Score: 0.86); ML Adaptive DBSCAN Beaconing (Core StdDev: 0.16, eps=0.500)", "score": 85, "reasons": ["Advanced_ML: ML K-Means Beaconing (Clusters: 5, Min StdDev: 0.01, Score: 0.86); ML Adaptive DBSCAN Beaconing (Core StdDev: 0.16, eps=0.500)", "process_masquerade"], "mitre_tactic": "TA0005", "mitre_technique": "T1036", "mitre_name": "Masquerading", "description": "C2 Beacon detected - ML K-Means Beaconing (Clusters: 5, Min StdDev: 0.01, Score: 0.86); ML Adaptive DBSCAN Beaconing (Core StdDev: 0.16, eps=0.500)"}
+```
+
+- The hunter caught ```gvfsd-wsdd```, which is the GNOME Virtual File System Web Services Dynamic Discovery daemon. It is a standard Linux background service used to discover Windows/SMB shares on your local network.
+
+***Here is exactly why C2 Hunter flagged it with a score of 85***:
+
+1. It acts exactly like a UDP Beacon
+
+```gvfsd-wsdd``` is designed to continuously broadcast UDP packets to the local network on a robotic timer to see if any new Windows file shares have come online. Because the timing is perfectly scripted, ML clustering algorithms correctly identified it as a mathematical beacon (Min StdDev: 0.01).
+
+2. It triggered the "Process Masquerade" penalty (+25 points)
+
+```gvfsd-wsdd``` is actually a Python script. When it starts up, it uses a trick to rewrite its own process name from python3 to gvfsd-wsdd so it looks prettier in htop or ps.
+
+- However, ```c2_beacon_hunter.py``` masquerading logic looks at the underlying executable path (```/usr/bin/python3```) and compares it to the running process name (```gvfsd-wsdd```). Because they didn't match, the engine immediately (and correctly) flagged it as Masquerading / Process Hollowing.
+
+- Initial tuning will be required.  Consult/Research events like this to understand what is happening and why the benign_processes is important.
+
+- If the intent is to monitor everything, then do not add to the benign_processes filter (lots of alerts/event will occur and require false-positive review).
