@@ -321,7 +321,7 @@ class BeaconHunter:
     def snapshot_db(self):
         """Fetches flow data from baseline.db (populated by eBPF collector)."""
         try:
-            conn = sqlite3.connect("baseline.db")
+            conn = sqlite3.connect("data/baseline.db")
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT process_name, dst_ip, interval, cv, outbound_ratio, entropy,

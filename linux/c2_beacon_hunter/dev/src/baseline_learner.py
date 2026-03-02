@@ -22,8 +22,8 @@ from sklearn.ensemble import IsolationForest
 import joblib
 import queue
 
-DB_PATH = Path("baseline.db")
-MODEL_PATH = Path("baseline_model.joblib")
+DB_PATH = Path("data/baseline.db")
+MODEL_PATH = Path("data/baseline_model.joblib")
 # Paranoia Mode: 12 hour learning cycles to aggressively penalize new C2 beacons
 LEARNING_INTERVAL = 3600 * 12
 RETENTION_DAYS = 30

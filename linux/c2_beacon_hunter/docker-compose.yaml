@@ -18,6 +18,7 @@ services:
       - /sys/fs/bpf:/sys/fs/bpf:rw
       - /sys/kernel/btf/vmlinux:/sys/kernel/btf/vmlinux:ro
       - ./output:/app/output:rw
+      - ./data:/app/data:rw
       - /lib/modules:/lib/modules:ro
       - /usr/src:/usr/src:ro
       - /proc:/host/proc:ro

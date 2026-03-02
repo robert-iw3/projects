@@ -49,6 +49,7 @@ COPY --from=builder /build/probes/c2_loader /app/dev/probes/c2_loader
 RUN python3 -m venv --system-site-packages /app/venv
 RUN /app/venv/bin/pip install --no-cache-dir -r requirements.txt
 RUN mkdir -p /app/output
+RUN mkdir -p /app/data
 RUN chmod +x /app/dev/probes/c2_loader
 
 USER root
