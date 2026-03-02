@@ -14,11 +14,15 @@
 #   4. Outputs a consolidated, human-readable text report containing the findings.
 # Note:        Includes deliberate sleep intervals to avoid rate-limiting on
 #              free-tier community API accounts.
+#
+# Operations:
+#   - Filters OTX pulses for modern frameworks (Sliver, Havoc, Nighthawk, Covenant, etc.).
+#   - Extracts JARM TLS fingerprints to identify unmasked teamserver signatures.
+#   - Identifies Behavior/Categories and Masking (VPN/Tor) for high-fidelity triage.
 # ======================================================================================
 
 CONFIG_FILE="config.ini"
 
-# Helper function to extract API keys from config.ini safely
 get_config() {
     grep "^$1=" "$CONFIG_FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r' 2>/dev/null
 }
@@ -49,74 +53,76 @@ if [ -z "$SUSPICIOUS_IPS" ]; then
     exit 0
 fi
 
-echo "============================================================"
-echo "[*] THREAT INTEL CTI ENRICHMENT"
-echo "============================================================"
-echo "Report will be saved to: $REPORT_OUT"
-echo "Starting analysis at $(date)" > "$REPORT_OUT"
-echo "" >> "$REPORT_OUT"
+echo "============================================================" | tee "$REPORT_OUT"
+echo "[*] ENHANCED BEHAVIORAL CTI ENRICHMENT" | tee -a "$REPORT_OUT"
+echo "============================================================" | tee -a "$REPORT_OUT"
 
 for IP in $SUSPICIOUS_IPS; do
     echo "------------------------------------------------------------" | tee -a "$REPORT_OUT"
     echo "TARGET IP: $IP" | tee -a "$REPORT_OUT"
     echo "------------------------------------------------------------" | tee -a "$REPORT_OUT"
 
-    # 1. VirusTotal
+    # 1. VirusTotal: Categorization with Null Handling
     if [ -n "$VT_API_KEY" ]; then
         echo "    -> Querying VirusTotal..."
-        VT_RESULT=$(curl -s --request GET --url "https://www.virustotal.com/api/v3/ip_addresses/$IP" --header "x-apikey: $VT_API_KEY")
-        VT_MALICIOUS=$(echo "$VT_RESULT" | jq -r '.data.attributes.last_analysis_stats.malicious // "0"')
-        VT_OWNER=$(echo "$VT_RESULT" | jq -r '.data.attributes.as_owner // "Unknown"')
-        echo "       - VT Malicious Hits: $VT_MALICIOUS" | tee -a "$REPORT_OUT"
-        echo "       - ASN Owner: $VT_OWNER" | tee -a "$REPORT_OUT"
+        VT_RES=$(curl -s --request GET --url "https://www.virustotal.com/api/v3/ip_addresses/$IP" --header "x-apikey: $VT_API_KEY")
+        VT_MAL=$(echo "$VT_RES" | jq -r '.data.attributes.last_analysis_stats.malicious // "0"')
+        # Uses ? to prevent 'null has no keys' errors and handles missing categories
+        VT_CATS=$(echo "$VT_RES" | jq -r '.data.attributes.categories? | if . then to_entries | map(.value) | join(", ") else "None" end')
+        echo "       - VT Malicious Hits: $VT_MAL" | tee -a "$REPORT_OUT"
+        echo "       - Behavior/Categories: $VT_CATS" | tee -a "$REPORT_OUT"
     fi
 
-    # 2. AlienVault OTX
+    # 2. AlienVault OTX: Focused Framework Identification
     if [ -n "$OTX_API_KEY" ]; then
         echo "    -> Querying AlienVault OTX..."
-        OTX_RESULT=$(curl -s "https://otx.alienvault.com/api/v1/indicators/IPv4/$IP/general" -H "X-OTX-API-KEY: $OTX_API_KEY")
-        OTX_PULSES=$(echo "$OTX_RESULT" | jq -r '.pulse_info.count // "0"')
-        echo "       - OTX Associated Campaigns (Pulses): $OTX_PULSES" | tee -a "$REPORT_OUT"
+        OTX_RES=$(curl -s "https://otx.alienvault.com/api/v1/indicators/IPv4/$IP/general" -H "X-OTX-API-KEY: $OTX_API_KEY")
+        FRAMEWORK_REGEX="Sliver|Mythic|Havoc|Empire|Cobalt|Metasploit|Brute|Deery|Nighthawk|Covenant|Manjusaka|PoshC2|Merlin|SharpC2|Koadic|Viper|S3cret|Godzilla|Behinder|Chisel|Ligolo|Insecure|Venom|Xray"
+        # Uses ? to handle missing pulses and filters for specific frameworks
+        OTX_TAGS=$(echo "$OTX_RES" | jq -r --arg re "$FRAMEWORK_REGEX" '.pulse_info.pulses? | if . then map(.tags[]?) | unique | map(select(test($re; "i"))) | join(", ") else "" end')
+
+        if [ -z "$OTX_TAGS" ]; then
+            OTX_COUNT=$(echo "$OTX_RES" | jq -r '.pulse_info.count // "0"')
+            OTX_TAGS="No specific framework match (Associated Pulses: $OTX_COUNT)"
+        fi
+        echo "       - C2 Framework Match: $OTX_TAGS" | tee -a "$REPORT_OUT"
     fi
 
-    # 3. GreyNoise
-    if [ -n "$GN_API_KEY" ]; then
-        echo "    -> Querying GreyNoise..."
-        GN_RESULT=$(curl -s "https://api.greynoise.io/v3/community/$IP" -H "key: $GN_API_KEY")
-        GN_CLASS=$(echo "$GN_RESULT" | jq -r '.classification // "Unknown"')
-        GN_NAME=$(echo "$GN_RESULT" | jq -r '.name // "Unknown"')
-        echo "       - GreyNoise Classification: $GN_CLASS" | tee -a "$REPORT_OUT"
-        echo "       - GreyNoise Actor Name: $GN_NAME" | tee -a "$REPORT_OUT"
-    fi
-
-    # 4. AbuseIPDB
+    # 3. AbuseIPDB: Confidence Score
     if [ -n "$ABUSEIPDB_KEY" ]; then
         echo "    -> Querying AbuseIPDB..."
-        ABIP_RESULT=$(curl -s -G https://api.abuseipdb.com/api/v2/check \
-          --data-urlencode "ipAddress=$IP" \
-          -d maxAgeInDays=90 \
-          -H "Key: $ABUSEIPDB_KEY" \
-          -H "Accept: application/json")
-        ABIP_SCORE=$(echo "$ABIP_RESULT" | jq -r '.data.abuseConfidenceScore // "0"')
-        ABIP_DOMAIN=$(echo "$ABIP_RESULT" | jq -r '.data.domain // "Unknown"')
-        echo "       - AbuseIPDB Confidence Score: $ABIP_SCORE%" | tee -a "$REPORT_OUT"
-        echo "       - Associated Domain: $ABIP_DOMAIN" | tee -a "$REPORT_OUT"
+        ABIP_RES=$(curl -s -G https://api.abuseipdb.com/api/v2/check --data-urlencode "ipAddress=$IP" -d maxAgeInDays=90 -H "Key: $ABUSEIPDB_KEY" -H "Accept: application/json")
+        ABIP_SCORE=$(echo "$ABIP_RES" | jq -r '.data.abuseConfidenceScore // "0"')
+        echo "       - Abuse Confidence Score: $ABIP_SCORE%" | tee -a "$REPORT_OUT"
     fi
 
-    # 5. Shodan
+    # 4. GreyNoise: Masking & Noise Context
+    if [ -n "$GN_API_KEY" ]; then
+        echo "    -> Querying GreyNoise..."
+        GN_RES=$(curl -s "https://api.greynoise.io/v3/community/$IP" -H "key: $GN_API_KEY")
+        GN_VPN=$(echo "$GN_RES" | jq -r '.vpn // "false"')
+        GN_TOR=$(echo "$GN_RES" | jq -r '.tor // "false"')
+        GN_CLASS=$(echo "$GN_RES" | jq -r '.classification // "Unknown"')
+        echo "       - GreyNoise Class: $GN_CLASS" | tee -a "$REPORT_OUT"
+        echo "       - Proxy Masking: VPN:$GN_VPN | TOR:$GN_TOR" | tee -a "$REPORT_OUT"
+    fi
+
+    # 5. Shodan: Fixed JARM and Product Extraction
     if [ -n "$SHODAN_KEY" ]; then
         echo "    -> Querying Shodan..."
-        SHODAN_RESULT=$(curl -s "https://api.shodan.io/shodan/host/$IP?key=$SHODAN_KEY")
-        SHODAN_PORTS=$(echo "$SHODAN_RESULT" | jq -r '.ports | join(", ") // "None"')
-        SHODAN_OS=$(echo "$SHODAN_RESULT" | jq -r '.os // "Unknown"')
-        echo "       - Shodan Open Ports: $SHODAN_PORTS" | tee -a "$REPORT_OUT"
-        echo "       - Shodan Fingerprinted OS: $SHODAN_OS" | tee -a "$REPORT_OUT"
+        SH_RES=$(curl -s "https://api.shodan.io/shodan/host/$IP?key=$SHODAN_KEY")
+        # JARM TLS Fingerprint extraction with null protection
+        JARM=$(echo "$SH_RES" | jq -r '.tags? | if . then map(select(contains("jarm")))? | join(", ") else "None" end')
+        # Replaced 'compact' with 'select(. != null)' for standard jq compatibility
+        PROD=$(echo "$SH_RES" | jq -r '.data? | if . then map(.product) | unique | map(select(. != null)) | join(", ") else "None" end')
+        echo "       - JARM TLS Fingerprint: $JARM" | tee -a "$REPORT_OUT"
+        echo "       - Fingerprinted Products: $PROD" | tee -a "$REPORT_OUT"
     fi
 
     echo "" | tee -a "$REPORT_OUT"
-    sleep 2 # Prevent rate-limiting on free API tiers
+    sleep 2
 done
 
-echo "============================================================"
-echo "[*] CTI Enrichment Complete. See $REPORT_OUT"
-echo "============================================================"
+echo "============================================================" | tee -a "$REPORT_OUT"
+echo "[*] Enrichment Complete. See $REPORT_OUT" | tee -a "$REPORT_OUT"
+echo "============================================================" | tee -a "$REPORT_OUT"
