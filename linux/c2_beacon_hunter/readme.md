@@ -289,3 +289,28 @@ benign_processes = firefox-bin, code, chrome_childiot, socket thread, gvfsd-wsdd
 - Initial tuning will be required.  Consult/Research events like this to understand what is happening and why the benign_processes is important.
 
 - If the intent is to monitor everything, then do not add to the benign_processes filter (lots of alerts/event will occur and require false-positive review).
+
+### baseline_learner.py
+
+***Understanding the "Burn-In" Period (Initial Alert Volume)***
+
+When first deploying `c2_beacon_hunter`'s Machine Learning and UEBA (User and Entity Behavior Analytics) engine, it is normal to experience a high volume of initial alerts that gradually tapers off over the first few days. In data science, this is known as the **"Burn-In Period"** or **"Learning Phase."** Here is a breakdown of why this occurs and how the engine dynamically adapts to your specific host environment.
+
+***1. Phase One: The Blank Slate (High Noise)***
+
+Upon initial startup, the anomaly detection engine has no historical context for what constitutes "normal" background activity on your specific machine. Algorithms like K-Means and DBSCAN are mathematically rigid; they look for exact, repeating network patterns. A benign developer tool checking for an update every 60 seconds looks mathematically identical to a stealthy C2 beacon. Because the historical baseline database is empty, the engine conservatively flags all highly structured, repetitive network traffic.
+
+***2. Phase Two: Baseline Maturation (Learning the Noise)***
+
+As the background learning engine (`baseline_learner.py`) runs over the subsequent hours and days, it silently ingests these events and maps the baseline ecosystem of the host. The model builds multi-dimensional profiles, learning facts such as:
+* *"Process X always connects to IP Y at 9:00 AM."*
+* *"Process Z always sends exactly 64 bytes of data on a perfect 30-second loop."*
+
+The machine learning model establishes a complex mathematical boundary around these benign, everyday behaviors.
+
+***3. Phase Three: The Drop-Off (Steady State)***
+
+Once the models mature, the alert volume drops off significantly. When a known benign tool executes its daily update loop, the core clustering algorithms still detect the mathematical pattern, but the UEBA engine cross-references the mature baseline and suppresses the alert. The ambient noise drops to near zero, preserving high-severity alerts strictly for true, unprofiled anomalies.
+
+> **The Train Track Analogy**
+> Deploying this tool is similar to moving into a house next to a busy train track. On the first night, a train passing at 2:00 AM is a massive anomaly that triggers a startle response. By day 14, your brain has built a baseline of the train's schedule, volume, and vibration. By day 30, you sleep right through it. However, if your bedroom door suddenly creaks open—a true anomaly that falls *outside* the baseline—you wake up instantly. The `c2_beacon_hunter` UEBA engine operates on this exact same principle.
