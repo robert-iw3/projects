@@ -11,10 +11,25 @@
 char LICENSE[] SEC("license") = "Dual BSD/GPL";
 
 // ==============================================================================
-// eBPF-Friendly Shannon Entropy Lookup Table
-// Since eBPF bans floats, this table holds (x * log2(x) * 100) for x in 0..64
-// H * 100 = 600 - (sum_xlogx / 64)
+// Epic 4: Wire-Speed Active Defense Maps
 // ==============================================================================
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 10000);
+    __type(key, u32);   // IPv4 Address (Network Byte Order)
+    __type(value, u8);  // 1 = Blocked
+} blocklist SEC(".maps");
+
+// ==============================================================================
+// Epic 3: Ring Buffer for User-Space Telemetry
+// ==============================================================================
+struct {
+    __uint(type, BPF_MAP_TYPE_RINGBUF);
+    __uint(max_entries, 256 * 1024);
+} rb SEC(".maps");
+
+// eBPF-Friendly Shannon Entropy Lookup Table
+// Holds (x * log2(x) * 100) for x in 0..64
 static const u32 xlogx[65] = {
     0, 0, 200, 475, 800, 1160, 1550, 1965, 2400, 2852, 3321, 3805,
     4301, 4810, 5329, 5859, 6400, 6950, 7509, 8078, 8655, 9240, 9834, 10435,
@@ -31,20 +46,14 @@ struct event_t {
     u16 dst_port;
     char comm[16];
     char dns_query[MAX_DNS_LEN];
-    u32 payload_entropy; // Scaled by 100 (e.g., 795 = 7.95)
+    u32 payload_entropy;
 };
 
-struct {
-    __uint(type, BPF_MAP_TYPE_RINGBUF);
-    __uint(max_entries, 256 * 1024);
-} rb SEC(".maps");
-
-// Story 3.1: In-Kernel DNS Parser
+// ==============================================================================
+// Inline Data Parsers
+// ==============================================================================
 static __always_inline void parse_dns_query(void *payload, char *out) {
-    // DNS Headers are exactly 12 bytes long. The query string starts at offset 12.
     int offset = 12;
-
-    // Pragma unroll is mandatory because eBPF bans unbounded loops
     #pragma unroll
     for (int i = 0; i < MAX_DNS_LEN - 1; i++) {
         u8 c;
@@ -53,7 +62,6 @@ static __always_inline void parse_dns_query(void *payload, char *out) {
             out[i] = '\0';
             break;
         }
-        // Convert DNS length-prefix bytes to human-readable dots
         if (c < 32 || c > 126) out[i] = '.';
         else out[i] = c;
         offset++;
@@ -61,7 +69,6 @@ static __always_inline void parse_dns_query(void *payload, char *out) {
     out[MAX_DNS_LEN - 1] = '\0';
 }
 
-// Story 3.2: In-Kernel Fast Shannon Entropy
 static __always_inline u32 calc_entropy(void *payload) {
     u8 buf[PAYLOAD_SAMPLE_SIZE];
     if (bpf_probe_read_user(&buf, sizeof(buf), payload) != 0) return 0;
@@ -82,11 +89,60 @@ static __always_inline u32 calc_entropy(void *payload) {
         }
     }
 
-    // Calculate integer scaled entropy
-    u32 entropy = 600 - (sum_xlogx / 64);
-    return entropy;
+    return 600 - (sum_xlogx / 64);
 }
 
+// ==============================================================================
+// Epic 4: Story 4.2 - XDP (eXpress Data Path) Wire-Speed Packet Dropping
+// ==============================================================================
+SEC("xdp")
+int xdp_drop_malicious(struct xdp_md *ctx) {
+    void *data_end = (void *)(long)ctx->data_end;
+    void *data     = (void *)(long)ctx->data;
+
+    struct ethhdr *eth = data;
+    if ((void *)(eth + 1) > data_end) return XDP_PASS;
+
+    if (eth->h_proto != bpf_htons(ETH_P_IP)) return XDP_PASS;
+
+    struct iphdr *iph = (struct iphdr *)(eth + 1);
+    if ((void *)(iph + 1) > data_end) return XDP_PASS;
+
+    // Drop Outbound to Blocked IPs
+    u32 daddr = iph->daddr;
+    u8 *blocked_dst = bpf_map_lookup_elem(&blocklist, &daddr);
+    if (blocked_dst && *blocked_dst == 1) {
+        return XDP_DROP;
+    }
+
+    // Drop Inbound from Blocked IPs
+    u32 saddr = iph->saddr;
+    u8 *blocked_src = bpf_map_lookup_elem(&blocklist, &saddr);
+    if (blocked_src && *blocked_src == 1) {
+        return XDP_DROP;
+    }
+
+    return XDP_PASS;
+}
+
+// ==============================================================================
+// Epic 4: Story 4.1 - Instant Process Termination (SIGKILL)
+// ==============================================================================
+SEC("kprobe/tcp_v4_connect")
+int BPF_KPROBE(kprobe_tcp_v4_connect, struct sock *sk) {
+    u32 daddr = BPF_CORE_READ(sk, __sk_common.skc_daddr);
+
+    u8 *is_blocked = bpf_map_lookup_elem(&blocklist, &daddr);
+    if (is_blocked && *is_blocked == 1) {
+        // Send SIGKILL (9) directly from the kernel
+        bpf_send_signal(9);
+    }
+    return 0;
+}
+
+// ==============================================================================
+// Epic 3: Native Telemetry Hooks (DNS & Entropy)
+// ==============================================================================
 SEC("kprobe/udp_sendmsg")
 int BPF_KPROBE(kprobe_udp_sendmsg, struct sock *sk, struct msghdr *msg, size_t len) {
     u16 dport = BPF_CORE_READ(sk, __sk_common.skc_dport);
@@ -100,7 +156,6 @@ int BPF_KPROBE(kprobe_udp_sendmsg, struct sock *sk, struct msghdr *msg, size_t l
         e->dst_ip = BPF_CORE_READ(sk, __sk_common.skc_daddr);
         e->dst_port = 53;
 
-        // Safely extract the memory address of the UDP payload buffer
         struct iovec iov;
         bpf_probe_read_kernel(&iov, sizeof(iov), (void *)BPF_CORE_READ(msg, msg_iter.__iov));
         parse_dns_query(iov.iov_base, e->dns_query);
@@ -117,7 +172,6 @@ int BPF_KPROBE(kprobe_tcp_sendmsg, struct sock *sk, struct msghdr *msg, size_t s
     u16 dport = BPF_CORE_READ(sk, __sk_common.skc_dport);
     u16 port = bpf_ntohs(dport);
 
-    // Only target common outbound web ports where C2 usually hides
     if (port != 80 && port != 443 && port != 8080 && port != 8443) return 0;
 
     struct event_t *e = bpf_ringbuf_reserve(&rb, sizeof(*e), 0);
@@ -129,7 +183,6 @@ int BPF_KPROBE(kprobe_tcp_sendmsg, struct sock *sk, struct msghdr *msg, size_t s
     e->dst_ip = BPF_CORE_READ(sk, __sk_common.skc_daddr);
     e->dst_port = port;
 
-    // Safely extract the memory address of the TCP payload buffer
     struct iovec iov;
     bpf_probe_read_kernel(&iov, sizeof(iov), (void *)BPF_CORE_READ(msg, msg_iter.__iov));
     e->payload_entropy = calc_entropy(iov.iov_base);

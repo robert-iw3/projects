@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <net/if.h>       // Required for if_nametoindex
 #include <bpf/libbpf.h>
 #include "c2_probe.skel.h"
 
@@ -32,7 +33,6 @@ static int handle_event(void *ctx, void *data, size_t data_sz) {
                e->pid, e->comm, ip_str, e->dst_port, e->dns_query);
     }
     else if (e->type == 2) { // TCP_ENTROPY
-        // Unscale the integer math back to a floating point entropy score
         double entropy = e->payload_entropy / 100.0;
         printf("{\"type\": \"tcp_payload\", \"pid\": %u, \"comm\": \"%s\", \"dst_ip\": \"%s\", \"dst_port\": %u, \"entropy\": %.2f}\n",
                e->pid, e->comm, ip_str, e->dst_port, entropy);
@@ -47,29 +47,49 @@ int main(int argc, char **argv) {
     struct ring_buffer *rb = NULL;
     int err;
 
-    // Load and verify BPF application
-    skel = c2_probe_bpf__open_and_load();
-    if (!skel) {
-        fprintf(stderr, "Failed to open and load BPF skeleton\n");
+    // Default to eth0 if no interface is provided
+    const char *iface = (argc > 1) ? argv[1] : "eth0";
+
+    // Convert the interface name string (e.g., "eth0") to a kernel interface index
+    unsigned int ifindex = if_nametoindex(iface);
+    if (!ifindex) {
+        fprintf(stderr, "[-] Failed to resolve interface %s. Does it exist?\n", iface);
         return 1;
     }
 
-    // Attach tracepoints/kprobes
+    // 1. Open and load the BPF skeleton into the kernel
+    skel = c2_probe_bpf__open_and_load();
+    if (!skel) {
+        fprintf(stderr, "[-] Failed to open and load BPF skeleton\n");
+        return 1;
+    }
+
+    // 2. Attach the standard kprobes (tcp_v4_connect, tcp_sendmsg, udp_sendmsg)
+    // Note: libbpf automatically skips attaching SEC("xdp") during this call
+    // because XDP programs require an explicit ifindex context.
     err = c2_probe_bpf__attach(skel);
     if (err) {
-        fprintf(stderr, "Failed to attach BPF skeleton\n");
+        fprintf(stderr, "[-] Failed to attach BPF kprobes\n");
         goto cleanup;
     }
 
-    // Set up ring buffer polling
+    // 3. Manually attach the XDP program to the targeted network interface
+    skel->links.xdp_drop_malicious = bpf_program__attach_xdp(skel->progs.xdp_drop_malicious, ifindex);
+    if (!skel->links.xdp_drop_malicious) {
+        fprintf(stderr, "[-] Failed to attach XDP program to interface %s\n", iface);
+        err = -1;
+        goto cleanup;
+    }
+
+    // 4. Set up ring buffer polling
     rb = ring_buffer__new(bpf_map__fd(skel->maps.rb), handle_event, NULL, NULL);
     if (!rb) {
         err = -1;
-        fprintf(stderr, "Failed to create ring buffer\n");
+        fprintf(stderr, "[-] Failed to create ring buffer\n");
         goto cleanup;
     }
 
-    printf("{\"status\": \"C-Loader initialized. Native DNS & Entropy tracing active.\"}\n");
+    printf("{\"status\": \"C-Loader initialized. Attached XDP to %s. Native tracing active.\"}\n", iface);
     fflush(stdout);
 
     // Enter high-speed polling loop
@@ -80,13 +100,13 @@ int main(int argc, char **argv) {
             break;
         }
         if (err < 0) {
-            fprintf(stderr, "Error polling perf buffer: %d\n", err);
+            fprintf(stderr, "[-] Error polling perf buffer: %d\n", err);
             break;
         }
     }
 
 cleanup:
     ring_buffer__free(rb);
-    c2_probe_bpf__destroy(skel);
+    c2_probe_bpf__destroy(skel); // This automatically detaches the XDP link and kprobes
     return -err;
 }
