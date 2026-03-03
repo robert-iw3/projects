@@ -1,0 +1,10 @@
+psutil
+scikit-learn
+numpy
+pandas
+scipy
+astropy
+joblib
+requests
+fastapi
+uvicorn
