@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ebpf_collector_base.py - Abstract base class for eBPF collectors v2.7
+ebpf_collector_base.py - Abstract base class for eBPF collectors v2.8
 
 This module defines the EBPFCollectorBase class, which serves as an abstract
 base class for eBPF collectors. It provides a common interface for loading probes,

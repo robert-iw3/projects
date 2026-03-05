@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
 ==============================================================================
-Script Name: c2_defend.py (Daemon Mode - Iteration 2.8.1)
+Script Name: c2_defend.py (Daemon Mode - v2.8)
 Description: Automated threat mitigation daemon. Monitors anomalies.jsonl.
-             Surgically terminates processes (psutil) and blackholes IPs
-             using firewalld, ufw, or iptables.
-Features:    Includes dry-run mode (--arm to enable) and firewalld zone awareness.
+             Surgically terminates processes and blackholes IPs using XDP
+             Wire-Speed enforcement, backed by OS firewalls.
 ==============================================================================
 """
 
@@ -16,9 +15,9 @@ import subprocess
 import os
 import sys
 import argparse
+import socket
 from pathlib import Path
 
-# Configuration [cite: 1, 4]
 LOG_FILE = Path("../output/anomalies.jsonl")
 BLOCKLIST = Path("blocklist.txt")
 DAEMON_LOG = Path("c2_defend_daemon.log")
@@ -33,7 +32,6 @@ def log_action(msg, is_dry_run=True):
     print(entry)
 
 def get_firewall_info():
-    """Detects firewall type and active zone."""
     if subprocess.call(["which", "firewall-cmd"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0:
         try:
             zone = subprocess.check_output(["firewall-cmd", "--get-default-zone"]).decode().strip()
@@ -46,66 +44,86 @@ def get_firewall_info():
         return "iptables", None
     return "none", None
 
-def isolate_network(fw_type, zone, ip, port, arm=False):
-    """Injects isolation rules (Story 1.3)[cite: 4, 8]."""
-    if ip == "0.0.0.0" or fw_type == "none":
+def block_ip_xdp(ip):
+    """Directly updates the eBPF XDP map for nanosecond wire-speed drops."""
+    if ip == "0.0.0.0":
         return
-
-    if not arm:
-        log_action(f"WOULD ISOLATE: {ip}:{port} via {fw_type}", is_dry_run=True)
-        return
-
     try:
-        if fw_type == "firewalld":
-            # Apply surgical Rich Rule
-            if port == 0:
-                rule = f'rule family="ipv4" source address="{ip}" drop'
-            else:
-                rule = f'rule family="ipv4" source address="{ip}" port port="{port}" protocol="tcp" drop'
+        packed_ip = socket.inet_aton(ip)
+        hex_key = " ".join([f"{b:02x}" for b in packed_ip])
 
-            subprocess.run(["firewall-cmd", "--permanent", f"--zone={zone}", "--add-rich-rule", rule], check=True, capture_output=True)
-            subprocess.run(["firewall-cmd", "--reload"], check=True, capture_output=True)
+        # Try native bpftool on host
+        cmd = f"bpftool map update pinned /sys/fs/bpf/c2_blocklist key hex {hex_key} value hex 01"
+        res = subprocess.run(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
-        elif fw_type == "ufw":
-            if port == 0:
-                subprocess.run(["ufw", "insert", "1", "deny", "from", ip], check=True, capture_output=True)
-            else:
-                subprocess.run(["ufw", "deny", f"from {ip} to any port {port}"], check=True, capture_output=True)
-
-        elif fw_type == "iptables":
-            # Dual-direction drop for maximum isolation
-            cmd = ["iptables", "-I", "INPUT", "1", "-s", ip, "-j", "DROP"]
-            if port != 0:
-                cmd.extend(["-p", "tcp", "--dport", str(port)])
-            subprocess.run(cmd, check=True)
-
-        log_action(f"NETWORK ISOLATED: {ip}:{port} via {fw_type}", is_dry_run=False)
-
-        # Log for undo.py (Story 1.4) [cite: 3, 4]
-        with open(BLOCKLIST, "a") as f:
-            f.write(f"{time.time()}|{fw_type}|{zone}|{ip}|{port}\n")
+        # Fallback to containerized bpftool if host doesn't have it installed
+        if res.returncode != 0:
+            cmd_docker = f"docker exec c2-beacon-hunter {cmd}"
+            subprocess.run(cmd_docker, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
     except Exception as e:
-        log_action(f"ERROR: Failed to block {ip} - {e}", is_dry_run=False)
+        pass # OS Firewall handles the fallback
 
-def terminate_process(pid, arm=False):
-    """Surgical termination using psutil (Story 1.2)."""
+def block_ip_port(fw_type, zone, ip, port, is_dry_run=True):
+    if ip == "0.0.0.0":
+        return
+
+    # 1. Engage Wire-Speed XDP Firewall
+    if not is_dry_run:
+        block_ip_xdp(ip)
+
+    # 2. Engage OS-Level Defense-in-Depth
     try:
-        proc = psutil.Process(pid)
-        name = proc.name()
-        if not arm:
-            log_action(f"WOULD TERMINATE: PID {pid} ({name})", is_dry_run=True)
-            return
+        if fw_type == "firewalld":
+            if port == 0:
+                cmd = ["firewall-cmd", "--zone=" + zone, "--add-rich-rule",
+                       f'rule family="ipv4" source address="{ip}" drop']
+            else:
+                cmd = ["firewall-cmd", "--zone=" + zone, "--add-rich-rule",
+                       f'rule family="ipv4" source address="{ip}" port port="{port}" protocol="tcp" drop']
+        elif fw_type == "ufw":
+            cmd = ["ufw", "deny", "from", ip]
+        elif fw_type == "iptables":
+            if port == 0:
+                cmd = ["iptables", "-A", "INPUT", "-s", ip, "-j", "DROP"]
+                cmd2 = ["iptables", "-A", "OUTPUT", "-d", ip, "-j", "DROP"]
+            else:
+                cmd = ["iptables", "-A", "INPUT", "-s", ip, "-p", "tcp", "--dport", str(port), "-j", "DROP"]
 
-        proc.kill() # Direct kill as per Epic 1 requirements
-        log_action(f"PROCESS TERMINATED: PID {pid} ({name})", is_dry_run=False)
-    except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
-        log_action(f"NOTICE: Could not terminate PID {pid} - {e}", is_dry_run=not arm)
+        if not is_dry_run:
+            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if fw_type == "iptables" and port == 0:
+                subprocess.run(cmd2, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            # Record the block for undo.py
+            ts = time.strftime('%Y-%m-%d %H:%M:%S')
+            with open(BLOCKLIST, "a") as f:
+                f.write(f"{ts}|{fw_type}|{zone}|{ip}|{port}\n")
+
+            log_action(f"XDP & {fw_type} block established for {ip}:{port}", is_dry_run=False)
+        else:
+            log_action(f"Would execute XDP Map Pin + {' '.join(cmd)}", is_dry_run=True)
+
+    except Exception as e:
+        log_action(f"Firewall block failed: {e}", is_dry_run=is_dry_run)
+
+def terminate_process(pid, proc_name, is_dry_run=True):
+    if pid <= 0:
+        return
+    try:
+        if not is_dry_run:
+            os.kill(pid, 9)
+            log_action(f"Killed malicious process: {proc_name} (PID: {pid})", is_dry_run=False)
+        else:
+            log_action(f"Would kill process: {proc_name} (PID: {pid})", is_dry_run=True)
+    except ProcessLookupError:
+        log_action(f"Process {pid} already dead.", is_dry_run=is_dry_run)
+    except Exception as e:
+        log_action(f"Failed to kill {pid}: {e}", is_dry_run=is_dry_run)
 
 def tail_log(file_path):
-    """Continuously monitors log for new entries (Story 1.1)."""
     with open(file_path, "r") as f:
-        f.seek(0, os.SEEK_END)
+        f.seek(0, 2)
         while True:
             line = f.readline()
             if not line:
@@ -115,7 +133,7 @@ def tail_log(file_path):
 
 def main():
     parser = argparse.ArgumentParser(description="C2 Defend Active Response Daemon")
-    parser.add_argument("--arm", action="store_true", help="Enable active containment (Kill/Block)")
+    parser.add_argument("--arm", action="store_true", help="Enable active containment")
     args = parser.parse_args()
 
     if os.getuid() != 0:
@@ -129,7 +147,7 @@ def main():
     mode_str = "ACTIVE CONTAINMENT" if args.arm else "DRY RUN (Observation Only)"
 
     print(f"--- c2_defend Daemon: {mode_str} ---")
-    print(f"Firewall: {fw_type} | Zone: {zone or 'N/A'}")
+    print(f"Firewall: XDP Wire-Speed + {fw_type} | Zone: {zone or 'N/A'}")
     log_action(f"Daemon started. Monitoring {LOG_FILE}")
 
     handled_events = set()
@@ -144,8 +162,8 @@ def main():
 
                 if event_key not in handled_events:
                     handled_events.add(event_key)
-                    terminate_process(pid, arm=args.arm)
-                    isolate_network(fw_type, zone, ip, port, arm=args.arm)
+                    terminate_process(pid, data.get("process"), is_dry_run=not args.arm)
+                    block_ip_port(fw_type, zone, ip, port, is_dry_run=not args.arm)
         except json.JSONDecodeError:
             continue
 

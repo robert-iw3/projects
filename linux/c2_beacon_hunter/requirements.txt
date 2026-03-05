@@ -1,11 +1,9 @@
-psutil>=5.9.0
-pandas
-numpy
+psutil
 scikit-learn
-astropy
-scipy
+numpy
+pandas
 joblib
-scapy
-# eBPF backends
-pybpf
-bcc
+requests
+fastapi
+uvicorn[standard]
+pydantic

@@ -21,7 +21,7 @@ class CollectorFactory:
 
         # Check all possible paths depending on where the script was launched from
         possible_configs = [
-            '/app/dev/config_dev.ini',
+            '/app/ebpf/config_dev.ini',
             '/app/config.ini',
             'config_dev.ini',
             '../config_dev.ini',

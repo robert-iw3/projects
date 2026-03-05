@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-c2_defend/defender.py - Active protection engine (DFIR Enhanced)
+c2_defend/defender.py - Active protection engine (DFIR Enhanced v2.8)
 """
 
 import json
@@ -8,6 +8,7 @@ import subprocess
 import time
 import os
 import signal
+import socket
 from pathlib import Path
 
 BLOCKLIST = Path("blocklist.txt")
@@ -33,74 +34,83 @@ def get_firewall_info():
         return "iptables", None
     return "none", None
 
-def block_ip_port(fw_type, zone, ip, port):
-    # Prevent crashing if IP is internal 0.0.0.0
+def block_ip_xdp(ip):
     if ip == "0.0.0.0":
         return
+    try:
+        packed_ip = socket.inet_aton(ip)
+        hex_key = " ".join([f"{b:02x}" for b in packed_ip])
+        cmd = f"bpftool map update pinned /sys/fs/bpf/c2_blocklist key hex {hex_key} value hex 01"
+        res = subprocess.run(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        if res.returncode != 0:
+            cmd_docker = f"docker exec c2-beacon-hunter {cmd}"
+            subprocess.run(cmd_docker, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    except Exception:
+        pass
+
+def block_ip_port(fw_type, zone, ip, port):
+    if ip == "0.0.0.0":
+        return
+
+    # Native XDP execution
+    block_ip_xdp(ip)
 
     try:
         if fw_type == "firewalld":
             if port == 0:
-                rule = f'rule family="ipv4" source address="{ip}" drop'
+                cmd = ["firewall-cmd", "--zone=" + zone, "--add-rich-rule", f'rule family="ipv4" source address="{ip}" drop']
             else:
-                rule = f'rule family="ipv4" source address="{ip}" port port="{port}" protocol="tcp" drop'
-
-            subprocess.run(["firewall-cmd", "--permanent", f"--zone={zone}", "--add-rich-rule", rule], check=True, stdout=subprocess.DEVNULL)
-            subprocess.run(["firewall-cmd", "--reload"], check=True, stdout=subprocess.DEVNULL)
-
+                cmd = ["firewall-cmd", "--zone=" + zone, "--add-rich-rule", f'rule family="ipv4" source address="{ip}" port port="{port}" protocol="tcp" drop']
         elif fw_type == "ufw":
-            if port == 0:
-                subprocess.run(["ufw", "deny", f"from", ip], check=True, stdout=subprocess.DEVNULL)
-            else:
-                subprocess.run(["ufw", "deny", f"from", ip, "to", "any", "port", str(port)], check=True, stdout=subprocess.DEVNULL)
-
+            cmd = ["ufw", "deny", "from", ip]
         elif fw_type == "iptables":
             if port == 0:
-                subprocess.run(["iptables", "-A", "INPUT", "-s", ip, "-j", "DROP"], check=True)
+                cmd = ["iptables", "-A", "INPUT", "-s", ip, "-j", "DROP"]
                 subprocess.run(["iptables", "-A", "OUTPUT", "-d", ip, "-j", "DROP"], check=True)
             else:
-                subprocess.run(["iptables", "-A", "INPUT", "-s", ip, "-p", "tcp", "--dport", str(port), "-j", "DROP"], check=True)
+                cmd = ["iptables", "-A", "INPUT", "-s", ip, "-p", "tcp", "--dport", str(port), "-j", "DROP"]
 
-        log_action(f"BLOCKED IP {ip} (Port: {port if port != 0 else 'ALL'}) via {fw_type}")
+        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        # Log for undo utility
+        ts = time.strftime('%Y-%m-%d %H:%M:%S')
         with open(BLOCKLIST, "a") as f:
-            f.write(f"{time.time()}|{fw_type}|{zone}|{ip}|{port}\n")
+            f.write(f"{ts}|{fw_type}|{zone}|{ip}|{port}\n")
 
+        log_action(f"XDP & {fw_type} network block enforced for {ip}:{port}")
     except Exception as e:
-        log_action(f"Failed to block {ip}:{port} - {e}")
+        log_action(f"Firewall block failed: {e}")
 
 def main():
-    print("=== c2_defend - Active Defender (DFIR Edition) ===")
-
-    fw_type, zone = get_firewall_info()
-    print(f"Firewall: {fw_type} | Zone: {zone or 'N/A'}")
+    if os.getuid() != 0:
+        print("Fatal: Must run as root to manage firewalls and processes.")
+        sys.exit(1)
 
     if not JSONL_LOG.exists():
-        print(f"No log found at {JSONL_LOG}")
+        print("No anomalies.jsonl found. Run the hunter first.")
         return
 
-    # Parse JSONL directly
     suspicious = []
-    with open(JSONL_LOG, 'r') as f:
-        for line in f:
+    with open(JSONL_LOG, "r") as f:
+        lines = f.readlines()
+        for line in lines[-50:]:
             try:
-                data = json.loads(line)
+                data = json.loads(line.strip())
                 if data.get("score", 0) >= 80:
-                    # Deduplicate based on PID and IP
-                    if not any(s['pid'] == data['pid'] and s['dst_ip'] == data['dst_ip'] for s in suspicious):
-                        suspicious.append(data)
+                    suspicious.append(data)
             except:
                 continue
 
     if not suspicious:
-        print("No high-confidence suspicious flows found (Score >= 80).")
+        print("No recent high-confidence anomalies found (Score >= 80).")
         return
 
-    print(f"\nFound {len(suspicious)} high-risk anomalies:\n")
+    fw_type, zone = get_firewall_info()
+    print(f"\n=== c2_defend Manual Containment Mode (v2.8) ===")
+    print(f"System Firewall Detected: {fw_type} (Zone: {zone or 'N/A'})\n")
+
     for i, row in enumerate(suspicious):
-        ip_display = row['dst_ip'] if row['dst_ip'] != '0.0.0.0' else 'Local/Masquerade'
-        print(f"{i+1:2d}. PID: {row['pid']} ({row['process']}) → {ip_display}:{row['dst_port']} | Score: {row['score']}")
+        ip_display = row.get("dst_ip")
+        print(f"[{i}] PID {row['pid']} ({row['process']}) → {ip_display}:{row['dst_port']} | Score: {row['score']}")
 
     print("\n[DFIR NOTE] We recommend 'f' (Freeze) instead of 'k' (Kill) to prevent systemd restarts and preserve memory.")
     action = input("\nAction (f=freeze, k=kill, b=block ip, a=all (freeze+block), q=quit): ").strip().lower()
@@ -116,10 +126,8 @@ def main():
 
         if action in ["a", "f"] and pid > 0:
             try:
-                # SIGSTOP freezes the process without killing it.
-                # This breaks the C2 connection but allows you to dump memory later.
                 os.kill(pid, signal.SIGSTOP)
-                log_action(f"FROZE (SIGSTOP) PID {pid} ({proc}) to preserve memory and stop restarts.")
+                log_action(f"FROZE (SIGSTOP) PID {pid} ({proc}) to preserve memory.")
             except ProcessLookupError:
                 log_action(f"PID {pid} no longer running.")
             except Exception as e:
@@ -130,12 +138,10 @@ def main():
                 os.kill(pid, signal.SIGKILL)
                 log_action(f"KILLED (SIGKILL) PID {pid} ({proc})")
             except Exception as e:
-                pass
+                log_action(f"Failed to kill PID {pid} - {e}")
 
-        if action in ["a", "b"]:
+        if action in ["a", "b"] and ip:
             block_ip_port(fw_type, zone, ip, port)
-
-    print("\nActions completed. Check defender.log")
 
 if __name__ == "__main__":
     main()

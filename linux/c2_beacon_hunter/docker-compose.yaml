@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: ebpf.Dockerfile
-    image: c2-beacon-hunter:v2.7
+    image: c2-beacon-hunter:v2.8
     container_name: c2-beacon-hunter
     privileged: true
     cap_add:
@@ -14,26 +14,33 @@ services:
     network_mode: "host"
     pid: "host"
     volumes:
-      # --- 1. eBPF & Kernel Core Mounts ---
-      # Allows eBPF to attach to kernel hooks (kprobes/tracepoints) via the debug filesystem.
       - /sys/kernel/debug:/sys/kernel/debug:rw
-      # The BPF virtual filesystem; allows pinning and sharing eBPF maps between kernel and user-space.
       - /sys/fs/bpf:/sys/fs/bpf:rw
-      # BTF (BPF Type Format) definitions required for CO-RE (Compile Once - Run Everywhere).
-      # Tells the pre-compiled probe how to map memory on this specific host kernel.
       - /sys/kernel/btf/vmlinux:/sys/kernel/btf/vmlinux:ro
-      # --- 2. Application Persistence Mounts ---
-      # Saves threat logs (anomalies.jsonl, detections.log) to the host machine.
       - ./output:/app/output:rw
-      # Persists the SQLite database and Machine Learning baseline models across container reboots.
       - ./data:/app/data:rw
-      # --- 3. BCC Fallback Mounts (On-the-fly compilation) ---
-      # Provides host kernel headers to the container so the BCC collector can compile eBPF C code dynamically.
       - /lib/modules:/lib/modules:ro
       - /usr/src:/usr/src:ro
-      # --- 4. Host Context Mapping ---
-      # Mounts the host's process tree so `psutil` can see all host processes, not just isolated container processes.
       - /proc:/host/proc:ro
     environment:
       - TEST_MODE=true
-    command: /app/venv/bin/python dev/run_full_stack.py
+      # wire-speed XDP dropping, dynamically writes to the eBPF map to block malicious IPs in real-time
+      - TARGET_INTERFACE=wlo1 # Set to your desired interface (e.g., eth0, wlan0, enp3s0, etc.)
+    command: /app/venv/bin/python ebpf/run_full_stack.py
+
+  api-dashboard:
+    image: python:3.12-slim
+    container_name: c2-api-dashboard
+    ports:
+      - "8443:8443"
+    volumes:
+      - ./api_server.py:/app/api_server.py:ro
+      - ./static:/app/static:ro
+      - ./certs:/app/certs:ro
+      - ./data:/app/data:ro
+      - ./output:/app/output:ro
+    working_dir: /app
+    command: >
+      bash -c "pip install fastapi uvicorn requests &&
+      uvicorn api_server:app --host 0.0.0.0 --port 8443
+      --ssl-keyfile=/app/certs/key.pem --ssl-certfile=/app/certs/cert.pem"

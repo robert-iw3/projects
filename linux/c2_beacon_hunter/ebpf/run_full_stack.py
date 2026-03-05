@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-run_full_stack.py - v2.7 Unified Launcher
+run_full_stack.py - v2.8 Unified Launcher
 Starts: c2_beacon_hunter + baseline_learner + eBPF collector
 """
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def main(args):
     logger.info("="*80)
-    logger.info(" c2_beacon_hunter v2.7 - Full Stack Launcher")
+    logger.info(" c2_beacon_hunter v2.8 - Full Stack Launcher")
     logger.info("="*80)
     logger.info("Starting: Hunter + Baseline Learner + eBPF Collector")
     logger.info("")
@@ -70,7 +70,7 @@ def main(args):
                 p.kill()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="v2.7 Launcher")
+    parser = argparse.ArgumentParser(description="v2.8 Launcher")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
 

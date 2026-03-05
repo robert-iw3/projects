@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-baseline_learner.py - v2.7 Advanced Behavioral Learning Engine
+baseline_learner.py - v2.8 Advanced Behavioral Learning Engine
 
 Features:
 - Per-process, per-destination (/24), per-hour, per-weekday/weekend baselines

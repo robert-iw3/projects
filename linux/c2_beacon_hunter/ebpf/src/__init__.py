@@ -1,5 +1,5 @@
 """
-dev/src - Core package for v2.7 development
+ebpf/src - Core package for v2.8
 
 This package contains the main components:
 - Baseline learning engine
@@ -7,7 +7,7 @@ This package contains the main components:
 - Factory for backend selection
 """
 
-__version__ = "2.7-dev"
+__version__ = "2.8"
 
 # Make key classes easily importable
 from .baseline_learner import BaselineLearner

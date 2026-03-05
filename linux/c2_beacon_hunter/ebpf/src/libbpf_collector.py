@@ -11,6 +11,7 @@ This approach allows us to leverage the performance and compatibility benefits o
 maintaining the flexibility of Python for data processing and integration with the baseline learner.
 """
 
+import os
 from ebpf_collector_base import EBPFCollectorBase
 import time
 import subprocess
@@ -24,117 +25,112 @@ class LibBPFCollector(EBPFCollectorBase):
         super().__init__()
         self.process = None
         self.loader_path = None
-        self.probe_path = None
+        self.target_interface = os.environ.get("TARGET_INTERFACE", "eth0")
+        self.event_count = 0
 
     def load_probes(self):
-        # Locate the compiled C binary
         loader_paths = [
             Path("probes/c2_loader"),
             Path("../probes/c2_loader"),
-            Path("/app/dev/probes/c2_loader")
+            Path("/app/ebpf/probes/c2_loader")
         ]
         self.loader_path = next((p for p in loader_paths if p.exists()), None)
 
-        # Locate the BPF object file
-        probe_paths = [
-            Path("probes/c2_probe.bpf.o"),
-            Path("../probes/c2_probe.bpf.o"),
-            Path("/app/dev/probes/c2_probe.bpf.o")
-        ]
-        self.probe_path = next((p for p in probe_paths if p.exists()), None)
-
-        if not self.loader_path or not self.probe_path:
-            print("Error: c2_loader binary or c2_probe.bpf.o not found. Build them first.")
+        if not self.loader_path:
+            print("Error: c2_loader binary not found. Build it first with 'make' in probes/")
             return False
         return True
 
     def process_stdout(self):
-        # Read the stdout stream line by line as the C program outputs JSON
+        print(f"[Collector] Listening for events from C-Loader on {self.target_interface}...")
+
         while self.running and self.process.poll() is None:
             line = self.process.stdout.readline()
             if not line:
                 continue
-
             line = line.strip()
-            # Ignore standard C debugging outputs, only parse JSON dictionaries
+
             if not line.startswith('{'):
-                print(f"[C-Loader] {line}")
+                if line and ("XDP" in line or "SUCCESS" in line or "initialized" in line):
+                    print(f"[C-Loader] {line}")
                 continue
 
             try:
                 event = json.loads(line)
+                self.event_count += 1
 
-                # Extract the PID sent by the C-Loader
                 pid = event.get("pid", 0)
-
                 process_name = event.get("comm", "unknown")
-                event_type = event.get("type", 0)
-                is_outbound = event.get("is_outbound", 0)
+                raw_type = event.get("type", "unknown")
+                dst_ip = event.get("dst_ip", "0.0.0.0")
                 packet_size = event.get("packet_size", 0)
                 interval_ns = event.get("interval_ns", 0)
-                daddr_int = event.get("daddr", 0)
-
-                # Format destination IP address
-                daddr = ".".join([str((daddr_int >> i) & 0xff) for i in [0, 8, 16, 24]])
                 interval_sec = interval_ns / 1_000_000_000.0
+                entropy = event.get("entropy", 0.0)
 
-                # MITRE mapping logic
+                # Normalize type (handles BOTH old int and new string types)
+                etype = str(raw_type).lower()
+
+                # Live visibility (first 30 events + every 50th)
+                if self.event_count <= 30 or self.event_count % 50 == 0:
+                    print(f"[EVENT #{self.event_count:03d}] {etype.upper():<12} | "
+                          f"PID:{pid:<6} | {process_name:<12} → {dst_ip} | "
+                          f"entropy={entropy:.3f} | size={packet_size}")
+
                 mitre_tactic = "Unknown"
-                if event_type in [3, 4]:
+                if etype in ["send", "3", "recv", "4", "dns", "6"] or etype == "tcp_payload":
                     mitre_tactic = "C2_Beaconing"
-                elif event_type == 5:
+                elif etype in ["memfd", "5"]:
                     mitre_tactic = "Process_Injection"
-                elif event_type == 2:
+                elif etype in ["connect", "2"]:
                     mitre_tactic = "Data_Exfiltration"
+                elif etype in ["exec", "1"]:
+                    mitre_tactic = "Execution"
 
+                # Force high-entropy TCP payloads into C2 tracking (original behavior)
+                if etype == "tcp_payload" and entropy > 0.7:
+                    mitre_tactic = "C2_Beaconing"
+
+                # Record to BaselineLearner (this is what populates baseline.db + active flows)
                 self.record_flow(
                     process_name=process_name,
-                    dst_ip=daddr,
+                    dst_ip=dst_ip,
                     interval=interval_sec,
-                    outbound_ratio=float(is_outbound),
+                    entropy=entropy,
                     packet_size_mean=packet_size,
                     packet_size_std=0.0,
                     packet_size_min=packet_size,
                     packet_size_max=packet_size,
                     mitre_tactic=mitre_tactic,
-                    pid=pid  # NEW: Pass to base class
+                    pid=pid
                 )
+
             except json.JSONDecodeError:
-                print(f"[C-Loader] Non-JSON Output: {line}")
+                pass  # ignore non-JSON status lines
             except Exception as e:
-                print(f"Event processing error: {e}")
+                print(f"[Collector] Processing error: {e}")
 
     def run(self):
         if not self.load_probes():
             return
 
         self.running = True
-        print(f"[{datetime.now()}] libbpf collector running (Native C-Loader mode)")
+        print(f"[{datetime.now()}] libbpf collector running (Native C-Loader on {self.target_interface})")
 
         try:
-            # Spawn the C loader, passing the probe path as an argument
             self.process = subprocess.Popen(
-                [str(self.loader_path), str(self.probe_path)],
+                [str(self.loader_path), self.target_interface],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=1
             )
 
-            # Start a thread to read stdout continuously
-            reader_thread = threading.Thread(target=self.process_stdout, daemon=True)
-            reader_thread.start()
+            threading.Thread(target=self.process_stdout, daemon=True).start()
 
-            # Main loop just keeps the collector alive
             while self.running and self.process.poll() is None:
                 time.sleep(1)
 
-            if self.process.poll() is not None:
-                err = self.process.stderr.read()
-                print(f"C-Loader exited unexpectedly with code {self.process.returncode}. Stderr: {err}")
-
-        except KeyboardInterrupt:
-            self.stop()
         except Exception as e:
             print(f"C-loader execution error: {e}")
 
@@ -143,6 +139,6 @@ class LibBPFCollector(EBPFCollectorBase):
         if self.process and self.process.poll() is None:
             self.process.terminate()
             try:
-                self.process.wait(timeout=2)
-            except subprocess.TimeoutExpired:
+                self.process.wait(timeout=3)
+            except:
                 self.process.kill()

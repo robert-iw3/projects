@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-c2_beacon_hunter - Linux C2 Beacon Detector (v2.8)
+c2_beacon_hunter - Linux C2 Beacon Detector (v2.7)
 Author: Robert Weber
 
-v2.8 - Active Enforcement & Scalability
-- Asynchronous HTTP POST SIEM Shipper (ELK/Splunk)
-- Persistent SQLite integration with Race Condition fixes
-- JSONL Append-mode for real-time c2_defend.py tailing
-- All v2.7 eBPF and ML features preserved
+v2.7 - Adaptive Learning + eBPF Integration
+- Loads baseline model from baseline_learner.py
+- Optional eBPF collector integration (via collector_factory)
+- Adjusts scores based on learned baselines
+- All previous v2.6 features preserved
 """
 
 import argparse
@@ -22,8 +22,6 @@ import subprocess
 import sys
 import threading
 import time
-import requests
-import queue
 from collections import defaultdict, deque, Counter
 from datetime import datetime
 from pathlib import Path
@@ -31,7 +29,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import psutil
+
 import sqlite3
+from pathlib import Path
 
 # Optional DNS monitoring
 try:
@@ -46,47 +46,6 @@ try:
 except ImportError:
     def detect_beaconing_list(*args, **kwargs): return None
 
-# ====================== SIEM SHIPPER ======================
-class SIEMShipper:
-    """Asynchronous HTTP POST Shipper for ELK/Splunk/API integration."""
-    def __init__(self, endpoint_url, auth_token=None, batch_size=10, timeout=3.0):
-        self.endpoint_url = endpoint_url
-        self.headers = {"Content-Type": "application/json"}
-        if auth_token:
-            self.headers["Authorization"] = f"Bearer {auth_token}"
-        self.batch_size = batch_size
-        self.timeout = timeout
-        self.queue = queue.Queue()
-        self.running = True
-
-        if self.endpoint_url:
-            self.worker = threading.Thread(target=self._shipping_loop, daemon=True)
-            self.worker.start()
-
-    def send(self, anomaly_dict):
-        if self.endpoint_url:
-            self.queue.put(anomaly_dict)
-
-    def _shipping_loop(self):
-        while self.running:
-            batch = []
-            try:
-                item = self.queue.get(timeout=2.0)
-                batch.append(item)
-                while len(batch) < self.batch_size and not self.queue.empty():
-                    batch.append(self.queue.get_nowait())
-                if batch:
-                    requests.post(self.endpoint_url, headers=self.headers, json={"events": batch}, timeout=self.timeout)
-            except queue.Empty:
-                continue
-            except Exception as e:
-                logging.debug(f"SIEM Shipping error: {e}")
-
-    def stop(self):
-        self.running = False
-        if self.endpoint_url:
-            self.worker.join(timeout=2.0)
-
 # ====================== CONFIG ======================
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -98,7 +57,6 @@ logger = logging.getLogger("c2_beacon_hunter")
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
-Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
 file_handler = logging.handlers.RotatingFileHandler(
     f"{OUTPUT_DIR}/c2_beacon_hunter.log", maxBytes=20*1024*1024, backupCount=5
 )
@@ -113,7 +71,7 @@ logger.addHandler(console_handler)
 USE_EBPF = config.getboolean('ebpf', 'enabled', fallback=False)
 if USE_EBPF:
     try:
-        sys.path.append('dev/src')
+        sys.path.append('ebpf/src')
         from collector_factory import CollectorFactory
     except ImportError:
         logger.warning("eBPF integration not available. Falling back to standard mode.")
@@ -137,24 +95,28 @@ USE_ENHANCED_DNS = config.getboolean('ml', 'use_enhanced_dns', fallback=True)
 BENIGN_PROCESSES = [p.strip().lower() for p in config.get('whitelist', 'benign_processes', fallback="").split(',') if p.strip()]
 BENIGN_DESTINATIONS = [d.strip() for d in config.get('whitelist', 'benign_destinations', fallback="").split(',') if d.strip()]
 
+Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+
 IN_CONTAINER = os.path.exists('/.dockerenv') or os.path.exists('/run/.containerenv')
 TEST_MODE = os.environ.get('TEST_MODE', 'false').lower() == 'true'
 
-# v2.8 Persistent Database & Baseline Model Paths
-DB_PATH = Path("data/baseline.db")
-BASELINE_MODEL_PATH = Path("data/baseline_model.joblib")
-
+# v2.7 Baseline Model
+BASELINE_MODEL_PATH = Path("baseline_model.joblib")
 baseline_model = None
 if BASELINE_MODEL_PATH.exists():
     try:
         import joblib
         baseline_model = joblib.load(BASELINE_MODEL_PATH)
+    except ImportError:
+        logger.warning("joblib not available. Running without baseline model enhancement.")
     except Exception as e:
         logger.warning(f"Failed to load baseline model: {e}. Running without UEBA enhancement.")
 
 if IN_CONTAINER:
-    logger.info("=== RUNNING INSIDE CONTAINER WITH HOST ACCESS ===")
+    logger.info("=== RUNNING INSIDE DOCKER/PODMAN CONTAINER WITH HOST ACCESS ===")
+    # Patch psutil to use host /proc for network stats visibility
     psutil.PROCFS_PATH = '/host/proc'
+    logger.info("Patched psutil to use host /proc for network stats visibility.")
 
 DETECTION_LOG = f"{OUTPUT_DIR}/detections.log"
 ANOMALY_CSV = f"{OUTPUT_DIR}/anomalies.csv"
@@ -178,49 +140,16 @@ class BeaconHunter:
         self.running = True
         self.lock = threading.Lock()
         self.detection_count = 0
-        self.process_baselines = defaultdict(list)
-        self.dns_timestamps = []
+        self.process_baselines = defaultdict(list)  # UEBA lite
+        self.dns_timestamps = []  # For DNS sniffer
 
-        # Ensure the data directory exists
-        Path("data").mkdir(exist_ok=True)
-
-        # Initialize SIEM Shipper
-        siem_endpoint = config.get('siem', 'endpoint', fallback='')
-        self.shipper = SIEMShipper(endpoint_url=siem_endpoint)
-
-        # Fix Startup Race Condition: Initialize DB Table if missing
-        try:
-            conn = sqlite3.connect(DB_PATH)
-            conn.execute('PRAGMA journal_mode=WAL;')
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS flows (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    timestamp REAL,
-                    process_name TEXT,
-                    dst_ip TEXT,
-                    interval REAL,
-                    cv REAL,
-                    outbound_ratio REAL,
-                    entropy REAL,
-                    packet_size_mean REAL,
-                    packet_size_std REAL,
-                    packet_size_min REAL,
-                    packet_size_max REAL,
-                    mitre_tactic TEXT,
-                    pid INTEGER,
-                    cmd_entropy REAL
-                )
-            """)
-            conn.commit()
-            conn.close()
-        except Exception as e:
-            logger.error(f"Failed to initialize database: {e}")
-
+        # v2.7 eBPF integration
         self.ebpf_collector = None
         if USE_EBPF:
             logger.info("Starting eBPF collector...")
             self.ebpf_collector = CollectorFactory.create_collector()
             threading.Thread(target=self.ebpf_collector.run, daemon=True).start()
+            logger.info("eBPF collector started and integrated.")
 
         signal.signal(signal.SIGTERM, self.shutdown)
         signal.signal(signal.SIGINT, self.shutdown)
@@ -233,7 +162,6 @@ class BeaconHunter:
         logger.info("Shutting down gracefully...")
         if self.ebpf_collector:
             self.ebpf_collector.stop()
-        self.shipper.stop()
         self.export_all()
         sys.exit(0)
 
@@ -328,8 +256,11 @@ class BeaconHunter:
                         flow["intervals"].append(interval)
                     flow["last_seen"] = ts
                     flow["count"] += 1
+                    # Update outbound ratio (simplified average)
                     flow["outbound_ratio"] = ((flow["outbound_ratio"] * (flow["count"] - 1)) + int(is_outbound)) / flow["count"]
+                    # Packet size stub (0 for non-eBPF mode; eBPF provides real sizes)
                     flow["packet_sizes"].append(0)
+                    # Keep recent history
                     if len(flow["intervals"]) > 500:
                         flow["intervals"].pop(0)
                     if len(flow["packet_sizes"]) > 500:
@@ -373,7 +304,7 @@ class BeaconHunter:
                             flow["last_seen"] = ts
                             flow["count"] += 1
                             flow["outbound_ratio"] = ((flow["outbound_ratio"] * (flow["count"] - 1)) + int(is_outbound)) / flow["count"]
-                            flow["packet_sizes"].append(0)
+                            flow["packet_sizes"].append(0)  # Stub
                             if len(flow["intervals"]) > 500:
                                 flow["intervals"].pop(0)
                             if len(flow["packet_sizes"]) > 500:
@@ -388,8 +319,9 @@ class BeaconHunter:
                     del self.flows[k]
 
     def snapshot_db(self):
+        """Fetches flow data from baseline.db (populated by eBPF collector)."""
         try:
-            conn = sqlite3.connect(DB_PATH)
+            conn = sqlite3.connect("data/baseline.db")
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT process_name, dst_ip, interval, cv, outbound_ratio, entropy,
@@ -400,10 +332,13 @@ class BeaconHunter:
             rows = cursor.fetchall()
             conn.close()
 
+            if not rows:
+                logger.info("DB mode active but no recent flows found.")
+
             with self.lock:
                 for row in rows:
                     proc, dst, interval, cv, out_ratio, entropy, size_mean, size_std, size_min, size_max, tactic, pid, cmd_entropy = row
-                    flow_key = (proc, dst)
+                    flow_key = (proc, dst)  # Simplified key; adjust as needed
                     if flow_key not in self.flows:
                         self.flows[flow_key] = {
                             "process_name": proc,
@@ -423,7 +358,7 @@ class BeaconHunter:
                     flow["last_seen"] = time.time()
                     flow["count"] += 1
                     flow["outbound_ratio"] = out_ratio
-                    flow["packet_sizes"].append(size_mean)
+                    flow["packet_sizes"].append(size_mean)  # Use mean as proxy
                     if len(flow["intervals"]) > 500:
                         flow["intervals"].pop(0)
                     if len(flow["packet_sizes"]) > 500:
@@ -438,14 +373,20 @@ class BeaconHunter:
             return None
         self.last_analyzed[key] = now
 
-        proc_name = flow.get("process_name", flow.get("process", {}).get("name", "unknown")).lower()
+        proc_name = flow["process_name"].lower()
         raddr = flow["dst_ip"]
-        port = flow.get("dst_port", 0)
+        # port = key[2]  # If needed; not in db structure, assume 0 or add to db
+        port = 0  # Placeholder; extend db if ports needed
 
+        # 1. Benign process whitelist
         if any(b in proc_name for b in BENIGN_PROCESSES):
             return None
+
+        # 2. Common benign ports (unless suspicious process)
         if port in COMMON_PORTS and not any(s in proc_name for s in ["python", "bash", "sh", "powershell", "cmd", "unknown", "java"]):
             return None
+
+        # 3. Known good destination networks
         if any(raddr.startswith(prefix) for prefix in BENIGN_DESTINATIONS):
             return None
 
@@ -454,17 +395,17 @@ class BeaconHunter:
             mean_delta = float(np.mean(deltas)) if deltas else 0
             cv = float(np.std(deltas) / mean_delta) if mean_delta > 0 else 0
             min_samples = MIN_SAMPLES_SPARSE if mean_delta > LONG_SLEEP_THRESHOLD else 5
-            if len(deltas) < min_samples - 1:
+            if len(deltas) < min_samples - 1:  # Since deltas = len(intervals) - 1
                 return None
 
             entropy_ip = self.shannon_entropy(raddr)
-            avg_cmd_entropy = flow.get("cmd_entropy", 0.0)
+            avg_cmd_entropy = flow.get("cmd_entropy", 0.0)  # Use placeholder if missing
             unusual_port = port not in COMMON_PORTS and port > 1024
             outbound_ratio = flow["outbound_ratio"]
 
             ml_result = detect_beaconing_list(
                 deltas,
-                timestamps=None,
+                timestamps=None,  # No timestamps in db; if needed, add to db
                 std_threshold=ML_STD_THRESHOLD, min_samples=3,
                 use_dbscan=ML_USE_DBSCAN, use_isolation=ML_USE_ISOLATION,
                 n_jobs=-1, max_samples=ML_MAX_SAMPLES
@@ -503,7 +444,7 @@ class BeaconHunter:
                 mitre = MITRE_MAP["suspicious_process"]
 
             if USE_UEBA:
-                proc_name_full = proc_name
+                proc_name_full = flow["process_name"]
                 self.process_baselines[proc_name_full].append(mean_delta)
                 if len(self.process_baselines[proc_name_full]) > 20:
                     baseline_lite = np.array(self.process_baselines[proc_name_full][-20:])
@@ -512,10 +453,13 @@ class BeaconHunter:
                         score += 25
                         reasons.append("ueba_deviation_lite")
 
+                # v2.7 Advanced UEBA with loaded baseline model
                 if baseline_model:
                     prefix = ".".join(raddr.split('.')[:3]) + ".0"
                     dt = datetime.fromtimestamp(now)
-                    baseline_key = f"{proc_name_full}|{prefix}|{dt.hour:02d}|{1 if dt.weekday() >= 5 else 0}"
+                    hour = dt.hour
+                    is_weekend = 1 if dt.weekday() >= 5 else 0
+                    baseline_key = f"{proc_name_full}|{prefix}|{hour:02d}|{is_weekend}"
                     if baseline_key in baseline_model.get("profiles", {}):
                         stats = baseline_model["profiles"][baseline_key]["stats"]
                         interval_dev = abs(mean_delta - stats["mean_interval"]) / (stats["mean_interval"] + 1e-6)
@@ -544,7 +488,7 @@ class BeaconHunter:
                     "dst_ip": raddr,
                     "dst_port": port,
                     "process": proc_name,
-                    "cmd_snippet": "",
+                    "cmd_snippet": "",  # Not in db; extend if needed
                     "pid": int(pid),
                     "process_tree": tree_str,
                     "masquerade_detected": masquerade,
@@ -560,18 +504,9 @@ class BeaconHunter:
                     "mitre_name": mitre[2],
                     "description": f"C2 Beacon detected - {ml_result or 'Statistical match'}"
                 }
-
-                # Write locally
                 with open(DETECTION_LOG, "a") as f:
-                    f.write(f"{datetime.now().isoformat()} [SCORE {score}] {anomaly['description']} → {raddr}:{port} ({anomaly['process']})\n")
-
-                # Append to JSONL for c2_defend.py tailer
-                with open(ANOMALY_JSONL, "a") as f:
-                    f.write(json.dumps(anomaly) + "\n")
-
-                # Async ship to SIEM
-                self.shipper.send(anomaly)
-
+                    f.write(f"{datetime.now().isoformat()} [SCORE {score}] {anomaly['description']} "
+                            f"→ {raddr}:{port} ({anomaly['process']})\n")
                 return anomaly
             return None
         except Exception as e:
@@ -583,7 +518,11 @@ class BeaconHunter:
             current_flows = dict(self.flows)
         active_flows = {k: v for k, v in current_flows.items() if v["count"] >= 3}
         if len(active_flows) > 300:
-            sorted_active = sorted(active_flows.items(), key=lambda item: item[1]["last_seen"], reverse=True)
+            sorted_active = sorted(
+                active_flows.items(),
+                key=lambda item: item[1]["last_seen"],
+                reverse=True
+            )
             active_flows = dict(sorted_active[:300])
 
         new_anomalies = []
@@ -595,6 +534,10 @@ class BeaconHunter:
                 print(f"\033[91m[DETECTION #{self.detection_count}] {anomaly['description']}\033[0m")
                 logger.info(f"DETECTION: {anomaly['description']} Score={anomaly['score']}")
 
+        if USE_ENHANCED_DNS:
+            # Simple DNS analysis stub (can be expanded)
+            pass
+
         if new_anomalies:
             self.anomalies.extend(new_anomalies)
             self.export_all()
@@ -603,22 +546,24 @@ class BeaconHunter:
         if not self.anomalies:
             return
         df = pd.DataFrame(self.anomalies)
-        # We only overwrite the CSV here. JSONL is dynamically appended in analyze_flow now.
         df.to_csv(ANOMALY_CSV, index=False)
-        logger.info(f"Exported {len(self.anomalies)} anomalies to CSV in {self.output_dir}")
+        with open(ANOMALY_JSONL, "w") as f:
+            for a in self.anomalies:
+                f.write(json.dumps(a) + "\n")
+        logger.info(f"Exported {len(self.anomalies)} anomalies to {self.output_dir}")
 
     def print_status(self):
         while self.running:
             with self.lock:
                 active = len(self.flows)
-            print(f"\r[MONITORING v2.8] Active flows: {active:5d} | Detections: {self.detection_count:4d} | "
+            print(f"\r[MONITORING v2.7] Active flows: {active:5d} | Detections: {self.detection_count:4d} | "
                   f"Last: {datetime.now().strftime('%H:%M:%S')}", end="", flush=True)
             time.sleep(10)
 
     def start(self):
         threading.Thread(target=self.snapshot_loop, daemon=True).start()
         threading.Thread(target=self.print_status, daemon=True).start()
-        logger.info("c2_beacon_hunter v2.8 started")
+        logger.info("c2_beacon_hunter v2.7 started")
         print(f"Output directory: {self.output_dir} | Ctrl+C to stop")
         try:
             while self.running:
@@ -630,15 +575,17 @@ class BeaconHunter:
             logger.critical(f"Main loop error: {e}")
 
     def snapshot_loop(self):
+        """Routes traffic collection based on the configuration."""
         while self.running:
             if USE_EBPF:
                 self.snapshot_db()
             else:
-                self.snapshot()
+                self.snapshot()  # Uses classic psutil/auditd logic
+
             time.sleep(SNAPSHOT_INTERVAL)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="c2_beacon_hunter v2.8")
+    parser = argparse.ArgumentParser(description="c2_beacon_hunter v2.7")
     parser.add_argument("--output-dir", default=OUTPUT_DIR, help="Output directory for logs/CSV/JSON")
     args = parser.parse_args()
     hunter = BeaconHunter(output_dir=args.output_dir)
