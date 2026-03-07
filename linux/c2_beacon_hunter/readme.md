@@ -442,7 +442,8 @@ SHODAN_KEY=""
 
 ```bash
 # After alerts populate in output:
-bash dfir/threat_intel_check.sh
+cd dfir
+bash threat_intel_check.sh
 ```
 
 ---

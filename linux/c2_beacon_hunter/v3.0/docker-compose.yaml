@@ -2,17 +2,13 @@
 services:
   c2-beacon-hunter:
     build:
-      context: .
+      context: ..
       dockerfile: ebpf.Dockerfile
-    image: c2-beacon-hunter:v2.8
-    container_name: c2-beacon-hunter
+    container_name: c2-beacon-hunter-v3
     privileged: true
-    cap_add:
-      - SYS_ADMIN
-      - NET_ADMIN
-      - SYS_PTRACE
-    network_mode: "host"
-    pid: "host"
+    network_mode: host
+    pid: host
+    restart: unless-stopped
     volumes:
       - /sys/kernel/debug:/sys/kernel/debug:rw
       - /sys/fs/bpf:/sys/fs/bpf:rw
@@ -23,10 +19,24 @@ services:
       - /usr/src:/usr/src:ro
       - /proc:/host/proc:ro
     environment:
+      - TARGET_INTERFACE=${TARGET_INTERFACE:-wlo1}
+      - MODE=${MODE:-host} # ← set to "promisc" for Epic 1
       - TEST_MODE=false
-      # wire-speed XDP dropping, dynamically writes to the eBPF map to block malicious IPs in real-time
-      - TARGET_INTERFACE=wlo1 # Set to your desired interface (e.g., eth0, wlan0, enp3s0, etc.)
-    command: /app/venv/bin/python ebpf/run_full_stack.py
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+      - BPF
+    command: >
+      sh -c "
+        cp /app/v3.0/config.ini /app/config.ini 2>/dev/null || true &&
+        echo '[v3.0] Starting in $${MODE:-host} mode on $${TARGET_INTERFACE}' &&
+        python3 /app/c2_beacon_hunter.py --output-dir /app/output
+      "
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
 
   api-dashboard:
     image: python:3.12-slim
