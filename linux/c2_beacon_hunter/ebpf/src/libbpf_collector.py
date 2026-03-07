@@ -19,6 +19,7 @@ import json
 import threading
 from datetime import datetime
 from pathlib import Path
+import configparser
 
 class LibBPFCollector(EBPFCollectorBase):
     def __init__(self):
@@ -27,6 +28,26 @@ class LibBPFCollector(EBPFCollectorBase):
         self.loader_path = None
         self.target_interface = os.environ.get("TARGET_INTERFACE", "eth0")
         self.event_count = 0
+
+        # Configurable loopback filtering (respects config.ini)
+        self.capture_loopback = True
+        try:
+            parser = configparser.ConfigParser()
+            parser.read(['config.ini', '/app/config.ini', '/app/ebpf/config_dev.ini'])
+            if parser.has_section('ebpf'):
+                self.capture_loopback = parser.getboolean('ebpf', 'capture_loopback', fallback=True)
+        except Exception:
+            pass  # safe fallback
+
+        print(f"[LibBPF] Loopback capture: {'ENABLED' if self.capture_loopback else 'DISABLED (localhost/0.0.0.0 skipped)'}")
+
+    def _is_loopback(self, ip: str) -> bool:
+        """Quick check for loopback / unspecified addresses."""
+        if not ip or ip.strip() in ("", "0.0.0.0", "127.0.0.1", "::1", "::"):
+            return True
+        if ip.startswith(("127.", "169.254.", "fe80::")):
+            return True
+        return False
 
     def load_probes(self):
         loader_paths = [
@@ -67,6 +88,12 @@ class LibBPFCollector(EBPFCollectorBase):
                 interval_ns = event.get("interval_ns", 0)
                 interval_sec = interval_ns / 1_000_000_000.0
                 entropy = event.get("entropy", 0.0)
+
+                # Configurable Loopback Filter (early exit)
+                if not self.capture_loopback and self._is_loopback(dst_ip):
+                    if self.event_count % 100 == 0:  # rate-limited debug
+                        print(f"[LOOPBACK SKIP #{self.event_count}] {process_name} (PID {pid}) → {dst_ip}")
+                    continue
 
                 # Normalize type (handles BOTH old int and new string types)
                 etype = str(raw_type).lower()
