@@ -9,7 +9,7 @@
 ## Architectural Pivot Overview
 The current architecture excels as an Endpoint Detection and Response (EDR) sensor, heavily reliant on mapping network traffic to specific Process IDs (`PID`, `process_tree`).
 
-To scale to multi-gigabit enterprise networks via Core Router SPAN ports or Cloud Traffic Mirroring, we lose host context. Version 3.0 represents a total architectural pivot: the analytical entity shifts from "Processes" to "Internal Subnet IPs."
+To scale to multi-gigabit enterprise networks via Core Router SPAN ports or Cloud Traffic Mirroring, we lose host context. Version 3.0 represents a total architectural pivot: the analytical entity shifts from "Processes" to "Internal Subnet IPs / Flow Tuples" for wire-speed, centralised detection.
 
 ```mermaid
 %%{init: {'theme': 'dark', 'themeVariables': { 'fontFamily': 'Fira Code, monospace', 'lineColor': '#06b6d4', 'mainBkg': '#0a0a0a', 'textColor': '#e2e8f0'}}}%%
@@ -87,23 +87,94 @@ graph LR
 
 ---
 
-## Epic 1: The Promiscuous eBPF Parser
-**Objective:** Shift from hooking host sockets (`kprobes`) to parsing raw Ethernet frames off the wire.
-* **Story 1.1:** Develop a Traffic Control (TC) or XDP eBPF program capable of running in promiscuous mode on dedicated sniffing interfaces (e.g., `eth1`).
-* **Story 1.2:** Implement robust header parsing to extract Ethernet, IP, TCP, and UDP tuple data from raw wire streams.
+## Epic 1: Promiscuous eBPF Parser (Wire-Speed Ingestion)
 
-## Epic 2: In-Kernel Flow State Tracking (The Heavy Lifter)
-**Objective:** Prevent CPU meltdown by tracking connection states entirely inside kernel memory rather than passing millions of packets to Python.
-* **Story 2.1:** Construct highly concurrent BPF Hash Maps keyed by the `(Source IP, Dest IP, Dest Port)` tuple.
-* **Story 2.2:** Program the kernel to independently calculate delta intervals, compute payload entropy, and maintain moving averages (`outbound_ratio`, `cv`) directly inside the BPF Maps.
-* **Story 2.3:** Update the Python detection engine to wake up periodically and sweep the BPF Maps for aggregated statistics, drastically reducing user-space context switches.
+**Status:** Planned
+
+**Objective:** Shift from host kprobes to raw wire parsing.
+
+- Story 1.1: TC/XDP program in promiscuous mode on sniffing interfaces
+- Story 1.2: Robust Ethernet/IP/TCP/UDP header parsing
+- Story 1.3: In-kernel flow state tracking (5-tuple maps)
+
+---
+
+## Epic 2: In-Kernel Flow State Tracking
+
+**Status:** Planned
+
+**Objective:** Keep heavy lifting in the kernel to prevent user-space overload.
+
+- Story 2.1: BPF Hash Maps for interval, entropy, CV, and packet-size tracking
+- Story 2.2: Kernel-side aggregation before ringbuf submission
+
+---
 
 ## Epic 3: ML Engine Evolution (Subnet Clustering)
-**Objective:** Adapt the UEBA and clustering algorithms to evaluate network-level behavior rather than process-level behavior.
-* **Story 3.1:** Refactor the baseline learner to establish temporal baselines utilizing CIDR blocks (e.g., modeling normal variance for the `10.0.5.0/24` subnet).
-* **Story 3.2:** Upgrade the ML clustering module to ingest the new tuple structures, optimizing K-Means and DBSCAN to detect mathematically perfect beaconing from internal enterprise IPs to unknown external infrastructure.
+
+**Status:** Planned
+
+**Objective:** Adapt UEBA and clustering to network-level (not process-level) behaviour.
+
+- Story 3.1: CIDR-based baselines (10.0.5.0/24, etc.)
+- Story 3.2: 3D+ clustering with flow metadata
+
+---
 
 ## Epic 4: Cloud-Native Flow Log Ingestion
-**Objective:** Support serverless and PaaS cloud environments where deploying a virtual TAP or SPAN interface is impossible.
-* **Story 4.1:** Build ingestion adapters for AWS VPC Flow Logs, Azure NSG Flow Logs, and GCP VPC Telemetry.
-* **Story 4.2:** Optimize the detection engine to operate solely on header-derived timing intervals, compensating for the loss of payload entropy data inherent to standard cloud flow logs.
+
+**Status:** Planned
+
+**Objective:** Support environments where host eBPF is impossible.
+
+- Story 4.1: Adapters for AWS VPC Flow Logs, Azure NSG, GCP
+- Story 4.2: Pure flow-log mode with reduced entropy features
+
+---
+
+## **Epic 5: Centralized Postgres Backend (Database Migration)**
+
+**Status:** Planned (v3.0 Core)
+
+**Objective:** Replace per-host SQLite with a central, scalable Postgres database for enterprise/multi-host deployments.
+
+### Why Postgres in v3.0?
+- Single endpoint → SQLite remains optimal (fast, zero-config)
+- Enterprise / multi-host / cloud NDR → Postgres is required for:
+  - Concurrent writes from multiple sensors
+  - Advanced indexing and partitioning
+  - Centralized UEBA across the entire fleet
+  - High-availability and replication
+  - Easier integration with BI/SIEM tools
+
+### Features to Deliver:
+- Story 5.1: Dual-backend support (SQLite for single-host, Postgres for enterprise) via config flag
+- Story 5.2: SQLAlchemy + asyncpg for high-performance writes
+- Story 5.3: Migration script (`sqlite_to_postgres.py`) for seamless upgrade
+- Story 5.4: Partitioning by day + process_name for fast queries
+- Story 5.5: Connection pooling and read replicas for SOC dashboard scale
+- Story 5.6: Baseline learner updated to use Postgres for cross-host UEBA
+
+**Migration Strategy:**
+- v2.8.2+ continues using SQLite (no breaking change)
+- v3.0 introduces optional Postgres backend
+- Single-host users stay on SQLite if desired
+
+---
+
+## Epic 6: Enterprise SOC & Orchestration Layer
+
+**Status:** Planned
+
+**Objective:** Central dashboard and policy engine.
+
+- Story 6.1: Multi-sensor aggregation API
+- Story 6.2: Global blocklist propagation via Postgres
+- Story 6.3: Alert correlation across hosts
+
+---
+
+**Target Release:** v3.0 (Q2 2026)
+
+**Last updated:** March 2026
+```
