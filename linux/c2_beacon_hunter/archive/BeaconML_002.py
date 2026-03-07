@@ -3,18 +3,30 @@ BeaconML.py
 Advanced ML-based beaconing detection using Multi-Dimensional Clustering.
 
 Author: Robert Weber
-Version: 2.8.2 (UEBA False-Positive Suppression Edition)
+Version: 2.9 (Stealth C2)
 
 Description:
-Core mathematical engine for detecting Command and Control (C2) beaconing.
-Upgraded for modern stealthy TTPs including jitter, malleable payloads,
-sparse/long-sleep beacons, and high-entropy encryption.
+This is the core mathematical detection engine for identifying Command and Control (C2)
+beaconing patterns. It has been upgraded from pure temporal analysis to a robust
+multi-dimensional threat hunting system capable of detecting modern, stealthy TTPs.
 
-Key Capabilities:
-- 3D Feature Space (interval + entropy + packet-size CV)
-- Adaptive jitter tolerance
-- Confidence scoring (0-100)
-- Zero heavy dependencies (astropy removed)
+Key Capabilities & Algorithms (v2.9):
+- 3D Feature Space: interval + Shannon Entropy + packet-size variation (CV)
+- Adaptive Jitter Tolerance: relaxed Fast-Path and clustering for realistic malware jitter
+- Malleable C2 Support: detects variable payload sizes and encryption patterns
+- Sparse / Long-Sleep Beacon Detection: dynamic min_samples for low-and-slow beacons
+- Confidence Scoring: returns a 0-100 confidence value for better thresholding
+- Modern TTP Flags: "Jitter Beaconing", "Malleable Beaconing", "Sparse Beaconing"
+- Zero external heavy dependencies (astropy removed — Lomb-Scargle is optional)
+
+Core Engines:
+- Optimized K-Means with silhouette scoring
+- Adaptive DBSCAN (dynamic epsilon)
+- Isolation Forest for outliers
+- Fast-Path for near-perfect robotic timing + high entropy
+
+This version is specifically tuned to catch evolving stealthy C2 techniques while keeping
+false positives low through confidence scoring and adaptive thresholds.
 """
 
 import sys
@@ -65,6 +77,7 @@ def detect_beaconing_list(intervals, timestamps=None, payload_entropies=None,
     std_int = np.std(intervals_arr)
     mean_int = float(np.mean(intervals_arr))
 
+    # Adaptive Fast-Path for jittered/malleable beacons (modern C2)
     if std_int < max(1.5, 0.3 * mean_int):
         if payload_entropies and len(payload_entropies) == len(intervals):
             mean_ent = float(np.mean(payload_entropies))
@@ -74,6 +87,7 @@ def detect_beaconing_list(intervals, timestamps=None, payload_entropies=None,
         flags.append(f"ML Fast-Path Beaconing (Jittered Timing: {mean_int:.2f}s ±{std_int:.2f})")
         return "; ".join(flags), 78
 
+    # 3D Feature Space (interval + entropy + size variation)
     is_multidimensional = payload_entropies and len(payload_entropies) == len(intervals)
     if is_multidimensional:
         features = [intervals]
@@ -86,16 +100,19 @@ def detect_beaconing_list(intervals, timestamps=None, payload_entropies=None,
     else:
         X = intervals_arr.reshape(-1, 1)
 
+    # K-Means (primary engine)
     max_k = min(10, len(X) - 1)
     if max_k > 1:
         results = Parallel(n_jobs=n_jobs)(delayed(compute_silhouette)(k, X) for k in range(2, max_k + 1))
         best_k, best_score, _, best_labels = max(((k, score, km, lbl) for k, score, km, lbl in results if score > 0.5), default=(0, 0, None, None))
+
         if best_k > 0:
             min_std = min(np.std(np.array(intervals)[np.where(best_labels == i)[0]])
                          for i in range(best_k) if len(np.where(best_labels == i)[0]) >= min_samples)
             if min_std <= std_threshold:
                 flags.append(f"ML K-Means Beaconing (Clusters: {best_k}, Min StdDev: {min_std:.2f})")
 
+    # DBSCAN + Isolation Forest (unchanged core logic)
     if use_dbscan and len(X) >= min_samples:
         try:
             nn = NearestNeighbors(n_neighbors=min_samples)

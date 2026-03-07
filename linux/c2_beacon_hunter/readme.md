@@ -420,8 +420,32 @@ See `v3.0/plan.md`
 
 ```ini
 [whitelist]
+# lower threshold to see detection
+# warning: heavy alert detections the lower the score, in 1-2 hours the baseline learner will suppress them
+score_threshold = 90
+# warning: adding here would blind the detector to real LOLBins/LOTL attacks (proceed with caution)
+# example
 benign_processes = firefox-bin, code, chrome_childiot, socket thread, gvfsd-wsdd
 ```
+
+- Run the CTI tool to check IP's for potential known C2 Servers:
+
+Configure the API keys in dfir/config.ini:
+```ini
+[API_KEYS]
+VIRUSTOTAL_KEY=""
+ALIENVAULT_OTX_KEY=""
+GREYNOISE_KEY=""
+ABUSEIPDB_KEY=""
+SHODAN_KEY=""
+```
+
+```bash
+# After alerts populate in output:
+bash dfir/threat_intel_check.sh
+```
+
+---
 
 ***Example***
 

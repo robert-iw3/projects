@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-c2_beacon_hunter - Linux C2 Beacon Detector (v2.8)
+c2_beacon_hunter - Linux C2 Beacon Detector (v2.8.2)
 Author: Robert Weber
 
 v2.8 - Active Enforcement & Scalability
@@ -8,6 +8,9 @@ v2.8 - Active Enforcement & Scalability
 - Persistent SQLite integration with Race Condition fixes
 - JSONL Append-mode for real-time c2_defend.py tailing
 - All v2.7 eBPF and ML features preserved
+
+Patch:
+- v2.8.2: Added real eBPF entropy to BeaconML + confidence scoring.
 """
 
 import argparse
@@ -423,6 +426,7 @@ class BeaconHunter:
                     flow["last_seen"] = time.time()
                     flow["count"] += 1
                     flow["outbound_ratio"] = out_ratio
+                    flow["entropy"] = entropy
                     flow["packet_sizes"].append(size_mean)
                     if len(flow["intervals"]) > 500:
                         flow["intervals"].pop(0)
@@ -462,7 +466,10 @@ class BeaconHunter:
             unusual_port = port not in COMMON_PORTS and port > 1024
             outbound_ratio = flow["outbound_ratio"]
 
-            entropy_list = [max(entropy_ip, avg_cmd_entropy)] * len(deltas) if 'entropy_ip' in locals() else [0.88] * len(deltas)
+            # Use high payload entropy from eBPF C-Loader
+            flow_entropy = flow.get("entropy", max(entropy_ip, avg_cmd_entropy))
+            entropy_list = [flow_entropy] * len(deltas)
+            print(f"[DEBUG] Passing eBPF entropy {flow_entropy:.3f} to BeaconML")
 
             ml_result, ml_confidence = detect_beaconing_list(
                 deltas,
@@ -616,14 +623,14 @@ class BeaconHunter:
         while self.running:
             with self.lock:
                 active = len(self.flows)
-            print(f"\r[MONITORING v2.8] Active flows: {active:5d} | Detections: {self.detection_count:4d} | "
+            print(f"\r[MONITORING v2.8.2] Active flows: {active:5d} | Detections: {self.detection_count:4d} | "
                   f"Last: {datetime.now().strftime('%H:%M:%S')}", end="", flush=True)
             time.sleep(10)
 
     def start(self):
         threading.Thread(target=self.snapshot_loop, daemon=True).start()
         threading.Thread(target=self.print_status, daemon=True).start()
-        logger.info("c2_beacon_hunter v2.8 started")
+        logger.info("c2_beacon_hunter v2.8.2 started")
         print(f"Output directory: {self.output_dir} | Ctrl+C to stop")
         try:
             while self.running:
@@ -643,7 +650,7 @@ class BeaconHunter:
             time.sleep(SNAPSHOT_INTERVAL)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="c2_beacon_hunter v2.8")
+    parser = argparse.ArgumentParser(description="c2_beacon_hunter v2.8.2")
     parser.add_argument("--output-dir", default=OUTPUT_DIR, help="Output directory for logs/CSV/JSON")
     args = parser.parse_args()
     hunter = BeaconHunter(output_dir=args.output_dir)

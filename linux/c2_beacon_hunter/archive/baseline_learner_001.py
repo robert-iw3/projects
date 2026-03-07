@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-baseline_learner.py - v2.8.2 Advanced Behavioral Learning Engine
+baseline_learner.py - v2.8 Advanced Behavioral Learning Engine
 
 Features:
 - Per-process, per-destination (/24), per-hour, per-weekday/weekend baselines
@@ -8,11 +8,11 @@ Features:
 - Hybrid statistical + Isolation Forest models (batch-fitted for large data)
 - Automatic data retention (30 days)
 - Model versioning
-- UEBA False-Positive Suppression + Performance Tuning
 """
 
 import sqlite3
 import time
+import json
 import numpy as np
 from pathlib import Path
 from collections import defaultdict, Counter
@@ -24,29 +24,28 @@ import queue
 
 DB_PATH = Path("data/baseline.db")
 MODEL_PATH = Path("data/baseline_model.joblib")
-
-LEARNING_INTERVAL = 3600
+# Paranoia Mode: 12 hour learning cycles to aggressively penalize new C2 beacons
+LEARNING_INTERVAL = 3600 * 12
 RETENTION_DAYS = 30
-BATCH_SIZE = 200
-QUEUE_TIMEOUT = 1.0
+BATCH_SIZE = 100
+QUEUE_TIMEOUT = 2.0
+CHUNK_SIZE = 1000    # For batch Isolation Forest fitting
 
 class BaselineLearner:
     def __init__(self):
         self.db = sqlite3.connect(DB_PATH, check_same_thread=False)
         self.db.execute('PRAGMA journal_mode=WAL;')
-        self.db.execute('PRAGMA synchronous=NORMAL;')
-        self.db.execute('PRAGMA cache_size=-64000;')
         self._init_db()
-        self._create_indexes()
         self.flow_queue = queue.Queue()
         self.running = True
+
         self.writer_thread = threading.Thread(target=self._queue_writer, daemon=True)
         self.writer_thread.start()
 
     def _init_db(self):
         self.db.execute("""
             CREATE TABLE IF NOT EXISTS flows (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 timestamp REAL,
                 process_name TEXT,
                 dst_ip TEXT,
@@ -60,15 +59,9 @@ class BaselineLearner:
                 packet_size_max REAL,
                 mitre_tactic TEXT,
                 pid INTEGER,
-                cmd_entropy REAL,
-                suppressed INTEGER DEFAULT 0
+                cmd_entropy REAL
             )
         """)
-        self.db.commit()
-
-    def _create_indexes(self):
-        self.db.execute("CREATE INDEX IF NOT EXISTS idx_process_dst ON flows(process_name, dst_ip)")
-        self.db.execute("CREATE INDEX IF NOT EXISTS idx_timestamp ON flows(timestamp)")
         self.db.commit()
 
     def _queue_writer(self):
@@ -80,30 +73,42 @@ class BaselineLearner:
                     batch.append(item)
             except queue.Empty:
                 pass
+
             if batch:
-                self.db.executemany("""
-                    INSERT INTO flows (timestamp, process_name, dst_ip, interval, cv, outbound_ratio, entropy,
-                                       packet_size_mean, packet_size_std, packet_size_min, packet_size_max,
-                                       mitre_tactic, pid, cmd_entropy, suppressed)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
-                """, batch)
-                self.db.commit()
+                try:
+                    self.db.executemany("""
+                        INSERT INTO flows (timestamp, process_name, dst_ip, interval, cv, outbound_ratio, entropy,
+                                           packet_size_mean, packet_size_std, packet_size_min, packet_size_max, mitre_tactic,
+                                           pid, cmd_entropy)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, batch)
+                    self.db.commit()
+                except Exception as e:
+                    print(f"Batch insert error: {e}")
 
     def record_flow(self, process_name, dst_ip, interval=0.0, cv=0.0, outbound_ratio=0.0,
                     entropy=0.0, packet_size_mean=0, packet_size_std=0,
                     packet_size_min=0, packet_size_max=0, mitre_tactic="C2_Beaconing",
                     pid=0, cmd_entropy=0.0):
         ts = time.time()
-        self.flow_queue.put((ts, process_name, dst_ip, interval, cv, outbound_ratio, entropy,
-                             packet_size_mean, packet_size_std, packet_size_min, packet_size_max,
-                             mitre_tactic, pid, cmd_entropy))
+        self.flow_queue.put((
+            ts, process_name, dst_ip, interval, cv, outbound_ratio, entropy,
+            packet_size_mean, packet_size_std, packet_size_min, packet_size_max, mitre_tactic,
+            pid, cmd_entropy
+        ))
 
     def learn(self):
         cursor = self.db.cursor()
-        cursor.execute("SELECT * FROM flows WHERE suppressed = 0")
+        # CRITICAL FIX: Extract true timestamp to prevent temporal skewing
+        cursor.execute("""
+            SELECT timestamp, process_name, dst_ip, interval, cv, outbound_ratio, entropy,
+                   packet_size_mean, packet_size_std, packet_size_min, packet_size_max, mitre_tactic
+            FROM flows
+        """)
         data = cursor.fetchall()
 
         model = {"version": 1, "profiles": {}}
+
         profiles = defaultdict(lambda: {
             "intervals": [], "cvs": [], "outbound_ratios": [], "entropies": [],
             "packet_means": [], "packet_stds": [], "packet_mins": [], "packet_maxs": [],
@@ -111,11 +116,15 @@ class BaselineLearner:
         })
 
         for row in data:
-            ts, process_name, dst_ip, interval, cv, outbound_ratio, entropy, p_mean, p_std, p_min, p_max, tactic, pid, cmd_entropy, suppressed = row
+            # CRITICAL FIX: Unpack the actual network event timestamp
+            ts, process_name, dst_ip, interval, cv, outbound_ratio, entropy, p_mean, p_std, p_min, p_max, tactic = row
             prefix = ".".join(dst_ip.split('.')[:3]) + ".0"
+
+            # CRITICAL FIX: Profile the event using its real time of occurrence
             event_dt = datetime.fromtimestamp(ts)
             hour = event_dt.hour
             is_weekend = event_dt.weekday() >= 5
+
             key = f"{process_name}|{prefix}|{hour:02d}|{'weekend' if is_weekend else 'weekday'}"
 
             prof = profiles[key]
@@ -131,18 +140,35 @@ class BaselineLearner:
 
         for key, prof in profiles.items():
             if len(prof["intervals"]) < 5: continue
-            model["profiles"][key] = {"stats": { ... }}  # keep your original stats code
-            # ... (full Isolation Forest code from your original file)
 
-            # NEW: Stability-based suppression
-            stability = 1.0 - (np.std(prof["intervals"]) / (np.mean(prof["intervals"]) + 1e-6))
-            if stability > 0.85:
-                cursor.execute("UPDATE flows SET suppressed = 1 WHERE process_name = ? AND dst_ip LIKE ? AND timestamp > ?",
-                               (key.split('|')[0], key.split('|')[1] + '%', time.time() - 86400))
-                self.db.commit()
+            model["profiles"][key] = {
+                "stats": {
+                    "mean_interval": np.mean(prof["intervals"]),
+                    "mean_cv": np.mean(prof["cvs"]),
+                    "mean_outbound_ratio": np.mean(prof["outbound_ratios"]),
+                    "mean_entropy": np.mean(prof["entropies"]),
+                    "mean_packet_mean": np.mean(prof["packet_means"]),
+                    "mean_packet_std": np.mean(prof["packet_stds"]),
+                    "mean_packet_min": np.mean(prof["packet_mins"]),
+                    "mean_packet_max": np.mean(prof["packet_maxs"]),
+                    "top_mitre": prof["mitre_tactics"].most_common(1)[0][0] if prof["mitre_tactics"] else "Unknown"
+                }
+            }
+
+            # Batch-fit Isolation Forest on multi-dimensional data
+            training_data = np.column_stack((
+                prof["intervals"], prof["cvs"], prof["outbound_ratios"], prof["entropies"],
+                prof["packet_means"], prof["packet_stds"], prof["packet_mins"], prof["packet_maxs"]
+            ))
+            clf = IsolationForest(contamination=0.05, random_state=42)
+            for i in range(0, len(training_data), CHUNK_SIZE):
+                chunk = training_data[i:i+CHUNK_SIZE]
+                clf.fit(chunk)
+            model["profiles"][key]["isolation_forest"] = clf
 
         joblib.dump(model, MODEL_PATH)
-        print(f"[{datetime.now()}] Baseline updated with {len(model['profiles'])} profiles (suppression active)")
+
+        print(f"[{datetime.now()}] Baseline updated with {len(model['profiles'])} profiles")
 
     def cleanup_old_data(self):
         cutoff = time.time() - 86400 * RETENTION_DAYS
@@ -161,3 +187,11 @@ class BaselineLearner:
     def stop(self):
         self.running = False
         self.writer_thread.join(timeout=3)
+
+
+if __name__ == "__main__":
+    learner = BaselineLearner()
+    try:
+        learner.run()
+    except KeyboardInterrupt:
+        learner.stop()
