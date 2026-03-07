@@ -162,19 +162,54 @@ graph LR
 
 ---
 
-## Epic 6: Enterprise SOC & Orchestration Layer
+## Epic 6: Advanced Dashboard & Drill-Down
+**Goal**: Turn the current static index.html + api_server.py into a production-grade, interactive SOC console with **full event drill-down**.
 
-**Status:** Planned
+**Key Features**
+- Click any row in "Active Detections" table → modal popup with **complete event record**
+- Drill-down data pulled live from database (Postgres first, SQLite fallback)
+- Fields shown in modal:
+  - Full process tree + parent/child PIDs
+  - Raw payload entropy + packet-size CV
+  - ML features (intervals array, K-Means/DBSCAN/IsolationForest scores)
+  - MITRE ATT&CK mapping + confidence breakdown
+  - Suppression status + UEBA baseline profile
+  - XDP block status (was it dropped at wire speed?)
+  - Threat Intel enrichment link
+- Timeline view (last 24h/7d) with anomaly heatmap
+- Export single event as JSON / PCAP snippet
+- Dark cyberpunk UI preserved + Tailwind responsiveness
 
-**Objective:** Central dashboard and policy engine.
+**API Extensions (api_server.py)**
+- New endpoint: `GET /api/v1/anomaly/{timestamp_or_id}` → returns full row from `anomalies` + joined `flows` data
+- `GET /api/v1/flows/{dst_ip}` → context for that destination
+- WebSocket support for real-time anomaly push (optional stretch)
 
-- Story 6.1: Multi-sensor aggregation API
-- Story 6.2: Global blocklist propagation via Postgres
-- Story 6.3: Alert correlation across hosts
+**Frontend Enhancements (index.html)**
+- Clickable table rows with JavaScript modal (Tailwind + vanilla JS — no React bloat)
+- Detailed modal template (entropy graph, interval plot, full JSON export button)
+- Preserve existing neon cyberpunk styling
+
+**Acceptance Criteria**
+- Drill-down works on both SQLite and Postgres backends
+- Modal loads < 500ms
+- Mobile-friendly
+- No new heavy dependencies (keep FastAPI + vanilla JS)
+
+**Implementation Order**
+1. Add `/api/v1/anomaly/{id}` to api_server.py (today’s file is ready as base)
+2. Extend index.html with modal + click handlers
+3. Hook into Postgres once Epic 5 is complete
+
+### Epic 7: Multi-Endpoint & Central Console (Stretch)
+- Agent mode (lightweight eBPF collector only)
+- Central Postgres + Grafana dashboards
+
+### Epic 8: Automated Response Playbooks
+- SOAR-lite (block + isolate + notify)
 
 ---
 
 **Target Release:** v3.0 (Q2 2026)
 
 **Last updated:** March 2026
-```
