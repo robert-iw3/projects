@@ -4,7 +4,7 @@ libbpf_collector.py - eBPF Collector (C-Loader Subprocess Mode) - v3.0
 
 Supports:
 - mode = host      → original v2.8.2 behaviour (kprobes + process context)
-- mode = promisc   → new wire-speed XDP parser (IPv4 + IPv6, 5-tuple flow tracking)
+- mode = promisc   → new wire-speed XDP parser with in-kernel aggregation (IPv4 + IPv6, 5-tuple flow tracking)
 """
 
 import os
@@ -31,19 +31,15 @@ class LibBPFCollector(EBPFCollectorBase):
         self.capture_loopback = True
         try:
             parser = configparser.ConfigParser()
-            config_files = ['config.ini', '/app/config.ini', '/app/ebpf/config_dev.ini', 'v3.0/config.ini']
+            config_files = ['config.ini', 'v3.0/config.ini', '/app/config.ini', '/app/ebpf/config_dev.ini']
             parsed = parser.read(config_files)
-            if not parsed:
-                print("[WARNING] No config.ini found — using defaults (host mode)")
-
             if parser.has_section('general'):
                 self.mode = parser.get('general', 'mode', fallback='host').strip().lower()
             if parser.has_section('ebpf'):
                 self.capture_loopback = parser.getboolean('ebpf', 'capture_loopback', fallback=True)
+            print(f"[LibBPF v3.0] Mode: {self.mode.upper()} | Loopback capture: {'ENABLED' if self.capture_loopback else 'DISABLED'}")
         except Exception as e:
-            print(f"[ERROR] Config parsing failed: {e} — falling back to host mode")
-
-        print(f"[LibBPF v3.0] Mode: {self.mode.upper()} | Loopback capture: {'ON' if self.capture_loopback else 'OFF'}")
+            print(f"[ERROR] Config parsing failed: {e} — defaulting to host mode")
 
     def _is_loopback(self, ip: str) -> bool:
         if not ip:
@@ -56,11 +52,7 @@ class LibBPFCollector(EBPFCollectorBase):
         return False
 
     def load_probes(self):
-        if self.mode == "promisc":
-            loader_name = "c2_promisc_loader"
-        else:
-            loader_name = "c2_loader"
-
+        loader_name = "c2_promisc_loader" if self.mode == "promisc" else "c2_loader"
         search_paths = [
             Path(loader_name),
             Path(f"probes/{loader_name}"),
@@ -75,7 +67,7 @@ class LibBPFCollector(EBPFCollectorBase):
                 print(f"[LibBPF] Using loader: {self.loader_path}")
                 return True
 
-        print(f"[CRITICAL ERROR] {loader_name} binary not found in any search path. Build it first!")
+        print(f"[CRITICAL ERROR] {loader_name} binary not found. Build it first with 'make' in v3.0/")
         return False
 
     def process_stdout(self):
@@ -96,19 +88,43 @@ class LibBPFCollector(EBPFCollectorBase):
                 event = json.loads(line)
                 self.event_count += 1
 
-                pid = event.get("pid", 0)
-                process_name = event.get("comm", "unknown")
-                raw_type = event.get("type", "unknown")
                 dst_ip = event.get("dst_ip", "0.0.0.0")
-                packet_size = event.get("packet_size", 0)
-                interval_ns = event.get("interval_ns", 0)
-                interval_sec = interval_ns / 1_000_000_000.0 if interval_ns else 0.0
-                entropy = event.get("entropy", 0.0)
 
                 if not self.capture_loopback and self._is_loopback(dst_ip):
                     if self.event_count % 100 == 0:
-                        print(f"[LOOPBACK SKIP #{self.event_count}] {process_name} (PID {pid}) → {dst_ip}")
+                        print(f"[LOOPBACK SKIP #{self.event_count}] → {dst_ip}")
                     continue
+
+                if self.mode == "promisc":
+                    pkt_count = event.get("pkt_count", 1)
+                    total_bytes = event.get("total_bytes", 0)
+                    avg_interval_sec = event.get("avg_interval_ns", 0) / 1_000_000_000.0
+                    cv = event.get("cv", 0) / 10000.0
+
+                    print(f"[EVENT #{self.event_count:03d} AGGREGATED] → {dst_ip} | count={pkt_count} | avg_int={avg_interval_sec:.3f}s | cv={cv:.4f}")
+
+                    self.record_flow(
+                        process_name="network_flow",
+                        dst_ip=dst_ip,
+                        interval=avg_interval_sec,
+                        cv=cv,
+                        entropy=0.0,
+                        packet_size_mean=total_bytes // max(pkt_count, 1),
+                        packet_size_std=0.0,
+                        packet_size_min=0,
+                        packet_size_max=total_bytes,
+                        mitre_tactic="C2_Beaconing",
+                        pid=0
+                    )
+                    continue
+
+                pid = event.get("pid", 0)
+                process_name = event.get("comm", "unknown")
+                raw_type = event.get("type", "unknown")
+                packet_size = event.get("packet_size", 0)
+                interval_ns = event.get("interval_ns", 0)
+                interval_sec = interval_ns / 1_000_000_000.0
+                entropy = event.get("entropy", 0.0)
 
                 etype = str(raw_type).lower()
 
@@ -118,7 +134,7 @@ class LibBPFCollector(EBPFCollectorBase):
                           f"entropy={entropy:.3f} | size={packet_size}")
 
                 mitre_tactic = "Unknown"
-                if etype in ["send", "3", "recv", "4", "dns", "6", "tcp_payload"]:
+                if etype in ["send", "3", "recv", "4", "dns", "6"] or etype == "tcp_payload":
                     mitre_tactic = "C2_Beaconing"
                 elif etype in ["memfd", "5"]:
                     mitre_tactic = "Process_Injection"
@@ -144,9 +160,9 @@ class LibBPFCollector(EBPFCollectorBase):
                 )
 
             except json.JSONDecodeError:
-                pass  # ignore status lines
+                pass
             except Exception as e:
-                print(f"[ERROR] process_stdout line processing failed: {e}")
+                print(f"[ERROR] process_stdout failed: {e}")
 
     def run(self):
         if not self.load_probes():
@@ -165,20 +181,15 @@ class LibBPFCollector(EBPFCollectorBase):
                 universal_newlines=True
             )
 
-            # Start processing in background thread
             threading.Thread(target=self.process_stdout, daemon=True).start()
 
-            # Keep main thread alive
             while self.running and self.process.poll() is None:
                 time.sleep(1)
 
-        except FileNotFoundError:
-            print(f"[CRITICAL] Loader binary not executable: {self.loader_path}")
         except Exception as e:
             print(f"[CRITICAL] Loader startup failed: {e}")
 
     def stop(self):
-        """Graceful shutdown with error handling."""
         self.running = False
         if self.process and self.process.poll() is None:
             try:
