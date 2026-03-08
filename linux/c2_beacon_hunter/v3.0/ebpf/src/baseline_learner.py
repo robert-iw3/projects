@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
 """
-libbpf_collector.py - eBPF Collector (C-Loader Subprocess Mode) - v3.0
-
-CIDR-based baselines (/24 for IPv4, /64 for IPv6) + subnet-level UEBA.
-
-Supports:
-- mode = host      → original v2.8.2 behaviour (kprobes + process context)
-- mode = promisc   → new wire-speed XDP parser with in-kernel aggregation (IPv4 + IPv6, 5-tuple flow tracking)
+baseline_learner.py - v3.0 Subnet Clustering Edition (Epic 3)
+CIDR-based baselines (/24 IPv4, /64 IPv6) + subnet-level UEBA.
 """
 
 import sqlite3
@@ -19,7 +14,7 @@ from datetime import datetime
 from sklearn.ensemble import IsolationForest
 import joblib
 import queue
-import ipaddress
+import ipaddress  # ← CIDR normalization
 
 DB_PATH = Path("data/baseline.db")
 MODEL_PATH = Path("data/baseline_model.joblib")
@@ -108,13 +103,14 @@ class BaselineLearner:
             print(f"[ERROR] Queue put failed: {e}")
 
     def _normalize_cidr(self, ip: str) -> str:
+        """Robust CIDR normalization with fallback."""
         try:
             if ':' in ip:  # IPv6
                 return str(ipaddress.IPv6Network(ip + '/64', strict=False))
             else:  # IPv4
                 return str(ipaddress.IPv4Network(ip + '/24', strict=False))
         except Exception:
-            return ip  # fallback to raw IP if parsing fails
+            return ip  # safe fallback
 
     def learn(self):
         try:
@@ -122,7 +118,7 @@ class BaselineLearner:
             cursor.execute("SELECT * FROM flows WHERE suppressed = 0")
             data = cursor.fetchall()
 
-            model = {"version": 3, "profiles": {}}  # version bump for Epic 3
+            model = {"version": 3, "profiles": {}}
             profiles = defaultdict(lambda: {
                 "intervals": [], "cvs": [], "outbound_ratios": [], "entropies": [],
                 "packet_means": [], "packet_stds": [], "packet_mins": [], "packet_maxs": [],
@@ -162,7 +158,6 @@ class BaselineLearner:
                     }
                 }
 
-                # 3D training data for subnet clustering
                 training_data = np.column_stack((
                     prof["intervals"], prof["cvs"], prof["entropies"]
                 ))
@@ -170,13 +165,11 @@ class BaselineLearner:
                 clf.fit(training_data)
                 model["profiles"][key]["isolation_forest"] = clf
 
-                # Stability-based suppression (subnet level)
+                # Stability suppression at subnet level
                 stability = 1.0 - (np.std(prof["intervals"]) / (np.mean(prof["intervals"]) + 1e-6))
                 if stability > 0.85:
-                    cursor.execute("""
-                        UPDATE flows SET suppressed = 1
-                        WHERE dst_ip LIKE ? AND timestamp > ?
-                    """, (key.split('|')[0] + '%', time.time() - 86400))
+                    cursor.execute("UPDATE flows SET suppressed = 1 WHERE dst_ip LIKE ? AND timestamp > ?",
+                                   (key.split('|')[0] + '%', time.time() - 86400))
                     self.db.commit()
 
             joblib.dump(model, MODEL_PATH)
